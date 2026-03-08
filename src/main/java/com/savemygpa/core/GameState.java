@@ -1,7 +1,10 @@
 package com.savemygpa.core;
 
 public enum GameState {
+    CUTSCENE,
     MAIN_MENU,
-    MAP,
-
+    GAMEPLAY,
+    EXAM,
+    RESULT,
+    EXIT
 }

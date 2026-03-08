@@ -32,9 +32,9 @@ public class StatConfig {
     public static final int AUDITORIUM_MOOD_REQUIREMENT = 2;
     public static final int AUDITORIUM_ENERGY_REQUIREMENT = 2;
 
-    // Co Working Space (Break)
-    public static final int BREAK_ENERGY_GAIN = 1;
-    public static final int BREAK_MOOD_GAIN = 1;
+    // Co Working Space (Relax)
+    public static final int RELAX_ENERGY_GAIN = 1;
+    public static final int RELAX_MOOD_GAIN = 1;
 
     // Co Working Space (Review)
     public static final int REVIEW_ENERGY_LOSS = 1;

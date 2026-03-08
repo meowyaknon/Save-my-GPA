@@ -26,4 +26,8 @@ public class Player {
             case MOOD -> mood += amount;
         }
     }
+
+    public boolean hasStat(StatType type, int require) {
+        return getStat(type) >= require;
+    }
 }
