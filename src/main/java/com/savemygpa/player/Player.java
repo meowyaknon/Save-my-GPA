@@ -21,9 +21,9 @@ public class Player {
 
     public void changeStat(StatType type, int amount) {
         switch (type) {
-            case ENERGY -> energy += amount;
-            case INTELLIGENCE -> intelligence += amount;
-            case MOOD -> mood += amount;
+            case ENERGY -> energy = Math.max(0, energy + amount);
+            case INTELLIGENCE -> intelligence =  Math.max(0, intelligence + amount);
+            case MOOD -> mood = Math.max(0, mood + amount);
         }
     }
 
