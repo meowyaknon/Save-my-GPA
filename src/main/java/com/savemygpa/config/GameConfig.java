@@ -1,6 +1,6 @@
 package com.savemygpa.config;
 
-public class GameConfig {
+public final class GameConfig {
 
     // Game Loop
     public static final int TARGET_FPS = 60;

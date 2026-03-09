@@ -1,6 +1,6 @@
 package com.savemygpa.config;
 
-public class WindowConfig {
+public final class WindowConfig {
 
     // Game Name
     public static final String TITLE = "Save My GPA";

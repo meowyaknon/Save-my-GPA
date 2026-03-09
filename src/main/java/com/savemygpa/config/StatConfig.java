@@ -1,6 +1,6 @@
 package com.savemygpa.config;
 
-public class StatConfig {
+public final class StatConfig {
 
     // Home
     public static final int HOME_ENERGY_GAIN = 3;
