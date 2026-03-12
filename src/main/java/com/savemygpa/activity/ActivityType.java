@@ -1,7 +1,11 @@
 package com.savemygpa.activity;
 
 public enum ActivityType {
-    CLASSROOMSTUDYACTIVITY,
-    ACTIVITY,
-
+    CLASSROOM,
+    AUDITORIUM,
+    COWORKINGRELAX,
+    COWORKINGSTUDY,
+    EAT,
+    GOHOME,
+    KLLC
 }

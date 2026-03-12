@@ -19,6 +19,7 @@ public final class GameConfig {
     public static final int AUDITORIUM_TIME_COST = 1;
     public static final int RELAX_TIME_COST = 1;
     public static final int REVIEW_TIME_COST = 1;
+    public static final int GOHOME_TIME_COST = 11;
 
     private GameConfig() {}
 }

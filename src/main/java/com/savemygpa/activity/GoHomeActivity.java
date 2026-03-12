@@ -1,4 +1,5 @@
 package com.savemygpa.activity;
 
-public class GoHomeActivity {
+public class GoHomeActivity  {
+
 }
