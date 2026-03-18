@@ -20,7 +20,9 @@ public class TimeSystem {
     }
 
     public void advanceTime(int hours) {
-        currentHour += hours;
+        if(currentHour < GameConfig.END_HOUR){
+            currentHour += hours;
+        }
     }
 
     public boolean isDayOver() {

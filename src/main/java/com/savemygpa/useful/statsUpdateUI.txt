@@ -1,0 +1,11 @@
+private void updateStats() {
+
+    energyLabel.setText("Energy: " + player.getStat(StatType.ENERGY));
+    moodLabel.setText("Mood: " + player.getStat(StatType.MOOD));
+    intLabel.setText("Intelligence: " + player.getStat(StatType.INTELLIGENCE));
+
+    timeLabel.setText(
+            "Day " + timeSystem.getCurrentDay() +
+                    " | Hour " + timeSystem.getCurrentHour()
+    );
+}

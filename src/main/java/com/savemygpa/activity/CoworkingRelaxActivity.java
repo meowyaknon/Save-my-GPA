@@ -9,12 +9,23 @@ import com.savemygpa.player.StatType;
 public class CoworkingRelaxActivity extends Activity {
 
     @Override
-    protected boolean canPerform(Player player, TimeSystem timeSystem) {
-        return timeSystem.isEnoughTime(GameConfig.RELAX_TIME_COST);
+    public RequirementReason canPerform(Player player, TimeSystem timeSystem) {
+        if (!timeSystem.isEnoughTime(getTimeCost())) {
+            return RequirementReason.NOT_ENOUGH_TIME;
+        }
+        return null;
     }
 
     @Override
-    protected void applyEffects(Player player) {
+    public String getFailMessage(RequirementReason reason) {
+        if  (reason == RequirementReason.NOT_ENOUGH_TIME) {
+            return "No time for relaxing";
+        }
+        return null;
+    }
+
+    @Override
+    protected void applyEffects(Player player, TimeSystem timeSystem) {
         player.changeStat(StatType.MOOD, StatConfig.RELAX_MOOD_GAIN);
         player.changeStat(StatType.ENERGY, StatConfig.RELAX_ENERGY_GAIN);
     }
@@ -23,6 +34,9 @@ public class CoworkingRelaxActivity extends Activity {
     protected int getTimeCost() {
         return GameConfig.RELAX_TIME_COST;
     }
+
+    @Override
+    protected void afterActivity(Player player, TimeSystem timeSystem) { }
 
     @Override
     protected String getName() {

@@ -9,22 +9,49 @@ import com.savemygpa.player.StatType;
 public class KLLCActivity extends Activity {
 
     @Override
-    protected boolean canPerform(Player player, TimeSystem timeSystem) {
-        return timeSystem.isEnoughTime(GameConfig.KLLC_TIME_COST)
-                && player.hasStat(StatType.MOOD, StatConfig.KLLC_MOOD_REQUIREMENT)
-                && player.hasStat(StatType.ENERGY, StatConfig.KLLC_ENERGY_REQUIREMENT);
+    public RequirementReason canPerform(Player player, TimeSystem timeSystem) {
+        if (!timeSystem.isEnoughTime(getTimeCost())) {
+            return RequirementReason.NOT_ENOUGH_TIME;
+        }
+        else if (!player.hasStat(StatType.MOOD, StatConfig.KLLC_MOOD_REQUIREMENT)) {
+            return RequirementReason.NOT_ENOUGH_MOOD;
+        }
+        else if (!player.hasStat(StatType.ENERGY, StatConfig.KLLC_ENERGY_REQUIREMENT)) {
+            return RequirementReason.NOT_ENOUGH_ENERGY;
+        }
+        return null;
     }
 
     @Override
-    protected void applyEffects(Player player) {
-        player.changeStat(StatType.INTELLIGENCE, StatConfig.KLLC_INTELLIGENCE_GAIN);
-        player.changeStat(StatType.MOOD, StatConfig.KLLC_MOOD_GAIN);
+    public String getFailMessage(RequirementReason reason) {
+        return switch (reason) {
+            case NOT_ENOUGH_MOOD -> "no mood for KLLC";
+            case NOT_ENOUGH_ENERGY -> "no energy for KLLC";
+            case NOT_ENOUGH_TIME -> "no time for KLLC";
+        };
+    }
+
+    @Override
+    protected void applyEffects(Player player, TimeSystem timeSystem) {
+
+        int intelligenceGain  = switch (player.getMoodTier(player.getStat(StatType.MOOD))) {
+            case HIGH -> StatConfig.KLLC_HIGH_INTELLIGENCE_GAIN;
+            case MEDIUM ->  StatConfig.KLLC_MEDIUM_INTELLIGENCE_GAIN;
+            case LOW -> StatConfig.KLLC_LOW_INTELLIGENCE_GAIN;
+        };
+
+        player.changeStat(StatType.INTELLIGENCE, intelligenceGain);
+        player.changeStat(StatType.MOOD, -StatConfig.KLLC_MOOD_LOSS);
+        player.changeStat(StatType.ENERGY, -StatConfig.KLLC_ENERGY_LOSS);
     }
 
     @Override
     protected int getTimeCost() {
         return GameConfig.KLLC_TIME_COST;
     }
+
+    @Override
+    protected void afterActivity(Player player, TimeSystem timeSystem) { }
 
     @Override
     protected String getName() {

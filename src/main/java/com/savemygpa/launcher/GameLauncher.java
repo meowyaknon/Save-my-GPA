@@ -1,274 +1,282 @@
 package com.savemygpa.launcher;
 
-import javafx.stage.Modality;
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
-import javafx.scene.input.KeyCode;
+
+import com.savemygpa.player.*;
+import com.savemygpa.core.*;
+import com.savemygpa.activity.*;
 
 public class GameLauncher extends Application {
 
     private Stage stage;
 
+    private Player player;
+    private TimeSystem timeSystem;
+    private boolean hasSavedGame = false;
+
+    private Label energyLabel = new Label();
+    private Label moodLabel = new Label();
+    private Label intLabel = new Label();
+    private Label timeLabel = new Label();
+
     @Override
     public void start(Stage stage) {
-
         this.stage = stage;
-        stage.setTitle("Save My GPA");
 
         showAgreement();
+
+        stage.setTitle("Save My GPA");
         stage.show();
     }
 
-    // ---------------- AGREEMENT ----------------
+    private void startNewGame() {
+        player = new Player(5,0,50);
+        timeSystem = new TimeSystem();
 
-    private void showAgreement() {
+        hasSavedGame = true;
 
-        Label text = new Label("Do you accept the challenge?");
+        showGameplay();
+    }
+
+    private void updateStats() {
+
+        energyLabel.setText("Energy: " + player.getStat(StatType.ENERGY));
+        moodLabel.setText("Mood: " + player.getStat(StatType.MOOD));
+        intLabel.setText("Intelligence: " + player.getStat(StatType.INTELLIGENCE));
+
+        timeLabel.setText(
+                "Day " + timeSystem.getCurrentDay() +
+                        " | Hour " + timeSystem.getCurrentHour()
+        );
+    }
+
+    private VBox statsPanel() {
+
+        VBox box = new VBox(10,
+                energyLabel,
+                moodLabel,
+                intLabel,
+                timeLabel
+        );
+
+        box.setPrefWidth(150);
+        updateStats();
+
+        return box;
+    }
+
+    private void perform(Activity activity) {
+
+        RequirementReason reason = activity.canPerform(player, timeSystem);
+
+        if (reason != null) {
+            showPopup(activity.getFailMessage(reason));
+            return;
+        }
+
+        activity.performActivity(player,timeSystem);
+
+        if(timeSystem.isDayOver()){
+            forceGoHome();
+            return;
+        }
+
+        updateStats();
+    }
+
+    private void forceGoHome() {
+        Activity goHome = new GoHomeActivity();
+
+        goHome.performActivity(player, timeSystem);
+
+        showPopup("You are too tired... heading home.");
+
+        showGameplay();
+
+        updateStats();
+    }
+
+    private void showPopup(String message){
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+
+    private void showAgreement(){
+
+        Label text = new Label("Agreement:\nPlay responsibly.");
 
         Button accept = new Button("Accept");
         Button refuse = new Button("Refuse");
 
-        accept.setOnAction(e -> showMainMenu());
-        refuse.setOnAction(e -> stage.close());
+        accept.setOnAction(e->showMainMenu());
+        refuse.setOnAction(e->stage.close());
 
-        HBox buttons = new HBox(20, accept, refuse);
-        buttons.setAlignment(Pos.CENTER);
-
-        VBox root = new VBox(30, text, buttons);
+        VBox root = new VBox(20,text,accept,refuse);
         root.setAlignment(Pos.CENTER);
 
-        stage.setScene(new Scene(root, 600, 400));
+        stage.setScene(new Scene(root,600,400));
     }
 
-    // ---------------- MAIN MENU ----------------
+    private void showMainMenu(){
 
-    private void showMainMenu() {
+        VBox root = new VBox(20);
+        root.setAlignment(Pos.CENTER);
 
-        Label title = new Label("Main Menu");
+        if (hasSavedGame) {
+            Button cont = new Button("Continue");
+            cont.setOnAction(e -> showGameplay());
+            root.getChildren().add(cont);
+        }
 
-        Button newGame = new Button("Start New Game");
-        Button howTo = new Button("How To Play");
+        Button start = new Button("Start New Game");
+        Button how = new Button("How To Play");
         Button credits = new Button("Credits");
         Button quit = new Button("Quit");
 
-        newGame.setOnAction(e -> showMap());
-        howTo.setOnAction(e -> showHowToPlay());
-        credits.setOnAction(e -> showCredits());
-        quit.setOnAction(e -> stage.close());
+        start.setOnAction(e->startNewGame());
+        how.setOnAction(e->showHowToPlay());
+        credits.setOnAction(e->showCredits());
+        quit.setOnAction(e->stage.close());
 
-        VBox root = new VBox(15, title, newGame, howTo, credits, quit);
-        root.setAlignment(Pos.CENTER);
+        root.getChildren().addAll(start, how, credits, quit);
 
-        stage.setScene(new Scene(root, 600, 400));
+        stage.setScene(new Scene(root,600,400));
     }
 
-    // ---------------- HOW TO PLAY SCREEN ----------------
-
-    private void showHowToPlay() {
-
-        Label title = new Label("How To Play");
+    private void showHowToPlay(){
 
         Label text = new Label(
-                """
-                Manage your time and stats.
-
-                Study to increase Intelligence.
-                Relax to restore Mood.
-                Balance your Energy.
-
-                Prepare before exam days!
-                """
+                "Increase intelligence before exam days.\n" +
+                        "Manage your mood and energy."
         );
 
         Button back = new Button("Back");
+        back.setOnAction(e->showMainMenu());
 
-        back.setOnAction(e -> showMainMenu());
-
-        VBox root = new VBox(20, title, text, back);
+        VBox root = new VBox(20,text,back);
         root.setAlignment(Pos.CENTER);
 
-        stage.setScene(new Scene(root, 600, 400));
+        stage.setScene(new Scene(root,600,400));
     }
 
-    // ---------------- CREDITS SCREEN ----------------
+    private void showCredits(){
 
-    private void showCredits() {
-
-        Label title = new Label("Credits");
-
-        Label text = new Label(
-                """
-                Save My GPA
-
-                Developer:
-                Sirithep Bordikarn
-
-                Built with JavaFX
-                """
-        );
+        Label text = new Label("Game created by SaveMyGPA Team");
 
         Button back = new Button("Back");
+        back.setOnAction(e->showMainMenu());
 
-        back.setOnAction(e -> showMainMenu());
-
-        VBox root = new VBox(20, title, text, back);
+        VBox root = new VBox(20,text,back);
         root.setAlignment(Pos.CENTER);
 
-        stage.setScene(new Scene(root, 600, 400));
+        stage.setScene(new Scene(root,600,400));
     }
 
-    // ---------------- MAP ----------------
-
-    private void showMap() {
+    private void showGameplay(){
 
         Button busStop = new Button("Bus Stop");
+        Button canteen = new Button("Canteen");
         Button itBuilding = new Button("IT Building");
-        Button cafeteria = new Button("Cafeteria");
+        Button back =  new Button("Back");
 
-        busStop.setPrefWidth(150);
-        itBuilding.setPrefWidth(150);
-        cafeteria.setPrefWidth(150);
+        busStop.setOnAction(e->showBusStop());
+        canteen.setOnAction(e->perform(new EatActivity()));
+        itBuilding.setOnAction(e->showITBuilding());
+        back.setOnAction(e->showMainMenu());
 
-        busStop.setOnAction(e -> showBusStopPopup());
-        itBuilding.setOnAction(e -> showITBuilding());
-        cafeteria.setOnAction(e -> showActivityResult("Relaxing in Cafeteria"));
+        VBox actions = new VBox(20,busStop,canteen,itBuilding,back);
+        actions.setAlignment(Pos.CENTER);
 
-        HBox map = new HBox(30, busStop, itBuilding, cafeteria);
-        map.setAlignment(Pos.CENTER);
+        BorderPane root = new BorderPane();
 
-        Scene scene = new Scene(map, 700, 400);
+        root.setCenter(actions);
+        root.setRight(statsPanel());
 
-        // ESC key → return to main menu
-        scene.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ESCAPE) {
-                showMainMenu();
-            }
-        });
+        stage.setScene(new Scene(root,800,500));
 
-        stage.setScene(scene);
+        updateStats();
     }
 
-    // ---------------- BUS STOP ----------------
+    private void showBusStop(){
 
-    private void showBusStopPopup() {
-
-        Stage popup = new Stage();
-        popup.initOwner(stage);
-        popup.initModality(Modality.APPLICATION_MODAL);
-        popup.setTitle("Bus Stop");
-
-        Button kllc = new Button("Go to KLLC (Study)");
+        Button kllc = new Button("Go KLLC");
         Button home = new Button("Go Home");
         Button cancel = new Button("Cancel");
 
-        kllc.setOnAction(e -> {
-            popup.close();
-            showActivityResult("Studying at KLLC");
+        kllc.setOnAction(e->{
+            perform(new KLLCActivity());
+            showGameplay();
         });
 
-        home.setOnAction(e -> {
-            popup.close();
-            showActivityResult("Going Home (End Day)");
+        home.setOnAction(e->{
+            perform(new GoHomeActivity());
+            showGameplay();
         });
 
-        cancel.setOnAction(e -> popup.close());
+        cancel.setOnAction(e->showGameplay());
 
-        VBox root = new VBox(15,
-                new Label("Bus Stop"),
-                kllc,
-                home,
-                cancel
-        );
-
+        VBox root = new VBox(20,kllc,home,cancel);
         root.setAlignment(Pos.CENTER);
 
-        popup.setScene(new Scene(root, 300, 200));
-        popup.show();
+        stage.setScene(new Scene(root,600,400));
     }
 
-    // ---------------- IT BUILDING ----------------
+    private void showITBuilding(){
 
-    private void showITBuilding() {
-
-        Button classroom = new Button("Classroom (Study)");
-        Button auditorium = new Button("Auditorium (Relax)");
-        Button coworking = new Button("CoWorking Space");
+        Button classroom = new Button("Classroom");
+        Button auditorium = new Button("Auditorium");
+        Button cowork = new Button("Coworking Space");
         Button back = new Button("Back");
 
-        classroom.setOnAction(e -> showActivityResult("Studying in Classroom"));
-        auditorium.setOnAction(e -> showActivityResult("Relaxing in Auditorium"));
-        coworking.setOnAction(e -> showCoworkingPopup());
-        back.setOnAction(e -> showMap());
+        classroom.setOnAction(e->{
+            perform(new ClassroomActivity());
+            showITBuilding();
+        });
 
-        VBox root = new VBox(20,
-                new Label("IT Building"),
-                classroom,
-                auditorium,
-                coworking,
-                back
-        );
+        auditorium.setOnAction(e->{
+            perform(new AuditoriumActivity());
+            showITBuilding();
+        });
 
+        cowork.setOnAction(e -> showCoworkingSpace());
+
+        back.setOnAction(e->showGameplay());
+
+        VBox root = new VBox(20,classroom,auditorium,cowork,back);
         root.setAlignment(Pos.CENTER);
 
-        stage.setScene(new Scene(root, 600, 400));
+        stage.setScene(new Scene(root,600,400));
     }
 
-    // ---------------- COWORKING SPACE ----------------
+    private void showCoworkingSpace(){
 
-    private void showCoworkingPopup() {
-
-        Stage popup = new Stage();
-        popup.initOwner(stage);
-        popup.initModality(Modality.APPLICATION_MODAL);
-        popup.setTitle("CoWorking Space");
-
-        Button study = new Button("Study");
         Button relax = new Button("Relax");
+        Button study = new Button("Study");
         Button cancel = new Button("Cancel");
 
-        study.setOnAction(e -> {
-            popup.close();
-            showActivityResult("Studying at CoWorking Space");
+        relax.setOnAction(e->{
+            perform(new CoworkingRelaxActivity());
+            showITBuilding();
         });
 
-        relax.setOnAction(e -> {
-            popup.close();
-            showActivityResult("Relaxing at CoWorking Space");
+        study.setOnAction(e->{
+            perform(new CoworkingStudyActivity());
+            showITBuilding();
         });
 
-        cancel.setOnAction(e -> popup.close());
+        cancel.setOnAction(e->showITBuilding());
 
-        VBox root = new VBox(15,
-                new Label("CoWorking Space"),
-                study,
-                relax,
-                cancel
-        );
-
+        VBox root = new VBox(20,relax,study,cancel);
         root.setAlignment(Pos.CENTER);
 
-        popup.setScene(new Scene(root, 300, 200));
-        popup.show();
-    }
-
-    // ---------------- ACTIVITY RESULT ----------------
-
-    private void showActivityResult(String message) {
-
-        Label result = new Label(message);
-
-        Button back = new Button("Back to Map");
-
-        back.setOnAction(e -> showMap());
-
-        VBox root = new VBox(30, result, back);
-        root.setAlignment(Pos.CENTER);
-
-        stage.setScene(new Scene(root, 600, 400));
+        stage.setScene(new Scene(root,600,400));
     }
 
     public static void main(String[] args) {
