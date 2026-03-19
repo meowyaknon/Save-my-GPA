@@ -1,4 +1,4 @@
 package com.savemygpa.ui;
 
-public class ExamScreen {
+public class BusStopUI {
 }

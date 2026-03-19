@@ -1,4 +1,4 @@
 package com.savemygpa.ui;
 
-public class ResultScreen {
+public class OutsideUI {
 }

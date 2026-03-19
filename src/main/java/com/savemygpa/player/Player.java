@@ -34,16 +34,15 @@ public class Player {
     }
 
     public MoodTier getMoodTier(int amount) {
-        if  (amount >= 0 && amount <= 30) {
-            return MoodTier.LOW;
-        }
-        else if (amount >= 31 && amount <= 69) {
-            return MoodTier.MEDIUM;
-        }
-        else if (amount >= 70 && amount <= 100) {
+        if (amount >= 70 && amount <= MAX_MOOD) {
             return MoodTier.HIGH;
         }
-        return null;
+        else if (amount >= 31 && amount < 70) {
+            return MoodTier.MEDIUM;
+        }
+        else {
+            return MoodTier.LOW;
+        }
     }
 
     private int clamp(int value, int min, int max) {

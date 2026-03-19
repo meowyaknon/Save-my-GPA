@@ -3,7 +3,6 @@ package com.savemygpa.activity;
 import com.savemygpa.config.GameConfig;
 import com.savemygpa.config.StatConfig;
 import com.savemygpa.core.TimeSystem;
-import com.savemygpa.player.MoodTier;
 import com.savemygpa.player.Player;
 import com.savemygpa.player.StatType;
 
@@ -33,7 +32,7 @@ public class AuditoriumActivity extends Activity {
     }
 
     @Override
-    protected void applyEffects(Player player,  TimeSystem timeSystem) {
+    protected void applyEffects(Player player,  TimeSystem timeSystem ) {
         player.changeStat(StatType.MOOD, StatConfig.AUDITORIUM_MOOD_GAIN);
         player.changeStat(StatType.ENERGY, -StatConfig.AUDITORIUM_ENERGY_LOSS);
     }
