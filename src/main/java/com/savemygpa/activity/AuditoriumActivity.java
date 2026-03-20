@@ -13,9 +13,6 @@ public class AuditoriumActivity extends Activity {
         if (!timeSystem.isEnoughTime(getTimeCost())) {
             return  RequirementReason.NOT_ENOUGH_TIME;
         }
-        else if (!player.hasStat(StatType.MOOD, StatConfig.AUDITORIUM_MOOD_REQUIREMENT)) {
-            return  RequirementReason.NOT_ENOUGH_MOOD;
-        }
         else if (!player.hasStat(StatType.ENERGY, StatConfig.AUDITORIUM_ENERGY_REQUIREMENT)) {
             return  RequirementReason.NOT_ENOUGH_ENERGY;
         }
@@ -25,9 +22,9 @@ public class AuditoriumActivity extends Activity {
     @Override
     public String getFailMessage(RequirementReason reason) {
         return switch (reason) {
-            case NOT_ENOUGH_MOOD -> "No mood for auditorium";
             case NOT_ENOUGH_ENERGY -> "No energy for auditorium";
             case NOT_ENOUGH_TIME -> "No time for auditorium";
+            case NOT_ENOUGH_MOOD -> null;
         };
     }
 

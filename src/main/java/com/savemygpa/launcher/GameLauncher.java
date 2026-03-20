@@ -18,11 +18,13 @@ public class GameLauncher extends Application {
     private Player player;
     private TimeSystem timeSystem;
     private boolean hasSavedGame = false;
+    private boolean classroomCompleted = false;
 
     private Label energyLabel = new Label();
     private Label moodLabel = new Label();
     private Label intLabel = new Label();
     private Label timeLabel = new Label();
+    private Label timeLeftLabel = new Label();
 
     @Override
     public void start(Stage stage) {
@@ -35,7 +37,7 @@ public class GameLauncher extends Application {
     }
 
     private void startNewGame() {
-        player = new Player(5,0,50);
+        player = new Player(6,0,60);
         timeSystem = new TimeSystem();
 
         hasSavedGame = true;
@@ -53,6 +55,8 @@ public class GameLauncher extends Application {
                 "Day " + timeSystem.getCurrentDay() +
                         " | Hour " + timeSystem.getCurrentHour()
         );
+
+        timeLeftLabel.setText("Hours left : " + timeSystem.getTimeLeft());
     }
 
     private VBox statsPanel() {
@@ -61,7 +65,8 @@ public class GameLauncher extends Application {
                 energyLabel,
                 moodLabel,
                 intLabel,
-                timeLabel
+                timeLabel,
+                timeLeftLabel
         );
 
         box.setPrefWidth(150);
@@ -90,10 +95,6 @@ public class GameLauncher extends Application {
     }
 
     private void forceGoHome() {
-        Activity goHome = new GoHomeActivity();
-
-        goHome.performActivity(player, timeSystem);
-
         showPopup("You are too tired... heading home.");
 
         showGameplay();
@@ -236,6 +237,9 @@ public class GameLauncher extends Application {
         Button back = new Button("Back");
 
         classroom.setOnAction(e->{
+            if (!classroomCompleted){
+                classroomCompleted = true;
+            }
             perform(new ClassroomActivity());
             showITBuilding();
         });

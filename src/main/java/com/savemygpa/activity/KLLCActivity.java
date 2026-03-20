@@ -34,7 +34,7 @@ public class KLLCActivity extends Activity {
     @Override
     protected void applyEffects(Player player, TimeSystem timeSystem) {
 
-        int intelligenceGain  = switch (player.getMoodTier(player.getStat(StatType.MOOD))) {
+        int intelligenceGain  = switch (player.getStatTier(player.getStat(StatType.MOOD))) {
             case HIGH -> StatConfig.KLLC_HIGH_INTELLIGENCE_GAIN;
             case MEDIUM ->  StatConfig.KLLC_MEDIUM_INTELLIGENCE_GAIN;
             case LOW -> StatConfig.KLLC_LOW_INTELLIGENCE_GAIN;

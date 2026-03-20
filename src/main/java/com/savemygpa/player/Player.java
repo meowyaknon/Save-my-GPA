@@ -33,15 +33,15 @@ public class Player {
         }
     }
 
-    public MoodTier getMoodTier(int amount) {
-        if (amount >= 70 && amount <= MAX_MOOD) {
-            return MoodTier.HIGH;
+    public StatTier getStatTier(int amount) {
+        if (amount >= 70 && amount <= 100) {
+            return StatTier.HIGH;
         }
         else if (amount >= 31 && amount < 70) {
-            return MoodTier.MEDIUM;
+            return StatTier.MEDIUM;
         }
         else {
-            return MoodTier.LOW;
+            return StatTier.LOW;
         }
     }
 

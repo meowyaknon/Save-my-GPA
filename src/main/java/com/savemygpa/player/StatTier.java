@@ -1,6 +1,6 @@
 package com.savemygpa.player;
 
-public enum MoodTier {
+public enum StatTier {
     LOW,
     MEDIUM,
     HIGH
