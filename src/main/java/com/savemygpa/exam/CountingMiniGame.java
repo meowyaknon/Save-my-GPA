@@ -21,7 +21,7 @@ public class CountingMiniGame {
 
     private static final int TOTAL_ROUNDS = 5;
     private static final int POINTS_PER_ROUND = 10;
-    private static final int SECONDS_PER_ROUND = 5;
+    private static final int SECONDS_PER_ROUND = 8;
     private static final double BAR_WIDTH = 400;
 
     private final Player player;
@@ -323,18 +323,19 @@ public class CountingMiniGame {
     }
 
     private void handleAnswer() {
-        if (countdownTimer != null) countdownTimer.stop();
-        // FIX: หยุด barAnim ด้วยเวลาตอบ
-        if (barAnim != null) barAnim.stop();
-
+        String input = answerField.getText().trim();
         int answer;
+
         try {
-            answer = Integer.parseInt(answerField.getText().trim());
+            answer = Integer.parseInt(input);
         } catch (NumberFormatException e) {
             resultLabel.setText("⚠ กรุณากรอกตัวเลข");
-            startTimerBar(); // เริ่มนับใหม่ถ้ากรอกผิด
-            return;
+            return; // ออกเลย ไม่ stop timer
         }
+
+        // stop timer หลังจาก parse ผ่านแล้วเท่านั้น
+        if (countdownTimer != null) countdownTimer.stop();
+        if (barAnim != null) barAnim.stop();
 
         answerField.setDisable(true);
         submitButton.setDisable(true);

@@ -514,7 +514,6 @@ public class GameLauncher extends Application {
             String round = (day <= 7) ? "รอบ 1" : "รอบ 2";
             showPopup(
                     "✅ สอบ Programming " + round + " เสร็จแล้ว!\n\n" +
-                            "🧠 Intelligence ปัจจุบัน: " + player.getStat(StatType.INTELLIGENCE) + "\n\n" +
                             "🎯 คะแนนมินิเกม: " + score + " / 50\n\n" +
                             "(คะแนนจะถูกบันทึกเมื่อคุณกลับบ้านสิ้นวันนี้)"
             );
@@ -540,21 +539,15 @@ public class GameLauncher extends Application {
         // Apply exam stat costs and ForgetID event BEFORE minigame
         perform(exam, Location.CLASSROOM);
 
-        // Launch minigame — score converted to INT on finish
         CountingMiniGame[] gameRef = new CountingMiniGame[1];
         gameRef[0] = new CountingMiniGame(player, () -> {
             int score = gameRef[0].getTotalScore(); // 0-50
-            // Convert minigame score (0-50) to INT bonus (0-10)
-            int intBonus = score / 5;
-            player.changeStat(StatType.INTELLIGENCE, intBonus);
 
             int day = timeSystem.getCurrentDay();
             String round = (day <= 7) ? "รอบ 1" : "รอบ 2";
             showPopup(
                     "✅ สอบ Math " + round + " เสร็จแล้ว!\n\n" +
                             "🎮 คะแนนมินิเกม: " + score + " / 50\n" +
-                            "🧠 INT โบนัสจากมินิเกม: +" + intBonus + "\n" +
-                            "🧠 Intelligence ปัจจุบัน: " + player.getStat(StatType.INTELLIGENCE) + "\n\n" +
                             "(คะแนนจะถูกบันทึกเมื่อคุณกลับบ้านสิ้นวันนี้)"
             );
             updateStats();

@@ -23,7 +23,7 @@ public class CaptchaMiniGame {
 
     private static final int TOTAL_ROUNDS = 5;
     private static final int POINTS_PER_ROUND = 10;
-    private static final int SECONDS_PER_ROUND = 10;
+    private static final int SECONDS_PER_ROUND = 12;
     private static final double BAR_WIDTH = 400;
 
     private static final String CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
@@ -295,7 +295,7 @@ public class CaptchaMiniGame {
 
             // ขนาด font สุ่มเล็กน้อย
             int fontSize = 22 + random.nextInt(8);
-            gc.setFont(Font.font("Monospace", FontWeight.BOLD, fontSize));
+            gc.setFont(Font.font("Times New Roman", FontWeight.BOLD, fontSize));
 
             // ตำแหน่งและการหมุน
             double x = 20 + i * charSpacing + random.nextDouble() * 4;
@@ -361,16 +361,16 @@ public class CaptchaMiniGame {
     }
 
     private void handleAnswer() {
-        if (countdownTimer != null) countdownTimer.stop();
-        if (barAnim != null) barAnim.stop();
-
         String input = answerField.getText().trim();
 
         if (input.isEmpty()) {
             resultLabel.setText("⚠ กรุณากรอกคำตอบ");
-            startTimerBar();
-            return;
+            return; // ไม่ stop timer
         }
+
+        // stop timer หลังจากมีค่าแล้วเท่านั้น
+        if (countdownTimer != null) countdownTimer.stop();
+        if (barAnim != null) barAnim.stop();
 
         answerField.setDisable(true);
         submitButton.setDisable(true);
