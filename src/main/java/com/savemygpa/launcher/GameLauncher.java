@@ -182,8 +182,8 @@ public class GameLauncher extends Application {
     private void doGoHome() {
         // Capture hour BEFORE endDay() resets it to START_HOUR
         int hourBonus = timeSystem.getCurrentHour();
-        player.changeStat(StatType.MOOD,   10 + hourBonus);
         player.changeStat(StatType.ENERGY,  3 + (player.getStat(StatType.MOOD) / 40) + hourBonus);
+        player.changeStat(StatType.MOOD,   10 + hourBonus);
 
         onDayEnd();
 
