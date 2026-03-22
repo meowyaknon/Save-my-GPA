@@ -3,6 +3,7 @@ package com.savemygpa.activity;
 import com.savemygpa.config.GameConfig;
 import com.savemygpa.config.StatConfig;
 import com.savemygpa.core.TimeSystem;
+import com.savemygpa.event.EventManager;
 import com.savemygpa.player.Player;
 import com.savemygpa.player.StatType;
 
@@ -36,7 +37,7 @@ public class CoworkingRelaxActivity extends Activity {
     }
 
     @Override
-    protected void afterActivity(Player player, TimeSystem timeSystem) { }
+    protected void afterActivity(Player player, TimeSystem timeSystem, EventManager eventManager) { }
 
     @Override
     protected String getName() {

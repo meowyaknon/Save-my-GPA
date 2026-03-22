@@ -3,6 +3,7 @@ package com.savemygpa.activity;
 import com.savemygpa.config.GameConfig;
 import com.savemygpa.config.StatConfig;
 import com.savemygpa.core.TimeSystem;
+import com.savemygpa.event.EventManager;
 import com.savemygpa.player.Player;
 import com.savemygpa.player.StatType;
 
@@ -26,17 +27,17 @@ public class EatActivity extends Activity {
 
     @Override
     protected void applyEffects(Player player,  TimeSystem timeSystem) {
-        player.changeStat(StatType.MOOD, StatConfig.CAFETERIA_MOOD_GAIN);
-        player.changeStat(StatType.ENERGY, StatConfig.CAFETERIA_ENERGY_GAIN);
+        player.changeStat(StatType.MOOD, StatConfig.CANTEEN_MOOD_GAIN);
+        player.changeStat(StatType.ENERGY, StatConfig.CANTEEN_ENERGY_GAIN);
     }
 
     @Override
     protected int getTimeCost() {
-        return GameConfig.CAFETERIA_TIME_COST;
+        return GameConfig.CANTEEN_TIME_COST;
     }
 
     @Override
-    protected void afterActivity(Player player, TimeSystem timeSystem) { }
+    protected void afterActivity(Player player, TimeSystem timeSystem,  EventManager eventManager) { }
 
     @Override
     protected String getName() {
