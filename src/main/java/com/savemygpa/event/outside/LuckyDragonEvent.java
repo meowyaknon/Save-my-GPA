@@ -11,21 +11,7 @@ import com.savemygpa.player.effect.buff.AuraOfLuckBuff;
 
 public class LuckyDragonEvent extends Event {
 
-    @Override
-    protected void applyEffects(Player player, TimeSystem timeSystem) {
-        player.changeStat(StatType.MOOD, +20);
-        player.addEffect(new AuraOfLuckBuff());
-    }
-
-    @Override
-    protected String getName() {
-        return "น้องเงินทอง";
-    }
-
-    @Override
-    protected String getDescription() {
-        return "A golden cat naps in the sun. Today feels lucky!";
-    }
+    @Override public boolean isVisitTriggered() { return true; }
 
     @Override
     public boolean canOccur(Player player, TimeSystem timeSystem, EventContext context) {
@@ -34,8 +20,12 @@ public class LuckyDragonEvent extends Event {
     }
 
     @Override
-    public double getChance() {
-        return 0.4;
+    protected void applyEffects(Player player, TimeSystem timeSystem) {
+        player.changeStat(StatType.MOOD, 20);
+        player.addEffect(new AuraOfLuckBuff());
     }
 
+    @Override protected String getName() { return "น้องเงินทอง"; }
+    @Override protected String getDescription() { return "A golden cat naps in the sun. Today feels lucky!"; }
+    @Override public double getChance() { return 0.4; }
 }

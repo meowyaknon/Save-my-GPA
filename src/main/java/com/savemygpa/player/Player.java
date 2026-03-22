@@ -9,16 +9,16 @@ public class Player {
     private int intelligence;
     private int mood;
 
-    private static final int BASE_MAX_ENERGY = 10;
+    private static final int BASE_MAX_ENERGY       = 10;
     private static final int BASE_MAX_INTELLIGENCE = 100;
-    private static final int BASE_MAX_MOOD = 100;
+    private static final int BASE_MAX_MOOD         = 100;
 
     private List<StatusEffect> effects = new ArrayList<>();
 
     public Player(int energy, int intelligence, int mood) {
-        this.energy = energy;
+        this.energy       = energy;
         this.intelligence = intelligence;
-        this.mood = mood;
+        this.mood         = mood;
     }
 
     public void addEffect(StatusEffect effect) {
@@ -30,11 +30,28 @@ public class Player {
     public void updateEffectsOnTransition() {
         Iterator<StatusEffect> it = effects.iterator();
         while (it.hasNext()) {
-            StatusEffect effect = it.next();
-            effect.onTransition(this);
-            if (effect.isExpired()) {
-                effect.onExpire(this);
+            StatusEffect e = it.next();
+            e.onTransition(this);
+            if (e.isExpired()) {
+                e.onExpire(this);
                 it.remove();
+            }
+        }
+    }
+
+    /**
+     * Force-removes an effect by class — safe to call even if not active.
+     * Used by: GameLauncher.clearDayEffects() for WetFeet + NoStackOverflow,
+     *          ClassroomActivity for WhyDizzy.
+     */
+    public <T extends StatusEffect> void removeEffect(Class<T> effectClass) {
+        Iterator<StatusEffect> it = effects.iterator();
+        while (it.hasNext()) {
+            StatusEffect e = it.next();
+            if (effectClass.isInstance(e)) {
+                e.onExpire(this);
+                it.remove();
+                return;
             }
         }
     }
@@ -57,9 +74,9 @@ public class Player {
 
     public int getStat(StatType type) {
         return switch (type) {
-            case ENERGY -> energy;
+            case ENERGY       -> energy;
             case INTELLIGENCE -> intelligence;
-            case MOOD -> mood;
+            case MOOD         -> mood;
         };
     }
 
@@ -69,7 +86,8 @@ public class Player {
                 int cap = getEffectiveMax(StatType.ENERGY);
                 energy = clamp(energy + amount, 0, cap);
             }
-            case INTELLIGENCE -> intelligence = clamp(intelligence + amount, 0, BASE_MAX_INTELLIGENCE);
+            case INTELLIGENCE ->
+                    intelligence = clamp(intelligence + amount, 0, BASE_MAX_INTELLIGENCE);
             case MOOD -> {
                 int cap = getEffectiveMax(StatType.MOOD);
                 mood = clamp(mood + amount, 0, cap);
@@ -79,21 +97,17 @@ public class Player {
 
     public void changeIntelligenceFromEffect(int baseGain) {
         int modified = baseGain;
-        for (StatusEffect e : effects) {
-            modified = e.modifyIntelligenceGain(modified);
-        }
+        for (StatusEffect e : effects) modified = e.modifyIntelligenceGain(modified);
         changeStat(StatType.INTELLIGENCE, modified);
     }
 
     private int getEffectiveMax(StatType type) {
         int cap = switch (type) {
-            case ENERGY -> BASE_MAX_ENERGY;
+            case ENERGY       -> BASE_MAX_ENERGY;
             case INTELLIGENCE -> BASE_MAX_INTELLIGENCE;
-            case MOOD -> BASE_MAX_MOOD;
+            case MOOD         -> BASE_MAX_MOOD;
         };
-        for (StatusEffect e : effects) {
-            cap = e.modifyStatCap(type, cap);
-        }
+        for (StatusEffect e : effects) cap = e.modifyStatCap(type, cap);
         return cap;
     }
 
@@ -108,11 +122,9 @@ public class Player {
     }
 
     public double getEventChanceMultiplier() {
-        double multiplier = 1.0;
-        for (StatusEffect e : effects) {
-            multiplier *= e.getEventChanceMultiplier();
-        }
-        return multiplier;
+        double m = 1.0;
+        for (StatusEffect e : effects) m *= e.getEventChanceMultiplier();
+        return m;
     }
 
     private int clamp(int value, int min, int max) {

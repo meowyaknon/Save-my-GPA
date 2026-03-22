@@ -10,6 +10,8 @@ import com.savemygpa.player.effect.debuff.WetFeetDebuff;
 
 public class RainEvent extends Event {
 
+    @Override public boolean isVisitTriggered() { return true; }
+
     @Override
     public boolean canOccur(Player player, TimeSystem timeSystem, EventContext context) {
         return context.getLocation() == Location.OUTSIDE
@@ -20,17 +22,9 @@ public class RainEvent extends Event {
     protected void applyEffects(Player player, TimeSystem timeSystem) {
         player.changeStat(StatType.MOOD, -10);
         player.addEffect(new WetFeetDebuff());
-        System.out.println("[Event] ฝนตกหนัก! ถุงเท้าเปียกจนเดินไม่สะดวก อารมณ์ไม่ดีซะมัด");
     }
 
-    @Override
-    protected String getName() { return "ฝนตกหนัก"; }
-
-    @Override
-    protected String getDescription() {
-        return "ฝนตกหนักที่เขตลาดกระบังคือเรื่องปกติ ถุงเท้าเปียกๆ คู่นี้ ทำให้อารมณ์ไม่ดีซะมัด";
-    }
-
-    @Override
-    public double getChance() { return 0.3; }
+    @Override protected String getName() { return "ฝนตกหนัก"; }
+    @Override protected String getDescription() { return "ฝนตกหนัก ถุงเท้าเปียก อารมณ์ไม่ดี"; }
+    @Override public double getChance() { return 0.3; }
 }

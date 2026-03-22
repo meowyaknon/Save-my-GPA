@@ -5,7 +5,7 @@ import com.savemygpa.player.effect.StatusEffect;
 
 public class WhyDizzyDebuff extends StatusEffect {
 
-    private static final int INT_PENALTY_PER_STUDY = 2;
+    private static final int INT_PENALTY = 2;
 
     public WhyDizzyDebuff() {
         super(99);
@@ -13,21 +13,23 @@ public class WhyDizzyDebuff extends StatusEffect {
 
     @Override
     public void onApply(Player player) {
-        System.out.println("[Debuff] Why Dizzy? — your head is spinning. Hard to focus.");
+        System.out.println("[Debuff] Why Dizzy? — head spinning, hard to focus.");
     }
 
     @Override
     public void onExpire(Player player) {
-        System.out.println("[Debuff] Why Dizzy? cleared.");
+        System.out.println("[Debuff] Why Dizzy? cleared — class helped settle the head.");
+    }
+
+    @Override
+    public void onTransition(Player player) {
     }
 
     @Override
     public int modifyIntelligenceGain(int base) {
-        return Math.max(0, base - INT_PENALTY_PER_STUDY);
+        return Math.max(0, base - INT_PENALTY);
     }
 
     @Override
-    public String getName() {
-        return "Why Dizzy?";
-    }
+    public String getName() { return "Why Dizzy?"; }
 }

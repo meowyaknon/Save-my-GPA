@@ -9,6 +9,8 @@ import com.savemygpa.player.StatType;
 
 public class SlowBusEvent extends Event {
 
+    @Override public boolean isVisitTriggered() { return false; }
+
     @Override
     public boolean canOccur(Player player, TimeSystem timeSystem, EventContext context) {
         return context.getLocation() == Location.BUS_STOP;
@@ -16,20 +18,12 @@ public class SlowBusEvent extends Event {
 
     @Override
     protected void applyEffects(Player player, TimeSystem timeSystem) {
-        timeSystem.advanceTime(2); // time -2
+        timeSystem.advanceTime(2);
         player.changeStat(StatType.ENERGY, -1);
         player.changeStat(StatType.MOOD, -15);
-        System.out.println("[Event] รถพระจอมไม่มา! รอนานจนแผนการอ่านหนังสือที่วางไว้หายไป 2 ชั่วโมง");
     }
 
-    @Override
-    protected String getName() { return "รถพระจอมไม่มา"; }
-
-    @Override
-    protected String getDescription() {
-        return "รอนานจนเกือบซึม รถบัสที่รอคอยไม่โผล่มาเสียที แผนการอ่านหนังสือที่วางไว้หายไป 2 ชั่วโมง";
-    }
-
-    @Override
-    public double getChance() { return 0.4; }
+    @Override protected String getName() { return "รถพระจอมไม่มา"; }
+    @Override protected String getDescription() { return "รอนานจนเกือบซึม รถบัสที่รอคอยไม่โผล่มา"; }
+    @Override public double getChance() { return 0.4; }
 }

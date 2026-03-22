@@ -1,7 +1,6 @@
 package com.savemygpa.event;
 
 import java.util.*;
-
 import com.savemygpa.core.TimeSystem;
 import com.savemygpa.player.Player;
 
@@ -21,15 +20,25 @@ public class EventManager {
         events.add(event);
     }
 
-    public void trigger(Player player, TimeSystem timeSystem, EventContext context) {
+    public void triggerVisit(Player player, TimeSystem timeSystem, Location location) {
+        trigger(player, timeSystem, new EventContext(location, false), true);
+    }
 
-        player.updateEffectsOnTransition();
+    public void triggerAfterActivity(Player player, TimeSystem timeSystem, Location location) {
+        trigger(player, timeSystem, new EventContext(location, true), false);
+    }
+
+    private void trigger(Player player, TimeSystem timeSystem, EventContext context, boolean visitOnly) {
+
+        if (visitOnly) {
+            player.updateEffectsOnTransition();
+        }
 
         if (eventsToday >= MAX_EVENTS_PER_DAY) return;
 
         List<Event> possibleEvents = new ArrayList<>();
         for (Event e : events) {
-            if (e.canOccur(player, timeSystem, context)) {
+            if (e.isVisitTriggered() == visitOnly && e.canOccur(player, timeSystem, context)) {
                 possibleEvents.add(e);
             }
         }
@@ -38,8 +47,7 @@ public class EventManager {
 
         Event chosen = possibleEvents.get(random.nextInt(possibleEvents.size()));
 
-        double effectiveChance = chosen.getChance() * player.getEventChanceMultiplier();
-        effectiveChance = Math.min(effectiveChance, 1.0);
+        double effectiveChance = Math.min(chosen.getChance() * player.getEventChanceMultiplier(), 1.0);
 
         if (random.nextDouble() <= effectiveChance) {
             chosen.occur(player, timeSystem);

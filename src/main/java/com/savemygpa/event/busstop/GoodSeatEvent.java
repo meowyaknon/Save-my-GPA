@@ -9,6 +9,8 @@ import com.savemygpa.player.StatType;
 
 public class GoodSeatEvent extends Event {
 
+    @Override public boolean isVisitTriggered() { return false; }
+
     @Override
     public boolean canOccur(Player player, TimeSystem timeSystem, EventContext context) {
         return context.getLocation() == Location.BUS_STOP;
@@ -17,18 +19,10 @@ public class GoodSeatEvent extends Event {
     @Override
     protected void applyEffects(Player player, TimeSystem timeSystem) {
         player.changeStat(StatType.MOOD, 15);
-        player.changeStat(StatType.INTELLIGENCE, 5); // lucky bonus int (bypasses debuff modifiers intentionally)
-        System.out.println("[Event] ได้นั่งมุมโปรด! แอร์เย็นฉ่ำ ปลั๊กไฟพร้อม ที่นั่งว่างพอดี สมาธิมาเต็มร้อย");
+        player.changeStat(StatType.INTELLIGENCE, 5);
     }
 
-    @Override
-    protected String getName() { return "ได้นั่งมุมโปรด"; }
-
-    @Override
-    protected String getDescription() {
-        return "แอร์เย็นฉ่ำ ปลั๊กไฟพร้อม ที่นั่งว่างพอดี สมาธิมาเต็มร้อย";
-    }
-
-    @Override
-    public double getChance() { return 0.3; }
+    @Override protected String getName() { return "ได้นั่งมุมโปรด"; }
+    @Override protected String getDescription() { return "แอร์เย็นฉ่ำ ปลั๊กไฟพร้อม ที่นั่งว่างพอดี สมาธิมาเต็มร้อย"; }
+    @Override public double getChance() { return 0.3; }
 }

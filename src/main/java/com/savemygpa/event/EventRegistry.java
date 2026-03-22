@@ -20,32 +20,30 @@ import com.savemygpa.event.outside.RainEvent;
 public class EventRegistry {
 
     public static void registerAll(EventManager manager) {
-        // Outside
+        // Outside — VISIT triggered
         manager.register(new LuckyDragonEvent());
         manager.register(new DuckEvent());
         manager.register(new RainEvent());
 
-        // Bus Stop
+        // Bus Stop — ACTIVITY triggered (only when player successfully goes to KLLC)
         manager.register(new SlowBusEvent());
         manager.register(new GoodSeatEvent());
 
-        // IT Building (shared / entering)
+        // IT Building entrance — VISIT triggered
         manager.register(new BrokenDoorEvent());
         manager.register(new DeanTreatsEvent());
         manager.register(new SourceCodeEvent());
 
-        // IT Building (common room)
+        // Coworking — ACTIVITY triggered
         manager.register(new HurtHeadEvent());
-
-        // Auditorium
         manager.register(new FreeFoodEvent());
 
-        // Classroom
+        // Classroom — ACTIVITY triggered
         manager.register(new InternetDownEvent());
         manager.register(new PerfectCompileEvent());
         manager.register(new ForgetIDEvent());
 
-        // Canteen
+        // Canteen — ACTIVITY triggered
         manager.register(new FreeMealEvent());
         manager.register(new SeniorAdviceEvent());
         manager.register(new NoSeatEvent());

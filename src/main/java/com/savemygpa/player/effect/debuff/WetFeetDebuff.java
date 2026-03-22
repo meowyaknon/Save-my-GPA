@@ -12,22 +12,19 @@ public class WetFeetDebuff extends StatusEffect {
 
     @Override
     public void onApply(Player player) {
-        System.out.println("[Debuff] Wet Feet — your socks are soaked. Energy drips per step.");
+        System.out.println("[Debuff] Wet Feet — soaked socks, energy drains per step.");
     }
 
     @Override
     public void onExpire(Player player) {
-        System.out.println("[Debuff] Wet Feet cleared — finally dry.");
+        System.out.println("[Debuff] Wet Feet cleared.");
     }
 
     @Override
     public void onTransition(Player player) {
-        super.onTransition(player);
         player.changeStat(StatType.ENERGY, -1);
     }
 
     @Override
-    public String getName() {
-        return "Wet Feet";
-    }
+    public String getName() { return "Wet Feet"; }
 }

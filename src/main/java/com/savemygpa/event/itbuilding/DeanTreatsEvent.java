@@ -7,7 +7,10 @@ import com.savemygpa.event.Location;
 import com.savemygpa.player.Player;
 import com.savemygpa.player.StatType;
 
+/** VISIT-triggered — fires on arriving at the IT building. */
 public class DeanTreatsEvent extends Event {
+
+    @Override public boolean isVisitTriggered() { return true; }
 
     @Override
     public boolean canOccur(Player player, TimeSystem timeSystem, EventContext context) {
@@ -17,18 +20,10 @@ public class DeanTreatsEvent extends Event {
     @Override
     protected void applyEffects(Player player, TimeSystem timeSystem) {
         player.changeStat(StatType.MOOD, 40);
-        player.changeStat(StatType.ENERGY, 10); // will be clamped to max by Player
-        System.out.println("[Event] ท่านคณบดีเลี้ยงไอติม! เดินผ่านโถงคณะพอดี เจอท่านคณบดีเหมาไอติมไผ่XXXมาแจกเด็กๆ พลังใจเต็มเปี่ยมพร้อมปั้นโปรเจค");
+        player.changeStat(StatType.ENERGY, 10);
     }
 
-    @Override
-    protected String getName() { return "ท่านคณบดีเลี้ยงไอติม"; }
-
-    @Override
-    protected String getDescription() {
-        return "เดินผ่านโถงคณะพอดี เจอท่านคณบดีเหมาไอติมไผ่XXXมาแจกเด็กๆ พลังใจเต็มเปี่ยมพร้อมปั้นโปรเจค";
-    }
-
-    @Override
-    public double getChance() { return 0.15; } // rare and powerful
+    @Override protected String getName() { return "ท่านคณบดีเลี้ยงไอติม"; }
+    @Override protected String getDescription() { return "ท่านคณบดีเหมาไอติมมาแจกเด็กๆ พลังใจเต็มเปี่ยม"; }
+    @Override public double getChance() { return 0.15; }
 }

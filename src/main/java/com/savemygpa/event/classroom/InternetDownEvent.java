@@ -10,6 +10,8 @@ import com.savemygpa.player.effect.debuff.NoStackOverflowDebuff;
 
 public class InternetDownEvent extends Event {
 
+    @Override public boolean isVisitTriggered() { return false; }
+
     @Override
     public boolean canOccur(Player player, TimeSystem timeSystem, EventContext context) {
         return context.getLocation() == Location.CLASSROOM
@@ -20,17 +22,9 @@ public class InternetDownEvent extends Event {
     protected void applyEffects(Player player, TimeSystem timeSystem) {
         player.changeStat(StatType.MOOD, -25);
         player.addEffect(new NoStackOverflowDebuff());
-        System.out.println("[Event] Internet ล่ม! เน็ตล่ม กู้โค้ดไม่ได้ ค้นหาวิธีแก้ Error ไม่ได้ ทำให้การเรียนรู้วันนี้ติดขัดไปหมด");
     }
 
-    @Override
-    protected String getName() { return "Internet ล่ม"; }
-
-    @Override
-    protected String getDescription() {
-        return "เน็ตล่ม กู้โค้ดไม่ได้ ค้นหาวิธีแก้ Error ไม่ได้ ทำให้การเรียนรู้วันนี้ติดขัดไปหมด";
-    }
-
-    @Override
-    public double getChance() { return 0.3; }
+    @Override protected String getName() { return "Internet ล่ม"; }
+    @Override protected String getDescription() { return "เน็ตล่ม กู้โค้ดไม่ได้ การเรียนรู้วันนี้ติดขัดไปหมด"; }
+    @Override public double getChance() { return 0.3; }
 }

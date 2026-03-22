@@ -10,6 +10,8 @@ import com.savemygpa.player.StatType;
 
 public class DuckEvent extends Event {
 
+    @Override public boolean isVisitTriggered() { return true; }
+
     @Override
     public boolean canOccur(Player player, TimeSystem timeSystem, EventContext context) {
         return context.getLocation() == Location.OUTSIDE
@@ -18,19 +20,11 @@ public class DuckEvent extends Event {
 
     @Override
     protected void applyEffects(Player player, TimeSystem timeSystem) {
-        timeSystem.advanceTime(1); // time -1
+        timeSystem.advanceTime(1);
         player.changeStat(StatType.MOOD, 15);
-        System.out.println("[Event] กองทัพเป็ดบุกเลน! หยุดรอจนกว่าขบวนจะหมด ได้ความน่ารักปลอบใจ");
     }
 
-    @Override
-    protected String getName() { return "กองทัพเป็ด"; }
-
-    @Override
-    protected String getDescription() {
-        return "น้องเป็ดเดินพาเหรดข้ามถนนแบบไม่รีบเร่ง คุณต้องหยุดรอจนกว่าขบวนจะหมด แต่ก็ได้ความน่ารักปลอบใจ";
-    }
-
-    @Override
-    public double getChance() { return 0.35; }
+    @Override protected String getName() { return "กองทัพเป็ด"; }
+    @Override protected String getDescription() { return "น้องเป็ดเดินพาเหรดข้ามถนน ต้องหยุดรอ แต่ได้ความน่ารักปลอบใจ"; }
+    @Override public double getChance() { return 0.35; }
 }

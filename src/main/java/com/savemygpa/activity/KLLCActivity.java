@@ -41,7 +41,7 @@ public class KLLCActivity extends Activity {
             case LOW -> StatConfig.KLLC_LOW_INTELLIGENCE_GAIN;
         };
 
-        player.changeIntelligenceFromEffect(intelligenceGain);
+        player.changeStat(StatType.INTELLIGENCE, intelligenceGain);
         player.changeStat(StatType.MOOD, -StatConfig.KLLC_MOOD_LOSS);
         player.changeStat(StatType.ENERGY, -StatConfig.KLLC_ENERGY_LOSS);
     }

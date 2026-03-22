@@ -9,6 +9,8 @@ import com.savemygpa.player.StatType;
 
 public class PerfectCompileEvent extends Event {
 
+    @Override public boolean isVisitTriggered() { return false; }
+
     @Override
     public boolean canOccur(Player player, TimeSystem timeSystem, EventContext context) {
         return context.getLocation() == Location.CLASSROOM;
@@ -18,17 +20,9 @@ public class PerfectCompileEvent extends Event {
     protected void applyEffects(Player player, TimeSystem timeSystem) {
         player.changeStat(StatType.MOOD, 45);
         player.changeStat(StatType.INTELLIGENCE, 2);
-        System.out.println("[Event] Compile ผ่าน! ความมหัศจรรย์ที่น่านันๆ จะเกิดที่ โค้ดที่เขียนมาอย่างยาวเที้ยมดัน Run ผ่านฉลุยแบบไม่มี Error");
     }
 
-    @Override
-    protected String getName() { return "Compile ผ่านในครั้งเดียว"; }
-
-    @Override
-    protected String getDescription() {
-        return "ความมหัศจรรย์ที่น่านันๆ จะเกิดที่ โค้ดที่เขียนมาอย่างยาวเที้ยมดัน Run ผ่านฉลุยแบบไม่มี Error ความฟินระดับนี้ทำให้ค่า Mood พุ่งทะลุหลอด";
-    }
-
-    @Override
-    public double getChance() { return 0.2; }
+    @Override protected String getName() { return "Compile ผ่านในครั้งเดียว"; }
+    @Override protected String getDescription() { return "โค้ดยาวเที้ยมดัน Run ผ่านฉลุยไม่มี Error ความฟินพุ่งทะลุหลอด"; }
+    @Override public double getChance() { return 0.2; }
 }

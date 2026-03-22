@@ -10,6 +10,8 @@ import com.savemygpa.player.effect.buff.SeniorNoteBuff;
 
 public class FreeMealEvent extends Event {
 
+    @Override public boolean isVisitTriggered() { return false; }
+
     @Override
     public boolean canOccur(Player player, TimeSystem timeSystem, EventContext context) {
         return context.getLocation() == Location.CANTEEN
@@ -18,19 +20,11 @@ public class FreeMealEvent extends Event {
 
     @Override
     protected void applyEffects(Player player, TimeSystem timeSystem) {
-        player.changeStat(StatType.ENERGY, 10); // clamped to max by Player
+        player.changeStat(StatType.ENERGY, 10);
         player.addEffect(new SeniorNoteBuff());
-        System.out.println("[Event] เจอพี่รหัส! บังเอิญเจอพี่รหัส พี่เลยเลี้ยงข้าวชุดใหญ่พร้อมแนะแนวทางทำ Assignment ให้ง่ายขึ้น");
     }
 
-    @Override
-    protected String getName() { return "เจอพี่รหัสสายซัพ"; }
-
-    @Override
-    protected String getDescription() {
-        return "บังเอิญเจอพี่รหัส พี่เลยเลี้ยงข้าวชุดใหญ่พร้อมแนะแนวทางทำ Assignment ให้ง่ายขึ้น";
-    }
-
-    @Override
-    public double getChance() { return 0.25; }
+    @Override protected String getName() { return "เจอพี่รหัสสายซัพ"; }
+    @Override protected String getDescription() { return "พี่รหัสเลี้ยงข้าวชุดใหญ่พร้อมแนะแนวทางทำ Assignment"; }
+    @Override public double getChance() { return 0.25; }
 }

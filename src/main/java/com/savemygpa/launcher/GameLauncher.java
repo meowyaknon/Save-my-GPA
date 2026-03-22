@@ -10,9 +10,12 @@ import javafx.stage.Stage;
 
 import com.savemygpa.player.*;
 import com.savemygpa.player.effect.buff.SeniorNoteBuff;
+import com.savemygpa.player.effect.debuff.WetFeetDebuff;
+import com.savemygpa.player.effect.debuff.NoStackOverflowDebuff;
 import com.savemygpa.core.*;
 import com.savemygpa.activity.*;
 import com.savemygpa.event.*;
+import com.savemygpa.exam.CountingMiniGame;
 
 public class GameLauncher extends Application {
 
@@ -26,11 +29,11 @@ public class GameLauncher extends Application {
     private boolean hasSavedGame  = false;
     private boolean agreedToTerms = false;
 
-    // Exam scores captured at end of each exam day
-    private int progExam1Score = 0;  // end of day 6
-    private int mathExam1Score = 0;  // end of day 7
-    private int progExam2Score = 0;  // end of day 13
-    private int mathExam2Score = 0;  // end of day 14
+    // Exam scores — captured at end of each exam day via onDayEnd()
+    private int progExam1Score = 0;  // day 6
+    private int mathExam1Score = 0;  // day 7
+    private int progExam2Score = 0;  // day 13
+    private int mathExam2Score = 0;  // day 14
 
     private static final int TOTAL_DAYS = 14;
 
@@ -77,13 +80,11 @@ public class GameLauncher extends Application {
     // Day classification helpers
     // ═════════════════════════════════════════════════════════════════════════
 
-    /** Day 6 or 13 = Programming Exam. */
     private boolean isProgExamDay() {
         int d = timeSystem.getCurrentDay();
         return d == 6 || d == 13;
     }
 
-    /** Day 7 or 14 = Math Exam. */
     private boolean isMathExamDay() {
         int d = timeSystem.getCurrentDay();
         return d == 7 || d == 14;
@@ -108,24 +109,27 @@ public class GameLauncher extends Application {
     // ═════════════════════════════════════════════════════════════════════════
 
     private void onDayEnd() {
-        int day = timeSystem.getCurrentDay(); // the day that is ending NOW
+        int day = timeSystem.getCurrentDay(); // the day ending NOW
 
-        // Capture exam scores
+        // Capture exam scores before advancing
         if (day == 6)  progExam1Score = player.getStat(StatType.INTELLIGENCE);
         if (day == 7)  mathExam1Score = player.getStat(StatType.INTELLIGENCE);
         if (day == 13) progExam2Score = player.getStat(StatType.INTELLIGENCE);
         if (day == 14) mathExam2Score = player.getStat(StatType.INTELLIGENCE);
 
-        // Tick day-based buffs (SeniorNote)
+        // Tick day-based buffs
         player.getEffect(SeniorNoteBuff.class).ifPresent(b -> b.tickDay(player));
+
+        // Clear day-scoped debuffs (WetFeet, NoStackOverflow)
+        clearDayEffects();
 
         // Reset daily event counter
         eventManager.newDayReset();
 
-        // Advance TimeSystem
+        // Advance to next day
         timeSystem.endDay();
 
-        // INT reset at the start of day 8 (after first exam block days 6-7)
+        // INT reset at start of day 8
         if (timeSystem.getCurrentDay() == 8) {
             int current = player.getStat(StatType.INTELLIGENCE);
             player.changeStat(StatType.INTELLIGENCE, -current);
@@ -133,7 +137,7 @@ public class GameLauncher extends Application {
                     "📚 รอบสอบแรกจบแล้ว!\n\n" +
                             "💻 Programming Score: " + progExam1Score + "\n" +
                             "📐 Math Score: "        + mathExam1Score + "\n\n" +
-                            "Intelligence รีเซ็ตเป็น 0 สำหรับรอบสอบถัดไป\n" +
+                            "Intelligence รีเซ็ตเป็น 0\n" +
                             "Mood และ Energy ยังคงเดิม — สู้ต่อไป!"
             );
         }
@@ -141,6 +145,16 @@ public class GameLauncher extends Application {
         if (isGameOver()) {
             showEnding();
         }
+    }
+
+    /**
+     * Removes WetFeet and NoStackOverflow at end of day.
+     * Replaces the missing player.clearDayEffects() — these debuffs use super(99)
+     * so we remove them by class directly instead.
+     */
+    private void clearDayEffects() {
+        player.removeEffect(WetFeetDebuff.class);
+        player.removeEffect(NoStackOverflowDebuff.class);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -156,18 +170,20 @@ public class GameLauncher extends Application {
 
         activity.performActivity(player, timeSystem, eventManager);
 
+        // Only fire activity-triggered events after success
         if (location != null) {
-            eventManager.trigger(player, timeSystem, new EventContext(location, false));
+            eventManager.triggerAfterActivity(player, timeSystem, location);
         }
 
-        // No auto-force: just update stats and let player click Go Home themselves
         updateStats();
         return true;
     }
 
     private void doGoHome() {
-        player.changeStat(StatType.MOOD,   10 + timeSystem.getCurrentHour());
-        player.changeStat(StatType.ENERGY,  3 + (player.getStat(StatType.MOOD) / 40) + timeSystem.getCurrentHour());
+        // Capture hour BEFORE endDay() resets it to START_HOUR
+        int hourBonus = timeSystem.getCurrentHour();
+        player.changeStat(StatType.MOOD,   10 + hourBonus);
+        player.changeStat(StatType.ENERGY,  3 + (player.getStat(StatType.MOOD) / 40) + hourBonus);
 
         onDayEnd();
 
@@ -290,16 +306,16 @@ public class GameLauncher extends Application {
                         "📅 ตารางวัน:\n" +
                         "  วัน 1-5  → เรียนปกติ\n" +
                         "  วัน 6    → สอบ Programming รอบ 1\n" +
-                        "  วัน 7    → สอบ Math รอบ 1\n" +
+                        "  วัน 7    → สอบ Math รอบ 1 (มีมินิเกม!)\n" +
                         "  วัน 8    → INT รีเซ็ตเป็น 0 (Mood/Energy คงเดิม)\n" +
                         "  วัน 8-12 → เรียนปกติ\n" +
                         "  วัน 13   → สอบ Programming รอบ 2\n" +
-                        "  วัน 14   → สอบ Math รอบ 2\n\n" +
+                        "  วัน 14   → สอบ Math รอบ 2 (มีมินิเกม!)\n\n" +
                         "📊 Stats:\n" +
                         "  🧠 INT (max 100)   — ยิ่งสูง คะแนนสอบยิ่งดี\n" +
                         "  😊 Mood (max 100)  — ส่งผลต่อ INT ที่ได้จากการเรียน\n" +
                         "  ⚡ Energy (max 10) — ต้องใช้ทำกิจกรรม\n\n" +
-                        "🎲 Event สุ่ม: สูงสุด 3 ครั้ง/วัน เมื่อเปลี่ยนสถานที่\n\n" +
+                        "🎲 Event สุ่ม: สูงสุด 3 ครั้ง/วัน\n\n" +
                         "🏆 เกรด: INT เฉลี่ย ≥70 → A | ≥40 → C | <40 → F"
         );
         text.setWrapText(true);
@@ -330,32 +346,29 @@ public class GameLauncher extends Application {
     private void showGameplay() {
         if (isGameOver()) { showEnding(); return; }
 
-        eventManager.trigger(player, timeSystem, new EventContext(Location.OUTSIDE, false));
+        // Fire visit-triggered events on arriving at main map (outside)
+        eventManager.triggerVisit(player, timeSystem, Location.OUTSIDE);
         updateStats();
 
         int day = timeSystem.getCurrentDay();
         Label header = new Label("📅 Day " + day + " — " + getDayTypeLabel());
         header.setStyle("-fx-font-size: 15; -fx-font-weight: bold;");
 
-        Button busStop    = new Button("🚌 Bus Stop (KLLC)");
+        Button busStop    = new Button("🚌 Bus Stop");
         Button canteen    = new Button("🍽️ Canteen");
         Button itBuilding = new Button("🏫 IT Building");
+        Button goHome     = new Button("🏠 Go Home");
         Button mainMenu   = new Button("⏸ Main Menu");
-        for (Button b : new Button[]{busStop, canteen, itBuilding, mainMenu}) b.setPrefWidth(210);
-
-        // When time is up, disable all activity buttons — player must click Go Home
-        boolean outOfTime = timeSystem.isDayOver();
-        busStop.setDisable(outOfTime);
-        canteen.setDisable(outOfTime);
-        itBuilding.setDisable(outOfTime);
+        for (Button b : new Button[]{busStop, canteen, itBuilding, goHome, mainMenu}) b.setPrefWidth(210);
 
         busStop.setOnAction(e -> showBusStop());
         canteen.setOnAction(e -> { perform(new EatActivity(), Location.CANTEEN); showGameplay(); });
         itBuilding.setOnAction(e -> showITBuilding());
+        goHome.setOnAction(e -> doGoHome());
         mainMenu.setOnAction(e -> showMainMenu());
 
         VBox actions = new VBox(12, header, new Separator(),
-                busStop, canteen, itBuilding, mainMenu);
+                busStop, canteen, itBuilding, goHome, mainMenu);
         actions.setAlignment(Pos.CENTER);
         actions.setStyle("-fx-padding: 20;");
 
@@ -367,7 +380,6 @@ public class GameLauncher extends Application {
     }
 
     private void showBusStop() {
-        eventManager.trigger(player, timeSystem, new EventContext(Location.BUS_STOP, false));
         updateStats();
 
         Label header = new Label("🚌 ป้ายรถเมล์");
@@ -376,9 +388,7 @@ public class GameLauncher extends Application {
         Button kllc   = new Button("📚 ไป KLLC (เรียน)");
         Button goHome = new Button("🏠 Go Home");
         Button cancel = new Button("← กลับ");
-        kllc.setPrefWidth(210);
-        goHome.setPrefWidth(210);
-        cancel.setPrefWidth(210);
+        for (Button b : new Button[]{kllc, goHome, cancel}) b.setPrefWidth(210);
 
         kllc.setOnAction(e -> { perform(new KLLCActivity(), Location.BUS_STOP); showGameplay(); });
         goHome.setOnAction(e -> doGoHome());
@@ -394,7 +404,8 @@ public class GameLauncher extends Application {
     }
 
     private void showITBuilding() {
-        eventManager.trigger(player, timeSystem, new EventContext(Location.IT_BUILDING, false));
+        // Fire visit-triggered events on arriving at IT building
+        eventManager.triggerVisit(player, timeSystem, Location.IT_BUILDING);
         updateStats();
 
         Label header = new Label("🏫 IT Building — " + getDayTypeLabel());
@@ -405,20 +416,26 @@ public class GameLauncher extends Application {
         center.setStyle("-fx-padding: 20;");
         center.getChildren().addAll(header, new Separator());
 
-        if (isProgExamDay() || isMathExamDay()) {
-            // Exam day: Classroom → Exam button; Auditorium and Coworking still available
-            String examLabel = isProgExamDay() ? "💻 เข้าห้องสอบ Programming" : "📐 เข้าห้องสอบ Math";
-            String examSubject = isProgExamDay() ? "Programming" : "Math";
-
-            Button examBtn    = new Button(examLabel);
+        if (isProgExamDay()) {
+            Button examBtn    = new Button("💻 เข้าห้องสอบ Programming");
             Button auditorium = new Button("🎭 Auditorium");
             Button cowork     = new Button("💻 Coworking Space");
             for (Button b : new Button[]{examBtn, auditorium, cowork}) b.setPrefWidth(210);
 
-            examBtn.setOnAction(e -> doExam(examSubject));
+            examBtn.setOnAction(e -> doProgExam());
             auditorium.setOnAction(e -> { perform(new AuditoriumActivity(), Location.AUDITORIUM); showITBuilding(); });
             cowork.setOnAction(e -> showCoworkingSpace());
+            center.getChildren().addAll(examBtn, auditorium, cowork);
 
+        } else if (isMathExamDay()) {
+            Button examBtn    = new Button("📐 เข้าห้องสอบ Math (มินิเกม)");
+            Button auditorium = new Button("🎭 Auditorium");
+            Button cowork     = new Button("💻 Coworking Space");
+            for (Button b : new Button[]{examBtn, auditorium, cowork}) b.setPrefWidth(220);
+
+            examBtn.setOnAction(e -> doMathExam());
+            auditorium.setOnAction(e -> { perform(new AuditoriumActivity(), Location.AUDITORIUM); showITBuilding(); });
+            cowork.setOnAction(e -> showCoworkingSpace());
             center.getChildren().addAll(examBtn, auditorium, cowork);
 
         } else {
@@ -430,7 +447,6 @@ public class GameLauncher extends Application {
             classroom.setOnAction(e -> { perform(new ClassroomActivity(), Location.CLASSROOM); showITBuilding(); });
             auditorium.setOnAction(e -> { perform(new AuditoriumActivity(), Location.AUDITORIUM); showITBuilding(); });
             cowork.setOnAction(e -> showCoworkingSpace());
-
             center.getChildren().addAll(classroom, auditorium, cowork);
         }
 
@@ -446,7 +462,6 @@ public class GameLauncher extends Application {
     }
 
     private void showCoworkingSpace() {
-        eventManager.trigger(player, timeSystem, new EventContext(Location.COWORKING, false));
         updateStats();
 
         Label header = new Label("💻 Coworking Space");
@@ -474,11 +489,11 @@ public class GameLauncher extends Application {
     // Exam execution
     // ═════════════════════════════════════════════════════════════════════════
 
-    private void doExam(String subject) {
-        // ForgetID event may fire here on exam days
-        eventManager.trigger(player, timeSystem, new EventContext(Location.CLASSROOM, true));
-        updateStats();
-
+    /**
+     * Programming exam (day 6 & 13) — uses ExamActivity directly.
+     * Stats cost applied, ForgetID event may fire, score captured at day-end.
+     */
+    private void doProgExam() {
         ExamActivity exam = new ExamActivity();
         RequirementReason reason = exam.canPerform(player, timeSystem);
         if (reason != null) {
@@ -491,12 +506,51 @@ public class GameLauncher extends Application {
         int day = timeSystem.getCurrentDay();
         String round = (day <= 7) ? "รอบ 1" : "รอบ 2";
         showPopup(
-                "✅ สอบ " + subject + " " + round + " เสร็จแล้ว!\n\n" +
+                "✅ สอบ Programming " + round + " เสร็จแล้ว!\n\n" +
                         "🧠 Intelligence ปัจจุบัน: " + player.getStat(StatType.INTELLIGENCE) + "\n\n" +
                         "(คะแนนจะถูกบันทึกเมื่อคุณกลับบ้านสิ้นวันนี้)"
         );
-
         showITBuilding();
+    }
+
+    /**
+     * Math exam (day 7 & 14) — launches CountingMiniGame.
+     * The minigame score is converted to INT bonus after completion.
+     * ExamActivity stat costs (mood/energy) still apply.
+     */
+    private void doMathExam() {
+        ExamActivity exam = new ExamActivity();
+        RequirementReason reason = exam.canPerform(player, timeSystem);
+        if (reason != null) {
+            showPopup(exam.getFailMessage(reason));
+            return;
+        }
+
+        // Apply exam stat costs and ForgetID event BEFORE minigame
+        perform(exam, Location.CLASSROOM);
+
+        // Launch minigame — score converted to INT on finish
+        CountingMiniGame[] gameRef = new CountingMiniGame[1];
+        gameRef[0] = new CountingMiniGame(player, () -> {
+            int score = gameRef[0].getTotalScore(); // 0-50
+            // Convert minigame score (0-50) to INT bonus (0-10)
+            int intBonus = score / 5;
+            player.changeStat(StatType.INTELLIGENCE, intBonus);
+
+            int day = timeSystem.getCurrentDay();
+            String round = (day <= 7) ? "รอบ 1" : "รอบ 2";
+            showPopup(
+                    "✅ สอบ Math " + round + " เสร็จแล้ว!\n\n" +
+                            "🎮 คะแนนมินิเกม: " + score + " / 50\n" +
+                            "🧠 INT โบนัสจากมินิเกม: +" + intBonus + "\n" +
+                            "🧠 Intelligence ปัจจุบัน: " + player.getStat(StatType.INTELLIGENCE) + "\n\n" +
+                            "(คะแนนจะถูกบันทึกเมื่อคุณกลับบ้านสิ้นวันนี้)"
+            );
+            updateStats();
+            showITBuilding();
+        });
+
+        stage.setScene(new Scene(gameRef[0].getView(), 650, 520));
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -528,10 +582,15 @@ public class GameLauncher extends Application {
         Label scores = new Label(
                 "📊 สรุปผลการสอบ\n\n" +
                         "💻 Programming:\n" +
-                        "   รอบ 1: " + progExam1Score + "  |  รอบ 2: " + progExam2Score + "  →  เฉลี่ย: " + progAvg + "\n\n" +
+                        "   รอบ 1: " + progExam1Score +
+                        "  |  รอบ 2: " + progExam2Score +
+                        "  →  เฉลี่ย: " + progAvg + "\n\n" +
                         "📐 Math:\n" +
-                        "   รอบ 1: " + mathExam1Score + "  |  รอบ 2: " + mathExam2Score + "  →  เฉลี่ย: " + mathAvg + "\n\n" +
-                        "📈 คะแนนรวมเฉลี่ย: " + overallAvg + "  |  🎓 เกรด: " + grade + "\n\n" +
+                        "   รอบ 1: " + mathExam1Score +
+                        "  |  รอบ 2: " + mathExam2Score +
+                        "  →  เฉลี่ย: " + mathAvg + "\n\n" +
+                        "📈 คะแนนรวมเฉลี่ย: " + overallAvg +
+                        "  |  🎓 เกรด: " + grade + "\n\n" +
                         message
         );
         scores.setWrapText(true);
