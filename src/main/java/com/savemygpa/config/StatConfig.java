@@ -33,8 +33,8 @@ public final class StatConfig {
     public static final int AUDITORIUM_ENERGY_REQUIREMENT = 2;
 
     // Co Working Space (Relax)
-    public static final int RELAX_ENERGY_GAIN = 20;
-    public static final int RELAX_MOOD_GAIN = 1;
+    public static final int RELAX_ENERGY_GAIN = 1;
+    public static final int RELAX_MOOD_GAIN = 20;
 
     // Co Working Space (Review)
     public static final int REVIEW_ENERGY_LOSS = 1;
