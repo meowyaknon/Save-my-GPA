@@ -1,6 +1,7 @@
 package com.savemygpa.activity;
 
 import com.savemygpa.core.TimeSystem;
+import com.savemygpa.event.EventManager;
 import com.savemygpa.player.Player;
 import com.savemygpa.player.StatType;
 
@@ -33,7 +34,7 @@ public class GoHomeActivity extends Activity {
     }
 
     @Override
-    protected void afterActivity(Player player, TimeSystem timeSystem) {
+    protected void afterActivity(Player player, TimeSystem timeSystem,  EventManager eventManager) {
         timeSystem.endDay();
         System.out.println("The day has ended. A new day begins.");
     }

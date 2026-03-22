@@ -12,9 +12,9 @@ public final class StatConfig {
     public static final int KLLC_MOOD_REQUIREMENT = 5;
     public static final int KLLC_ENERGY_REQUIREMENT = 2;
 
-    // Cafeteria
-    public static final int CAFETERIA_ENERGY_GAIN = 4;
-    public static final int CAFETERIA_MOOD_GAIN = 5;
+    // Canteen
+    public static final int CANTEEN_ENERGY_GAIN = 4;
+    public static final int CANTEEN_MOOD_GAIN = 5;
 
     // Classroom
     public static final int CLASSROOM_LOW_INTELLIGENCE_GAIN = 2;

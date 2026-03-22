@@ -1,19 +1,58 @@
 package com.savemygpa.player;
 
+import com.savemygpa.player.effect.StatusEffect;
+import java.util.*;
+
 public class Player {
 
     private int energy;
     private int intelligence;
     private int mood;
 
-    private static final int MAX_ENERGY = 10;
-    private static final int MAX_INTELLIGENCE = 100;
-    private static final int MAX_MOOD = 100;
+    private static final int BASE_MAX_ENERGY = 10;
+    private static final int BASE_MAX_INTELLIGENCE = 100;
+    private static final int BASE_MAX_MOOD = 100;
+
+    private List<StatusEffect> effects = new ArrayList<>();
 
     public Player(int energy, int intelligence, int mood) {
         this.energy = energy;
         this.intelligence = intelligence;
         this.mood = mood;
+    }
+
+    public void addEffect(StatusEffect effect) {
+        if (hasEffect(effect.getClass())) return;
+        effects.add(effect);
+        effect.onApply(this);
+    }
+
+    public void tickEffectsOnTransition() {
+        Iterator<StatusEffect> it = effects.iterator();
+        while (it.hasNext()) {
+            StatusEffect effect = it.next();
+            effect.onTransition(this);
+            if (effect.isExpired()) {
+                effect.onExpire(this);
+                it.remove();
+            }
+        }
+    }
+
+    public boolean hasEffect(Class<? extends StatusEffect> effectClass) {
+        return effects.stream().anyMatch(effectClass::isInstance);
+    }
+
+    @SuppressWarnings("unchecked")
+    public <T extends StatusEffect> Optional<T> getEffect(Class<T> effectClass) {
+        return effects.stream()
+                .filter(effectClass::isInstance)
+                .map(e -> (T) e)
+                .findFirst();
+    }
+
+    public List<StatusEffect> getActiveEffects() {
+        return Collections.unmodifiableList(effects);
     }
 
     public int getStat(StatType type) {
@@ -25,31 +64,58 @@ public class Player {
     }
 
     public void changeStat(StatType type, int amount) {
-
         switch (type) {
-            case ENERGY -> energy = clamp(energy + amount, 0, MAX_ENERGY);
-            case INTELLIGENCE -> intelligence = clamp(intelligence + amount, 0, MAX_INTELLIGENCE);
-            case MOOD -> mood = clamp(mood + amount, 0, MAX_MOOD);
+            case ENERGY -> {
+                int cap = getEffectiveMax(StatType.ENERGY);
+                energy = clamp(energy + amount, 0, cap);
+            }
+            case INTELLIGENCE -> intelligence = clamp(intelligence + amount, 0, BASE_MAX_INTELLIGENCE);
+            case MOOD -> {
+                int cap = getEffectiveMax(StatType.MOOD);
+                mood = clamp(mood + amount, 0, cap);
+            }
         }
+    }
+
+    public void changeIntelligenceFromStudy(int baseGain) {
+        int modified = baseGain;
+        for (StatusEffect e : effects) {
+            modified = e.modifyIntelligenceGain(modified);
+        }
+        changeStat(StatType.INTELLIGENCE, modified);
+    }
+
+    private int getEffectiveMax(StatType type) {
+        int cap = switch (type) {
+            case ENERGY -> BASE_MAX_ENERGY;
+            case INTELLIGENCE -> BASE_MAX_INTELLIGENCE;
+            case MOOD -> BASE_MAX_MOOD;
+        };
+        for (StatusEffect e : effects) {
+            cap = e.modifyStatCap(type, cap);
+        }
+        return cap;
     }
 
     public StatTier getStatTier(int amount) {
-        if (amount >= 70 && amount <= 100) {
-            return StatTier.HIGH;
-        }
-        else if (amount >= 31 && amount < 70) {
-            return StatTier.MEDIUM;
-        }
-        else {
-            return StatTier.LOW;
-        }
-    }
-
-    private int clamp(int value, int min, int max) {
-        return Math.max(min, Math.min(max, value));
+        if (amount >= 70) return StatTier.HIGH;
+        if (amount >= 31) return StatTier.MEDIUM;
+        return StatTier.LOW;
     }
 
     public boolean hasStat(StatType type, int require) {
         return getStat(type) >= require;
+    }
+
+    public double getEventChanceMultiplier() {
+        double multiplier = 1.0;
+        for (StatusEffect e : effects) {
+            multiplier *= e.getEventChanceMultiplier();
+        }
+        return multiplier;
+    }
+
+    private int clamp(int value, int min, int max) {
+        return Math.max(min, Math.min(max, value));
     }
 }
