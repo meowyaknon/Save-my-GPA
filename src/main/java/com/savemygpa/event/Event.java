@@ -1,6 +1,5 @@
 package com.savemygpa.event;
 
-import com.savemygpa.activity.RequirementReason;
 import com.savemygpa.core.TimeSystem;
 import com.savemygpa.player.Player;
 
@@ -20,6 +19,4 @@ public abstract class Event {
     public double getChance() {
         return 0.3;
     }
-
-    public abstract RequirementReason canPerform(Player player, TimeSystem timeSystem);
 }

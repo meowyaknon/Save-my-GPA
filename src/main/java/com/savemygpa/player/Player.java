@@ -27,7 +27,7 @@ public class Player {
         effect.onApply(this);
     }
 
-    public void tickEffectsOnTransition() {
+    public void updateEffectsOnTransition() {
         Iterator<StatusEffect> it = effects.iterator();
         while (it.hasNext()) {
             StatusEffect effect = it.next();
@@ -77,7 +77,7 @@ public class Player {
         }
     }
 
-    public void changeIntelligenceFromStudy(int baseGain) {
+    public void changeIntelligenceFromEffect(int baseGain) {
         int modified = baseGain;
         for (StatusEffect e : effects) {
             modified = e.modifyIntelligenceGain(modified);

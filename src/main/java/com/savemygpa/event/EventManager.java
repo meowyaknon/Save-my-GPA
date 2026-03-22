@@ -23,7 +23,7 @@ public class EventManager {
 
     public void trigger(Player player, TimeSystem timeSystem, EventContext context) {
 
-        player.tickEffectsOnTransition();
+        player.updateEffectsOnTransition();
 
         if (eventsToday >= MAX_EVENTS_PER_DAY) return;
 

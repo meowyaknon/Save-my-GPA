@@ -37,4 +37,5 @@ public class LuckyDragonEvent extends Event {
     public double getChance() {
         return 0.4;
     }
+
 }

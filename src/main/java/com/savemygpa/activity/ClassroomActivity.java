@@ -41,7 +41,7 @@ public class ClassroomActivity extends Activity {
             case LOW -> StatConfig.CLASSROOM_LOW_INTELLIGENCE_GAIN;
         };
 
-        player.changeStat(StatType.INTELLIGENCE, intelligenceGain);
+        player.changeIntelligenceFromEffect(intelligenceGain);
         player.changeStat(StatType.MOOD, -StatConfig.CLASSROOM_MOOD_LOSS);
         player.changeStat(StatType.ENERGY, -StatConfig.CLASSROOM_ENERGY_LOSS);
     }

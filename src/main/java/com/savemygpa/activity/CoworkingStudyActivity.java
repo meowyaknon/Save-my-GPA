@@ -41,7 +41,7 @@ public class CoworkingStudyActivity extends Activity {
             case LOW -> StatConfig.REVIEW_LOW_INTELLIGENCE_GAIN;
         };
 
-        player.changeStat(StatType.INTELLIGENCE, intelligenceGain);
+        player.changeIntelligenceFromEffect(intelligenceGain);
         player.changeStat(StatType.MOOD, StatConfig.REVIEW_MOOD_LOSS);
         player.changeStat(StatType.ENERGY, StatConfig.REVIEW_ENERGY_LOSS);
     }
