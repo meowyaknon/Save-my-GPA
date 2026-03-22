@@ -1,5 +1,6 @@
 package com.savemygpa.launcher;
 
+import com.savemygpa.exam.CountingMiniGame; // Test
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -187,12 +188,15 @@ public class GameLauncher extends Application {
         Button itBuilding = new Button("IT Building");
         Button back =  new Button("Back");
 
+        Button testMiniGame = new Button("[TEST] Duck Mini Game"); // Test
+        testMiniGame.setOnAction(e -> showDuckMiniGame());
+
         busStop.setOnAction(e->showBusStop());
         canteen.setOnAction(e->perform(new EatActivity()));
         itBuilding.setOnAction(e->showITBuilding());
         back.setOnAction(e->showMainMenu());
 
-        VBox actions = new VBox(20,busStop,canteen,itBuilding,back);
+        VBox actions = new VBox(20,busStop,canteen,itBuilding,back,testMiniGame);//Test
         actions.setAlignment(Pos.CENTER);
 
         BorderPane root = new BorderPane();
@@ -281,6 +285,17 @@ public class GameLauncher extends Application {
         root.setAlignment(Pos.CENTER);
 
         stage.setScene(new Scene(root,600,400));
+    }
+
+    private void showDuckMiniGame() {
+        CountingMiniGame[] gameRef = new CountingMiniGame[1];
+
+        gameRef[0] = new CountingMiniGame(player, () -> {
+            showPopup("จบเกม! คะแนนที่ได้: " + gameRef[0].getTotalScore() + " / 50");
+            showGameplay();
+        });
+
+        stage.setScene(new Scene(gameRef[0].getView(), 600, 500));
     }
 
     public static void main(String[] args) {

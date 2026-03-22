@@ -14,12 +14,16 @@ public class DuckEvent extends Event {
 
     @Override
     protected void applyEffects(Player player, TimeSystem timeSystem) {
-
+        // TODO: implement duck event effects
     }
 
     @Override
     protected String getName() {
-        return "";
+        return "Duck Event";
     }
 
+    @Override
+    protected String getDescription() {
+        return "A duck waddles onto the scene during your morning activity.";
+    }
 }
