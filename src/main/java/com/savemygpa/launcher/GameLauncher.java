@@ -1,5 +1,6 @@
 package com.savemygpa.launcher;
 
+import com.savemygpa.exam.CaptchaMiniGame;
 import javafx.application.Application;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
@@ -501,16 +502,26 @@ public class GameLauncher extends Application {
             return;
         }
 
-        perform(exam, Location.CLASSROOM);
+        // เปิด CaptchaMiniGame ก่อน แล้วค่อย perform หลังจบ
+        CaptchaMiniGame[] gameRef = new CaptchaMiniGame[1];
+        gameRef[0] = new CaptchaMiniGame(player, () -> {
+            int score = gameRef[0].getTotalScore();
 
-        int day = timeSystem.getCurrentDay();
-        String round = (day <= 7) ? "รอบ 1" : "รอบ 2";
-        showPopup(
-                "✅ สอบ Programming " + round + " เสร็จแล้ว!\n\n" +
-                        "🧠 Intelligence ปัจจุบัน: " + player.getStat(StatType.INTELLIGENCE) + "\n\n" +
-                        "(คะแนนจะถูกบันทึกเมื่อคุณกลับบ้านสิ้นวันนี้)"
-        );
-        showITBuilding();
+            // perform หลังเล่นจบ
+            perform(exam, Location.CLASSROOM);
+
+            int day = timeSystem.getCurrentDay();
+            String round = (day <= 7) ? "รอบ 1" : "รอบ 2";
+            showPopup(
+                    "✅ สอบ Programming " + round + " เสร็จแล้ว!\n\n" +
+                            "🧠 Intelligence ปัจจุบัน: " + player.getStat(StatType.INTELLIGENCE) + "\n\n" +
+                            "🎯 คะแนนมินิเกม: " + score + " / 50\n\n" +
+                            "(คะแนนจะถูกบันทึกเมื่อคุณกลับบ้านสิ้นวันนี้)"
+            );
+            showITBuilding();
+        });
+
+        stage.setScene(new Scene(gameRef[0].getView(), 700, 600));
     }
 
     /**
