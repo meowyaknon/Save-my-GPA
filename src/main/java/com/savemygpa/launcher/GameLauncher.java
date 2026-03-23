@@ -521,6 +521,8 @@ public class GameLauncher extends Application {
         });
 
         stage.setScene(new Scene(gameRef[0].getView(), 700, 600));
+        stage.setFullScreenExitHint("");
+        stage.setFullScreen(true);
     }
 
     /**
@@ -555,6 +557,8 @@ public class GameLauncher extends Application {
         });
 
         stage.setScene(new Scene(gameRef[0].getView(), 650, 520));
+        stage.setFullScreenExitHint("");
+        stage.setFullScreen(true);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
