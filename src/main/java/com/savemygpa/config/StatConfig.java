@@ -17,7 +17,7 @@ public final class StatConfig {
     public static final int CANTEEN_MOOD_GAIN = 5;
 
     // Classroom
-    public static final int CLASSROOM_LOW_INTELLIGENCE_GAIN = 2;
+    public static final int CLASSROOM_LOW_INTELLIGENCE_GAIN = 3;
     public static final int CLASSROOM_MEDIUM_INTELLIGENCE_GAIN = 5;
     public static final int CLASSROOM_HIGH_INTELLIGENCE_GAIN = 7;
     public static final int CLASSROOM_MOOD_LOSS = 20;
