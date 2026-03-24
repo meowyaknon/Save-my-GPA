@@ -23,10 +23,9 @@ public class CaptchaMiniGame {
 
     private static final int TOTAL_ROUNDS = 5;
     private static final int POINTS_PER_ROUND = 10;
-    private static final int SECONDS_PER_ROUND = 12;
     private static final double BAR_WIDTH = 400;
 
-    private static final String CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+    private static final String CHARS = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
 
     private final Player player;
     private final Random random = new Random();
@@ -51,6 +50,18 @@ public class CaptchaMiniGame {
     private final Label scoreLabel = new Label();
     private final TextField answerField = new TextField();
     private final Button submitButton = new Button("ยืนยัน ✔");
+    private static final String[] ROUND_FONTS = {
+            "Consolas",
+            "Courier New",
+            "Lucida Console",
+            "OCR A Extended",
+            "Trebuchet MS"
+            // [3]OCR A Extended and [4]Trebuchet MS(Now used this one) are recommended
+    };
+
+    private int getSecondsPerRound() {
+        return 8 + (player.getStat(StatType.MOOD) / 20);
+    }
 
     public CaptchaMiniGame(Player player, Runnable onFinish) {
         this.player = player;
@@ -262,11 +273,12 @@ public class CaptchaMiniGame {
         double w = captchaCanvas.getWidth();
         double h = captchaCanvas.getHeight();
 
-        // พื้นหลัง
+        // font ที่มีใน Windows และแยกพิมพ์เล็กใหญ่ชัดเจน
+        // String[] fonts = {"Courier New", "Lucida Console", "Consolas", "Courier New"};
+
         gc.setFill(Color.web("#0d1b2a"));
         gc.fillRoundRect(0, 0, w, h, 12, 12);
 
-        // เส้น noise
         gc.setStroke(Color.web("#1e3a5f"));
         gc.setLineWidth(1.5);
         for (int i = 0; i < 6; i++) {
@@ -276,28 +288,25 @@ public class CaptchaMiniGame {
             );
         }
 
-        // จุด noise
         gc.setFill(Color.web("#2a4a6f"));
         for (int i = 0; i < 30; i++) {
             gc.fillOval(random.nextDouble() * w, random.nextDouble() * h, 3, 3);
         }
 
-        // วาดตัวอักษรแต่ละตัวแบบเอียงสุ่ม
         double charSpacing = (w - 40) / text.length();
         for (int i = 0; i < text.length(); i++) {
             gc.save();
 
-            // สีสุ่มในโทนสว่าง
             double r = 0.6 + random.nextDouble() * 0.4;
             double g = 0.6 + random.nextDouble() * 0.4;
             double b = 0.6 + random.nextDouble() * 0.4;
             gc.setFill(Color.color(r, g, b));
 
-            // ขนาด font สุ่มเล็กน้อย
+            // random font ต่อตัวอักษร
+            // String selectedFont = ROUND_FONTS[(currentRound - 1) % ROUND_FONTS.length];
             int fontSize = 22 + random.nextInt(8);
-            gc.setFont(Font.font("Times New Roman", FontWeight.BOLD, fontSize));
+            gc.setFont(Font.font(ROUND_FONTS[4], FontWeight.BOLD, fontSize));
 
-            // ตำแหน่งและการหมุน
             double x = 20 + i * charSpacing + random.nextDouble() * 4;
             double y = h / 2 + 8 + random.nextDouble() * 10 - 5;
             double angle = -15 + random.nextDouble() * 30;
@@ -317,12 +326,12 @@ public class CaptchaMiniGame {
         barAnim = new Timeline(
                 new KeyFrame(Duration.ZERO,
                         new KeyValue(timerBarFill.widthProperty(), BAR_WIDTH)),
-                new KeyFrame(Duration.seconds(SECONDS_PER_ROUND),
+                new KeyFrame(Duration.seconds(getSecondsPerRound()),
                         new KeyValue(timerBarFill.widthProperty(), 0))
         );
         barAnim.play();
 
-        int[] timeLeft = {SECONDS_PER_ROUND};
+        int[] timeLeft = {getSecondsPerRound()};
         updateTimerLabel(timeLeft[0]);
 
         countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
@@ -343,7 +352,7 @@ public class CaptchaMiniGame {
                 timeUp();
             }
         }));
-        countdownTimer.setCycleCount(SECONDS_PER_ROUND);
+        countdownTimer.setCycleCount(getSecondsPerRound());
         countdownTimer.play();
     }
 
@@ -352,10 +361,24 @@ public class CaptchaMiniGame {
     }
 
     private void timeUp() {
+        if (countdownTimer != null) countdownTimer.stop();
+        if (barAnim != null) barAnim.stop();
+
+        String input = answerField.getText().trim();
+
         answerField.setDisable(true);
         submitButton.setDisable(true);
-        resultLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #ef5350;");
-        resultLabel.setText("⏰  หมดเวลา! คำตอบคือ: " + currentCaptcha);
+        timerBarFill.setWidth(0);
+
+        if (!input.isEmpty() && input.equals(currentCaptcha)) {
+            totalScore += POINTS_PER_ROUND;
+            resultLabel.setText("✅  ถูกต้อง! (ส่งทันเวลาพอดี) +" + POINTS_PER_ROUND + " คะแนน");
+            resultLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #66bb6a;");
+        } else {
+            resultLabel.setText("⏰  หมดเวลา! คำตอบคือ: " + currentCaptcha);
+            resultLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #ef5350;");
+        }
+
         scoreLabel.setText("คะแนน: " + totalScore + " / " + (TOTAL_ROUNDS * POINTS_PER_ROUND));
         proceedAfterAnswer();
     }
