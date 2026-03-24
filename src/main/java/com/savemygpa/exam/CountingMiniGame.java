@@ -17,6 +17,9 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.util.Duration;
 import java.util.Random;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 public class CountingMiniGame {
 
@@ -45,14 +48,14 @@ public class CountingMiniGame {
     private final Label timerLabel = new Label();
     private final Rectangle timerBarFill = new Rectangle(BAR_WIDTH, 18);
     private final Rectangle timerBarBg = new Rectangle(BAR_WIDTH, 18);
-    private final FlowPane animalPane = new FlowPane(10, 10);
+    private final Pane animalPane = new Pane();
     private final Label resultLabel = new Label();
     private final Label scoreLabel = new Label();
     private final TextField answerField = new TextField();
     private final Button submitButton = new Button("ยืนยัน ✔");
 
     private int getSecondsPerRound() {
-        return 7 + (player.getStat(StatType.MOOD) / 20);
+        return 5 + (player.getStat(StatType.MOOD) / 20);
     }
 
     public CountingMiniGame(Player player, Runnable onFinish) {
@@ -64,14 +67,12 @@ public class CountingMiniGame {
     private void loadImages() {
         for (int i = 0; i < duckImages.length; i++) {
             duckImages[i] = new Image(
-                    getClass().getResourceAsStream("/images/exam/math/ped/ped" + (i + 1) + ".png"),
-                    58, 58, true, true
+                    getClass().getResourceAsStream("/images/exam/math/ped/ped" + (i + 1) + ".png")
             );
         }
         for (int i = 0; i < lizardImages.length; i++) {
             lizardImages[i] = new Image(
-                    getClass().getResourceAsStream("/images/exam/math/here/here" + (i + 1) + ".png"),
-                    58, 58, true, true
+                    getClass().getResourceAsStream("/images/exam/math/here/here" + (i + 1) + ".png")
             );
         }
     }
@@ -127,6 +128,7 @@ public class CountingMiniGame {
 
         contentArea.getChildren().clear();
 
+        // --- Timer bar ---
         timerBarBg.setFill(Color.web("#2e2e4e"));
         timerBarBg.setArcWidth(12); timerBarBg.setArcHeight(12);
         timerBarFill.setFill(Color.web("#4fc3f7"));
@@ -142,17 +144,6 @@ public class CountingMiniGame {
         timerBox.setMaxWidth(BAR_WIDTH);
 
         roundLabel.setStyle("-fx-font-size: 22px; -fx-text-fill: #cccccc;");
-
-        animalPane.setAlignment(Pos.CENTER);
-        animalPane.setPadding(new Insets(24));
-        animalPane.setMaxWidth(900);
-        animalPane.setStyle("""
-            -fx-background-color: #16213e;
-            -fx-background-radius: 12;
-            -fx-border-color: #0f3460;
-            -fx-border-radius: 12;
-            -fx-border-width: 2;
-            """);
 
         answerField.setMaxWidth(150);
         answerField.setPromptText("0");
@@ -183,19 +174,22 @@ public class CountingMiniGame {
         resultLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #ffffff;");
         scoreLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #f0e68c;");
 
-        // --- gameBox ห่อทุกอย่าง ---
-        VBox gameBox = new VBox(20,
-                roundLabel, timerBox, animalPane, inputRow, resultLabel, scoreLabel
-        );
-        gameBox.setAlignment(Pos.CENTER);
-        gameBox.setPadding(new Insets(40));
-        gameBox.setMaxWidth(1000);
-        gameBox.setStyle("""
-            -fx-background-color: #1a1a2e;
-            -fx-background-radius: 16;
-            """);
+        // --- UI overlay บน bg ---
+        VBox uiOverlay = new VBox(16, roundLabel, timerBox, inputRow, resultLabel, scoreLabel);
+        uiOverlay.setAlignment(Pos.BOTTOM_CENTER);
+        uiOverlay.setPadding(new Insets(0, 0, 40, 0));
 
-        contentArea.getChildren().add(gameBox);
+        // --- animalPane วางบน bg ---
+        animalPane.setPrefSize(1920, 1080);
+
+        // --- BG ---
+        ImageView bg = loadFullImg("/images/exam/math/Suan.jpg");
+
+        // ซ้อน bg > animalPane > ui
+        StackPane gameStack = new StackPane(bg, animalPane, uiOverlay);
+        gameStack.setStyle("-fx-background-color: #0a0a0a;");
+
+        contentArea.getChildren().add(gameStack);
 
         currentRound++;
         resultLabel.setText("");
@@ -214,24 +208,70 @@ public class CountingMiniGame {
         startTimerBar();
         answerField.requestFocus();
     }
+    private static final int[][][] PED_POSITIONS = {
+            {{647,284,1},{1206,188,0},{152,414,1},{446,703,0},{1779,928,0}},  // ped1
+            {{1487,360,0},{1205,522,1},{1573,594,0},{1358,712,0},{1149,778,1}}, // ped2
+            {{1331,448,0},{1699,516,0},{1720,637,1},{1613,777,0},{855,837,1}},  // ped3
+            {{241,42,0},{580,105,0},{1494,83,1},{1733,73,1},{195,923,0}},       // ped4
+            {{1245,388,1},{1663,434,0},{970,676,1},{1233,893,1},{1366,891,0}}   // ped5
+    };
+
+    private static final int[][][] HERE_POSITIONS = {
+            {{1368,214,0},{447,304,1},{394,857,1}},   // here1
+            {{1400,591,0},{1459,796,1},{1093,875,0}}, // here2
+            {{763,163,0},{1059,168,1},{320,673,1}},   // here3
+            {{1543,482,1},{1238,647,1},{821,673,0}}   // here4
+    };
 
     private void buildAnimalPane(int ducks, int lizards) {
-        ImageView[] views = new ImageView[ducks + lizards];
+        animalPane.getChildren().clear();
+
+        // รวมตำแหน่งทั้งหมดของเป็ด (imgIdx, slotIdx)
+        List<int[]> allDuckSlots = new ArrayList<>();
+        for (int img = 0; img < PED_POSITIONS.length; img++) {
+            for (int slot = 0; slot < PED_POSITIONS[img].length; slot++) {
+                allDuckSlots.add(new int[]{img, slot});
+            }
+        }
+        Collections.shuffle(allDuckSlots, random);
+
+        // รวมตำแหน่งทั้งหมดของเงินทอง
+        List<int[]> allLizardSlots = new ArrayList<>();
+        for (int img = 0; img < HERE_POSITIONS.length; img++) {
+            for (int slot = 0; slot < HERE_POSITIONS[img].length; slot++) {
+                allLizardSlots.add(new int[]{img, slot});
+            }
+        }
+        Collections.shuffle(allLizardSlots, random);
+
+        // จำกัดไม่เกินจำนวน slot ที่มี
+        ducks   = Math.min(ducks,   allDuckSlots.size());
+        lizards = Math.min(lizards, allLizardSlots.size());
+        currentDuckCount = ducks;
+
         for (int i = 0; i < ducks; i++) {
-            ImageView iv = new ImageView(duckImages[random.nextInt(duckImages.length)]);
-            if (random.nextBoolean()) iv.setScaleX(-1);
-            views[i] = iv;
+            int imgIdx  = allDuckSlots.get(i)[0];
+            int slotIdx = allDuckSlots.get(i)[1];
+            int[] pos   = PED_POSITIONS[imgIdx][slotIdx];
+
+            ImageView iv = new ImageView(duckImages[imgIdx]);
+            iv.setLayoutX(pos[0]);
+            iv.setLayoutY(pos[1]);
+            if (pos[2] == 1) iv.setScaleX(-1);
+            animalPane.getChildren().add(iv);
         }
+
         for (int i = 0; i < lizards; i++) {
-            ImageView iv = new ImageView(lizardImages[random.nextInt(lizardImages.length)]);
-            if (random.nextBoolean()) iv.setScaleX(-1);
-            views[ducks + i] = iv;
+            int imgIdx  = allLizardSlots.get(i)[0];
+            int slotIdx = allLizardSlots.get(i)[1];
+            int[] pos   = HERE_POSITIONS[imgIdx][slotIdx];
+
+            ImageView iv = new ImageView(lizardImages[imgIdx]);
+            iv.setLayoutX(pos[0]);
+            iv.setLayoutY(pos[1]);
+            if (pos[2] == 1) iv.setScaleX(-1);
+            animalPane.getChildren().add(iv);
         }
-        for (int i = views.length - 1; i > 0; i--) {
-            int j = random.nextInt(i + 1);
-            ImageView tmp = views[i]; views[i] = views[j]; views[j] = tmp;
-        }
-        animalPane.getChildren().setAll(views);
     }
 
     private void startTimerBar() {
