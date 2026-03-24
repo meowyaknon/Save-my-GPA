@@ -25,7 +25,7 @@ public class CaptchaMiniGame {
     private static final int POINTS_PER_ROUND = 10;
     private static final double BAR_WIDTH = 400;
 
-    private static final String CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
+    private static final String CHARS = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
 
     private final Player player;
     private final Random random = new Random();
@@ -50,6 +50,14 @@ public class CaptchaMiniGame {
     private final Label scoreLabel = new Label();
     private final TextField answerField = new TextField();
     private final Button submitButton = new Button("ยืนยัน ✔");
+    private static final String[] ROUND_FONTS = {
+            "Consolas",
+            "Courier New",
+            "Lucida Console",
+            "OCR A Extended",
+            "Trebuchet MS"
+            // [3]OCR A Extended and [4]Trebuchet MS(Now used this one) are recommended
+    };
 
     private int getSecondsPerRound() {
         return 8 + (player.getStat(StatType.MOOD) / 20);
@@ -266,7 +274,7 @@ public class CaptchaMiniGame {
         double h = captchaCanvas.getHeight();
 
         // font ที่มีใน Windows และแยกพิมพ์เล็กใหญ่ชัดเจน
-        String[] fonts = {"Arial", "Courier New", "Georgia","Times New Roman"};
+        // String[] fonts = {"Courier New", "Lucida Console", "Consolas", "Courier New"};
 
         gc.setFill(Color.web("#0d1b2a"));
         gc.fillRoundRect(0, 0, w, h, 12, 12);
@@ -295,9 +303,9 @@ public class CaptchaMiniGame {
             gc.setFill(Color.color(r, g, b));
 
             // random font ต่อตัวอักษร
-            String selectedFont = fonts[random.nextInt(fonts.length)];
+            // String selectedFont = ROUND_FONTS[(currentRound - 1) % ROUND_FONTS.length];
             int fontSize = 22 + random.nextInt(8);
-            gc.setFont(Font.font(selectedFont, FontWeight.BOLD, fontSize));
+            gc.setFont(Font.font(ROUND_FONTS[4], FontWeight.BOLD, fontSize));
 
             double x = 20 + i * charSpacing + random.nextDouble() * 4;
             double y = h / 2 + 8 + random.nextDouble() * 10 - 5;
