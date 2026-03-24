@@ -12,6 +12,14 @@ public class EventManager {
     private int eventsToday = 0;
     private static final int MAX_EVENTS_PER_DAY = 3;
 
+    public int getEventsToday() {
+        return eventsToday;
+    }
+
+    public void setEventsToday(int eventsToday) {
+        this.eventsToday = Math.max(0, eventsToday);
+    }
+
     public void newDayReset() {
         eventsToday = 0;
     }

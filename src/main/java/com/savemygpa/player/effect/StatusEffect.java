@@ -39,5 +39,9 @@ public abstract class StatusEffect {
         return duration;
     }
 
+    public void setRemainingDuration(int duration) {
+        this.duration = duration;
+    }
+
     public abstract String getName();
 }
