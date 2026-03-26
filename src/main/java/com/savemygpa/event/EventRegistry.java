@@ -11,7 +11,7 @@ import com.savemygpa.event.classroom.InternetDownEvent;
 import com.savemygpa.event.classroom.PerfectCompileEvent;
 import com.savemygpa.event.itbuilding.BrokenDoorEvent;
 import com.savemygpa.event.itbuilding.DeanTreatsEvent;
-import com.savemygpa.event.itbuilding.HurtHeadEvent;
+import com.savemygpa.event.coworkingspace.HurtHeadEvent;
 import com.savemygpa.event.itbuilding.SourceCodeEvent;
 import com.savemygpa.event.outside.DuckEvent;
 import com.savemygpa.event.outside.LuckyDragonEvent;

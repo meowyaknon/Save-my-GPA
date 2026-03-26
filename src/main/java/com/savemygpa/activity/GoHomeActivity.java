@@ -3,7 +3,6 @@ package com.savemygpa.activity;
 import com.savemygpa.core.TimeSystem;
 import com.savemygpa.event.EventManager;
 import com.savemygpa.player.Player;
-import com.savemygpa.player.StatType;
 
 public class GoHomeActivity extends Activity {
 
