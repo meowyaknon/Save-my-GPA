@@ -1,4 +1,4 @@
-package com.savemygpa.event.itbuilding;
+package com.savemygpa.event.coworkingspace;
 
 import com.savemygpa.core.TimeSystem;
 import com.savemygpa.event.Event;

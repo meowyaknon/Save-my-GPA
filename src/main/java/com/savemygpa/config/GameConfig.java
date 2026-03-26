@@ -7,7 +7,6 @@ public final class GameConfig {
     public static final int END_HOUR = 18;
 
     public static final int TOTAL_DAYS = 14;
-    public static final int TOTAL_EXAMS = 2;
 
     // Time cost of actions
     public static final int CLASSROOM_TIME_COST = 3;

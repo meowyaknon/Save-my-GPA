@@ -1,944 +1,600 @@
 package com.savemygpa.launcher;
 
+import com.savemygpa.audio.AudioManager;
 import com.savemygpa.exam.CaptchaMiniGame;
+import com.savemygpa.exam.CountingMiniGame;
+import com.savemygpa.ui.*;
 import javafx.application.Application;
-import javafx.animation.Animation;
-import javafx.animation.FadeTransition;
-import javafx.animation.PauseTransition;
-import javafx.animation.SequentialTransition;
-import javafx.animation.Timeline;
-import javafx.animation.TranslateTransition;
+import javafx.animation.*;
 import javafx.geometry.Pos;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
 import javafx.scene.paint.Color;
-import javafx.util.Duration;
 import javafx.scene.text.*;
 import javafx.stage.Stage;
-
-import com.savemygpa.player.effect.StatusEffect;
+import javafx.util.Duration;
 import com.savemygpa.player.*;
+import com.savemygpa.player.effect.StatusEffect;
 import com.savemygpa.player.effect.buff.SeniorNoteBuff;
 import com.savemygpa.player.effect.debuff.WetFeetDebuff;
 import com.savemygpa.player.effect.debuff.NoStackOverflowDebuff;
 import com.savemygpa.core.*;
 import com.savemygpa.activity.*;
 import com.savemygpa.event.*;
-import com.savemygpa.exam.CountingMiniGame;
-
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.List;
-import java.util.Properties;
+import java.io.*;
+import java.nio.file.*;
+import java.util.*;
 
 public class GameLauncher extends Application {
 
-    // ── Core objects ─────────────────────────────────────────────────────────
-    private Stage stage;
-    private Player player;
-    private TimeSystem timeSystem;
+    private Stage        stage;
+    private Player       player;
+    private TimeSystem   timeSystem;
     private EventManager eventManager;
+    private final StackPane sceneRoot = new StackPane();
+    private static final int BASE_W = 1920, BASE_H = 1080;
+    private OutsideUI outsideUI;
+    private StackPane pauseOverlay = null;
+    private boolean pauseOpen    = false;
+    private boolean actionLocked = false;
+    private enum PauseOrigin { OUTSIDE, IT_BUILDING }
+    private PauseOrigin pauseOrigin = PauseOrigin.OUTSIDE;
+    private boolean hasSavedGame = false, agreedToTerms = false;
+    private int progExam1Score = 0, mathExam1Score = 0, progExam2Score = 0, mathExam2Score = 0;
 
-    // ── Game state ────────────────────────────────────────────────────────────
-    private boolean hasSavedGame  = false;
-    private boolean agreedToTerms = false;
-
-    // ── Save / Load ────────────────────────────────────────────────────────────
-    private static final String SAVE_VERSION = "1";
-    private static final String SAVE_FILE_NAME = "save_my_gpa_save.properties";
-    private long lastSaveMillis = 0;
-
-    // Exam scores — captured at end of each exam day via onDayEnd()
-    private int progExam1Score = 0;  // day 6
-    private int mathExam1Score = 0;  // day 7
-    private int progExam2Score = 0;  // day 13
-    private int mathExam2Score = 0;  // day 14
+    private boolean progExamTakenToday = false;
+    private boolean mathExamTakenToday = false;
 
     private static final int TOTAL_DAYS = 14;
+    private static final String SAVE_VERSION = "1", SAVE_FILE_NAME = "save_my_gpa_save.properties";
+    private long lastSaveMillis = 0;
 
-    // ── Stat display labels ──────────────────────────────────────────────────
-    private final Label energyLabel   = new Label();
-    private final Label moodLabel     = new Label();
-    private final Label intLabel      = new Label();
-    private final Label timeLabel     = new Label();
-    private final Label timeLeftLabel = new Label();
-    private final Label effectsLabel  = new Label();
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // JavaFX entry
-    // ═════════════════════════════════════════════════════════════════════════
+    private void runOnce(Runnable action) {
+        if (actionLocked) return;
+        action.run();
+        actionLocked = true;
+        PauseTransition unlock = new PauseTransition(Duration.millis(600));
+        unlock.setOnFinished(e -> actionLocked = false);
+        unlock.play();
+    }
 
     @Override
     public void start(Stage stage) {
         this.stage = stage;
         stage.setTitle("Save My GPA");
-        loadFromDisk();
-        if (agreedToTerms) showMainMenu();
-        else showIntroSequence();
+        stage.setScene(new Scene(sceneRoot, BASE_W, BASE_H));
+        stage.setResizable(true);
+        sceneRoot.setStyle("-fx-background-color: #000;");
         stage.show();
+        loadFromDisk();
+        AudioManager audio = AudioManager.getInstance();
+        applyResolution(audio.getResolutionWidth(), audio.getResolutionHeight());
+        if (agreedToTerms) showMainMenu(); else showIntroSequence();
+    }
+
+    private void setContent(javafx.scene.Node node) {
+        if (!sceneRoot.getChildren().isEmpty()) sceneRoot.getChildren().set(0, node);
+        else sceneRoot.getChildren().add(node);
+    }
+
+    private void applyResolution(int w, int h) {
+        AudioManager.getInstance().setResolution(w, h);
+        double sx = (double) w / BASE_W, sy = (double) h / BASE_H;
+        stage.getScene().getWindow().setWidth(w);
+        stage.getScene().getWindow().setHeight(h);
+        sceneRoot.setScaleX(sx); sceneRoot.setScaleY(sy);
+        sceneRoot.setTranslateX((w - BASE_W) / 2.0);
+        sceneRoot.setTranslateY((h - BASE_H) / 2.0);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    // Game initialisation
+    // New Game
     // ═════════════════════════════════════════════════════════════════════════
 
     private void startNewGame() {
-        player       = new Player(6, 0, 60);
-        timeSystem   = new TimeSystem();
+        player = new Player(6, 0, 60);
+        timeSystem = new TimeSystem();
         eventManager = new EventManager();
         EventRegistry.registerAll(eventManager);
+        hasSavedGame = true;
+        progExam1Score = mathExam1Score = progExam2Score = mathExam2Score = 0;
+        progExamTakenToday = false;
+        mathExamTakenToday = false;
+        persistSave(true);
+        showNewGameIntro();
+    }
 
-        hasSavedGame   = true;
-        progExam1Score = 0;
-        mathExam1Score = 0;
-        progExam2Score = 0;
-        mathExam2Score = 0;
-
-        persistSave(true); // create save file immediately
-        showGameplay();
+    private void showNewGameIntro() {
+        StackPane blackScreen = new StackPane();
+        blackScreen.setStyle("-fx-background-color: #000000;");
+        blackScreen.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        Label storyLabel = new Label("");
+        storyLabel.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30));
+        storyLabel.setTextFill(Color.WHITE);
+        storyLabel.setWrapText(true);
+        storyLabel.setMaxWidth(900);
+        storyLabel.setTextAlignment(TextAlignment.CENTER);
+        storyLabel.setStyle("-fx-effect: dropshadow(gaussian,rgba(200,220,255,0.35),14,0.4,0,0);");
+        storyLabel.setOpacity(0);
+        blackScreen.getChildren().add(storyLabel);
+        setContent(blackScreen);
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(600), blackScreen);
+        fadeIn.setFromValue(0); fadeIn.setToValue(1);
+        fadeIn.setOnFinished(e -> {
+            storyLabel.setOpacity(1);
+            String[] story = {
+                    "ถึงเวลาเปิดเทอมแล้ว...",
+                    "ได้เวลาเริ่มการศึกษา",
+                    "สถาบันเทคโนโลยีพระจอมเกล้าเจ้าคุณทหารลาดกระบัง",
+                    "คณะเทคโนโลยีสารสนเทศ  ปีที่ 1",
+                    "ตื่นเต้น... กลัว... แต่ก็พร้อมสู้!",
+                    "2 สัปดาห์ข้างหน้าจะเป็นยังไง?",
+                    "ทุกอย่างขึ้นอยู่กับตัวเอง..."
+            };
+            typeSegments(storyLabel, story, () -> {
+                FadeTransition fadeOut = new FadeTransition(Duration.millis(700), blackScreen);
+                fadeOut.setToValue(0);
+                fadeOut.setOnFinished(ev -> showGameplayWithFadeIn());
+                fadeOut.play();
+            });
+        });
+        fadeIn.play();
     }
 
     // ═════════════════════════════════════════════════════════════════════════
-    // Day classification helpers
+    // Gameplay with fade-in
     // ═════════════════════════════════════════════════════════════════════════
 
-    private boolean isProgExamDay() {
-        int d = timeSystem.getCurrentDay();
-        return d == 6 || d == 13;
+    private void showGameplayWithFadeIn() {
+        if (isGameOver()) { showEnding(); return; }
+        if (outsideUI != null) outsideUI.stopAnimations();
+        outsideUI = new OutsideUI(player, timeSystem, eventManager, buildOutsideCallbacks());
+        javafx.scene.Node gameView = outsideUI.buildView();
+        gameView.setOpacity(0);
+        setContent(gameView);
+        eventManager.triggerVisit(player, timeSystem, Location.OUTSIDE);
+        outsideUI.refresh();
+        maybeSaveProgress(false);
+        FadeTransition ft = new FadeTransition(Duration.millis(800), gameView);
+        ft.setFromValue(0); ft.setToValue(1);
+        ft.play();
     }
 
-    private boolean isMathExamDay() {
-        int d = timeSystem.getCurrentDay();
-        return d == 7 || d == 14;
-    }
-
-    private boolean isExamDay() {
-        return isProgExamDay() || isMathExamDay();
-    }
-
-    private boolean isGameOver() {
-        return timeSystem.getCurrentDay() > TOTAL_DAYS;
-    }
-
-    private String getDayTypeLabel() {
-        if (isProgExamDay()) return "⚠️ วันสอบ Programming!";
-        if (isMathExamDay()) return "⚠️ วันสอบ Math!";
-        return "วันเรียนปกติ";
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // Day-end logic
-    // ═════════════════════════════════════════════════════════════════════════
+    private boolean isProgExamDay() { int d = timeSystem.getCurrentDay(); return d == 6 || d == 13; }
+    private boolean isMathExamDay() { int d = timeSystem.getCurrentDay(); return d == 7 || d == 14; }
+    private boolean isGameOver()    { return timeSystem.getCurrentDay() > TOTAL_DAYS; }
 
     private void onDayEnd() {
-        int day = timeSystem.getCurrentDay(); // the day ending NOW
-
-        // Capture exam scores before advancing
+        int day = timeSystem.getCurrentDay();
         if (day == 6)  progExam1Score = player.getStat(StatType.INTELLIGENCE);
         if (day == 7)  mathExam1Score = player.getStat(StatType.INTELLIGENCE);
         if (day == 13) progExam2Score = player.getStat(StatType.INTELLIGENCE);
         if (day == 14) mathExam2Score = player.getStat(StatType.INTELLIGENCE);
-
-        // Tick day-based buffs
         player.getEffect(SeniorNoteBuff.class).ifPresent(b -> b.tickDay(player));
-
-        // Clear day-scoped debuffs (WetFeet, NoStackOverflow)
-        clearDayEffects();
-
-        // Reset daily event counter
-        eventManager.newDayReset();
-
-        // Advance to next day
-        timeSystem.endDay();
-
-        // INT reset at start of day 8
-        if (timeSystem.getCurrentDay() == 8) {
-            int current = player.getStat(StatType.INTELLIGENCE);
-            player.changeStat(StatType.INTELLIGENCE, -current);
-            showPopup(
-                    "📚 รอบสอบแรกจบแล้ว!\n\n" +
-                            "💻 Programming Score: " + progExam1Score + "\n" +
-                            "📐 Math Score: "        + mathExam1Score + "\n\n" +
-                            "Intelligence รีเซ็ตเป็น 0\n" +
-                            "Mood และ Energy ยังคงเดิม — สู้ต่อไป!"
-            );
-        }
-
-        if (isGameOver()) {
-            showEnding();
-        }
-    }
-
-    /**
-     * Removes WetFeet and NoStackOverflow at end of day.
-     * Replaces the missing player.clearDayEffects() — these debuffs use super(99)
-     * so we remove them by class directly instead.
-     */
-    private void clearDayEffects() {
         player.removeEffect(WetFeetDebuff.class);
         player.removeEffect(NoStackOverflowDebuff.class);
+        progExamTakenToday = false;
+        mathExamTakenToday = false;
+        eventManager.newDayReset();
+        timeSystem.endDay();
+        if (timeSystem.getCurrentDay() == 8) {
+            int cur = player.getStat(StatType.INTELLIGENCE);
+            player.changeStat(StatType.INTELLIGENCE, -cur);
+            showDialog("📚 รอบสอบแรกจบแล้ว!",
+                    "💻 Programming: " + progExam1Score + "\n📐 Math: " + mathExam1Score +
+                            "\n\nIntelligence รีเซ็ต — สู้ต่อไป!", this::showGameplay);
+            return;
+        }
+        if (isGameOver()) { showEnding(); return; }
+        showGameplay();
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Activity execution
-    // ═════════════════════════════════════════════════════════════════════════
+    // ── Go Home (with cutscene) ───────────────────────────────────────────────
+    private void doGoHome() {
+        if (actionLocked) return;
+        actionLocked = true;
+        ActivityCutscene.play(sceneRoot,
+                ActivityCutscene.lineFor("GoHomeActivity"),
+                () -> {
+                    int bonus = timeSystem.getTimeLeft();
+                    player.changeStat(StatType.ENERGY, 3 + (player.getStat(StatType.MOOD) / 40) + bonus);
+                    player.changeStat(StatType.MOOD, 10 + bonus);
+                    actionLocked = false;
+                    onDayEnd();
+                });
+    }
 
-    private boolean perform(Activity activity, Location location) {
+    // ── Activity helpers ──────────────────────────────────────────────────────
+
+    private void performWithCutscene(Activity activity, Location location, Runnable onAfter) {
+        if (actionLocked) return;
         RequirementReason reason = activity.canPerform(player, timeSystem);
         if (reason != null) {
-            showPopup(activity.getFailMessage(reason));
+            String msg = activity.getFailMessage(reason);
+            if (msg != null) showDialog("ไม่สามารถทำได้", msg, null);
+            if (outsideUI != null) outsideUI.sayFail();
+            return;
+        }
+        actionLocked = true;
+        String line = ActivityCutscene.lineFor(activity.getClass().getSimpleName());
+        ActivityCutscene.play(sceneRoot, line, () -> {
+            activity.performActivity(player, timeSystem, eventManager);
+            if (location != null) eventManager.triggerAfterActivity(player, timeSystem, location);
+            if (outsideUI != null) { outsideUI.refresh(); outsideUI.saySuccess(); }
+            maybeSaveProgress(false);
+            actionLocked = false;
+            if (onAfter != null) onAfter.run();
+        });
+    }
+
+    private boolean performSilent(Activity activity, Location location) {
+        RequirementReason reason = activity.canPerform(player, timeSystem);
+        if (reason != null) {
+            String msg = activity.getFailMessage(reason);
+            if (msg != null) showDialog("ไม่สามารถทำได้", msg, null);
+            if (outsideUI != null) outsideUI.sayFail();
             return false;
         }
-
         activity.performActivity(player, timeSystem, eventManager);
-
-        // Only fire activity-triggered events after success
-        if (location != null) {
-            eventManager.triggerAfterActivity(player, timeSystem, location);
-        }
-
-        updateStats();
+        if (location != null) eventManager.triggerAfterActivity(player, timeSystem, location);
+        if (outsideUI != null) { outsideUI.refresh(); outsideUI.saySuccess(); }
+        maybeSaveProgress(false);
         return true;
     }
 
-    private void doGoHome() {
-        // Capture hour BEFORE endDay() resets it to START_HOUR
-        int hourBonus = timeSystem.getTimeLeft();
-        player.changeStat(StatType.ENERGY,  3 + (player.getStat(StatType.MOOD) / 40) + hourBonus);
-        player.changeStat(StatType.MOOD,   10 + hourBonus);
-
-        onDayEnd();
-
-        if (!isGameOver()) {
-            showGameplay();
-            updateStats();
-        }
+    private void showDialog(String title, String message, Runnable onClose) {
+        GameDialog.show(sceneRoot, title, message, onClose);
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Stat panel
-    // ═════════════════════════════════════════════════════════════════════════
+    // ── Pause ─────────────────────────────────────────────────────────────────
 
-    private void updateStats() {
-        energyLabel.setText  ("⚡ Energy: "  + player.getStat(StatType.ENERGY));
-        moodLabel.setText    ("😊 Mood: "    + player.getStat(StatType.MOOD));
-        intLabel.setText     ("🧠 INT: "     + player.getStat(StatType.INTELLIGENCE));
-        timeLabel.setText    ("📅 Day "      + timeSystem.getCurrentDay()
-                + " | 🕐 "     + timeSystem.getCurrentHour() + ":00");
-        timeLeftLabel.setText("⏳ เหลือ: "  + timeSystem.getTimeLeft() + " ชม.");
-
-        if (player.getActiveEffects().isEmpty()) {
-            effectsLabel.setText("✨ ไม่มี effect");
-        } else {
-            StringBuilder sb = new StringBuilder("🎭 Effects:\n");
-            player.getActiveEffects().forEach(e ->
-                    sb.append("  • ").append(e.getName()).append("\n"));
-            effectsLabel.setText(sb.toString());
-        }
-
-        // Auto-save gameplay state (after the acceptance screen).
-        maybeSaveProgress(false);
-    }
-
-    private VBox statsPanel() {
-        effectsLabel.setWrapText(true);
-        VBox box = new VBox(8,
-                energyLabel, moodLabel, intLabel,
-                new Separator(),
-                timeLabel, timeLeftLabel,
-                new Separator(),
-                effectsLabel);
-        box.setPrefWidth(185);
-        box.setStyle("-fx-padding: 10; -fx-background-color: #f0f0f0;");
-        updateStats();
-        return box;
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // Save / Load
-    // ═════════════════════════════════════════════════════════════════════════
-
-    private Path getSavePath() {
-        // Store in user home so it persists between runs.
-        return Paths.get(System.getProperty("user.home"), SAVE_FILE_NAME);
-    }
-
-    private void loadFromDisk() {
-        // Reset defaults first.
-        agreedToTerms = false;
-        hasSavedGame = false;
-
-        Path path = getSavePath();
-        if (!Files.exists(path)) return;
-
-        Properties props = new Properties();
-        try (InputStream in = Files.newInputStream(path)) {
-            props.load(in);
-        } catch (Exception ignored) {
-            // If load fails, fall back to defaults.
-            return;
-        }
-
-        agreedToTerms = Boolean.parseBoolean(props.getProperty("termsAgreed", "false"));
-        hasSavedGame = Boolean.parseBoolean(props.getProperty("hasSavedGame", "false"));
-
-        if (!hasSavedGame) return;
-
-        try {
-            int day = Integer.parseInt(props.getProperty("day", "1"));
-            int hour = Integer.parseInt(props.getProperty("hour", "8"));
-            int energy = Integer.parseInt(props.getProperty("energy", "6"));
-            int intelligence = Integer.parseInt(props.getProperty("intelligence", "0"));
-            int mood = Integer.parseInt(props.getProperty("mood", "60"));
-
-            progExam1Score = Integer.parseInt(props.getProperty("progExam1Score", "0"));
-            mathExam1Score = Integer.parseInt(props.getProperty("mathExam1Score", "0"));
-            progExam2Score = Integer.parseInt(props.getProperty("progExam2Score", "0"));
-            mathExam2Score = Integer.parseInt(props.getProperty("mathExam2Score", "0"));
-
-            player = new Player(energy, intelligence, mood);
-            timeSystem = new TimeSystem();
-            timeSystem.setCurrentDay(day);
-            timeSystem.setCurrentHour(hour);
-
-            eventManager = new EventManager();
-            EventRegistry.registerAll(eventManager);
-            int eventsToday = Integer.parseInt(props.getProperty("eventsToday", "0"));
-            eventManager.setEventsToday(eventsToday);
-
-            int effectsCount = Integer.parseInt(props.getProperty("effectsCount", "0"));
-            for (int i = 0; i < effectsCount; i++) {
-                String className = props.getProperty("effect." + i + ".class");
-                if (className == null || className.isBlank()) continue;
-
-                int remaining = Integer.parseInt(props.getProperty("effect." + i + ".remaining", "0"));
-                StatusEffect effect = (StatusEffect) Class.forName(className).getDeclaredConstructor().newInstance();
-
-                // Restore effect state.
-                if (effect instanceof SeniorNoteBuff snb) {
-                    snb.setDaysRemaining(remaining);
-                } else {
-                    effect.setRemainingDuration(remaining);
+    private void showPause(PauseOrigin origin) {
+        if (pauseOpen) return;
+        pauseOpen = true;
+        pauseOrigin = origin;
+        PauseMenuUI pauseUI = new PauseMenuUI(new PauseMenuUI.Callbacks() {
+            @Override public void onResume() {
+                if (pauseOverlay != null) {
+                    FadeTransition ft = new FadeTransition(Duration.millis(180), pauseOverlay);
+                    ft.setToValue(0);
+                    ft.setOnFinished(e -> {
+                        sceneRoot.getChildren().remove(pauseOverlay);
+                        pauseOverlay = null;
+                        pauseOpen = false;
+                    });
+                    ft.play();
                 }
-
-                player.addEffect(effect);
             }
-
-        } catch (Exception ignored) {
-            // If any part of loading fails, keep defaults and do not crash.
-            agreedToTerms = false;
-            hasSavedGame = false;
-            player = null;
-            timeSystem = null;
-            eventManager = null;
-        }
-    }
-
-    private void persistSave(boolean force) {
-        if (!force && System.currentTimeMillis() - lastSaveMillis < 2000) return;
-        lastSaveMillis = System.currentTimeMillis();
-
-        Path path = getSavePath();
-        Properties props = new Properties();
-        props.setProperty("version", SAVE_VERSION);
-        props.setProperty("termsAgreed", String.valueOf(agreedToTerms));
-        props.setProperty("hasSavedGame", String.valueOf(hasSavedGame));
-
-        if (hasSavedGame && player != null && timeSystem != null && eventManager != null) {
-            props.setProperty("day", String.valueOf(timeSystem.getCurrentDay()));
-            props.setProperty("hour", String.valueOf(timeSystem.getCurrentHour()));
-            props.setProperty("energy", String.valueOf(player.getStat(StatType.ENERGY)));
-            props.setProperty("intelligence", String.valueOf(player.getStat(StatType.INTELLIGENCE)));
-            props.setProperty("mood", String.valueOf(player.getStat(StatType.MOOD)));
-
-            props.setProperty("progExam1Score", String.valueOf(progExam1Score));
-            props.setProperty("mathExam1Score", String.valueOf(mathExam1Score));
-            props.setProperty("progExam2Score", String.valueOf(progExam2Score));
-            props.setProperty("mathExam2Score", String.valueOf(mathExam2Score));
-
-            props.setProperty("eventsToday", String.valueOf(eventManager.getEventsToday()));
-
-            List<StatusEffect> effects = player.getActiveEffects();
-            props.setProperty("effectsCount", String.valueOf(effects.size()));
-
-            for (int i = 0; i < effects.size(); i++) {
-                StatusEffect eff = effects.get(i);
-                props.setProperty("effect." + i + ".class", eff.getClass().getName());
-                props.setProperty("effect." + i + ".remaining", String.valueOf(eff.getRemainingDuration()));
+            @Override public void onSettings() {
+                sceneRoot.getChildren().remove(pauseOverlay);
+                pauseOverlay = null; pauseOpen = false;
+                Runnable back = pauseOrigin == PauseOrigin.OUTSIDE
+                        ? GameLauncher.this::showGameplay
+                        : GameLauncher.this::showITBuilding;
+                showSettings(back);
             }
-        }
-
-        try {
-            try {
-                Path parent = path.getParent();
-                if (parent != null) Files.createDirectories(parent);
-            } catch (Exception ignored) {}
-
-            try (OutputStream out = Files.newOutputStream(path)) {
-                props.store(out, "Save My GPA");
+            @Override public void onMainMenu() {
+                sceneRoot.getChildren().remove(pauseOverlay);
+                pauseOverlay = null; pauseOpen = false;
+                showMainMenu();
             }
-        } catch (Exception ignored) {
-            // ignore save failure
-        }
-    }
-
-    private void maybeSaveProgress(boolean force) {
-        if (!agreedToTerms || !hasSavedGame) return;
-        if (player == null || timeSystem == null || eventManager == null) return;
-        persistSave(force);
+        });
+        pauseOverlay = pauseUI.buildView();
+        sceneRoot.getChildren().add(pauseOverlay);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
     // Screens
     // ═════════════════════════════════════════════════════════════════════════
 
-    private Image loadImage(String resourcePath) {
-        // resourcePath should start with "/" (classpath absolute path)
-        java.net.URL url = getClass().getResource(resourcePath);
-        if (url == null) {
-            throw new IllegalStateException("Missing resource on classpath: " + resourcePath);
-        }
-        return new Image(url.toExternalForm());
-    }
-
-    private void typeText(Label target, String fullText, Duration perChar, Runnable onDone) {
-        target.setText("");
-        Timeline timeline = new Timeline();
-
-        // Reveals text char-by-char for a "typewriter" feel.
-        for (int i = 0; i < fullText.length(); i++) {
-            final int next = i + 1;
-            timeline.getKeyFrames().add(
-                    new javafx.animation.KeyFrame(
-                            perChar.multiply(i),
-                            e -> target.setText(fullText.substring(0, next))
-                    )
-            );
-        }
-
-        timeline.setOnFinished(e -> {
-            if (onDone != null) onDone.run();
-        });
-        timeline.play();
-    }
-
-    private Font cuteFont(double size, FontWeight weight) {
-        // Use a "cute" font family; JVM will fall back if not available.
-        return Font.font("Comic Sans MS", weight, size);
-    }
-
-    private Font cuteFont(double size) {
-        return Font.font("Comic Sans MS", size);
-    }
-
-    private Timeline createTypeTimeline(Label target, String text, Duration perChar) {
-        Timeline timeline = new Timeline();
-        for (int i = 0; i < text.length(); i++) {
-            final int next = i + 1;
-            timeline.getKeyFrames().add(
-                    new javafx.animation.KeyFrame(
-                            perChar.multiply(i),
-                            e -> target.setText(text.substring(0, next))
-                    )
-            );
-        }
-        return timeline;
-    }
-
-    private void typeTextSegments(
-            Label target,
-            String[] segments,
-            Duration perChar,
-            Duration pauseAfterTyped,
-            Duration fadeOutDuration,
-            Duration fadeInDuration,
-            Runnable onDone
-    ) {
-        if (segments == null || segments.length == 0) {
-            if (onDone != null) onDone.run();
-            return;
-        }
-
-        target.setText("");
-
-        SequentialTransition seq = new SequentialTransition();
-        for (int idx = 0; idx < segments.length; idx++) {
-            String seg = segments[idx];
-            Timeline typing = createTypeTimeline(target, seg, perChar);
-            seq.getChildren().add(typing);
-            seq.getChildren().add(new PauseTransition(pauseAfterTyped));
-
-            boolean isLast = (idx == segments.length - 1);
-            if (!isLast) {
-                FadeTransition fadeOut = new FadeTransition(fadeOutDuration, target);
-                fadeOut.setFromValue(1);
-                fadeOut.setToValue(0);
-                fadeOut.setOnFinished(e -> target.setText(""));
-
-                FadeTransition fadeIn = new FadeTransition(fadeInDuration, target);
-                fadeIn.setFromValue(0);
-                fadeIn.setToValue(1);
-
-                seq.getChildren().add(fadeOut);
-                seq.getChildren().add(fadeIn);
-            }
-        }
-
-        if (onDone != null) seq.setOnFinished(e -> onDone.run());
-        seq.play();
-    }
-
-    private Button createAnimatedImageButton(String imageResourcePath, double fitWidth, Runnable onClick) {
-        Button btn = new Button();
-        btn.setStyle("-fx-background-color: transparent; -fx-padding: 0; -fx-border-width: 0;");
-        btn.setContentDisplay(ContentDisplay.GRAPHIC_ONLY);
-
-        ImageView iv = new ImageView(loadImage(imageResourcePath));
-        iv.setPreserveRatio(true);
-        iv.setFitWidth(fitWidth);
-        btn.setGraphic(iv);
-
-        // Idle "bob" animation
-        TranslateTransition bob = new TranslateTransition(Duration.millis(650), btn);
-        bob.setFromY(0);
-        bob.setToY(-8);
-        bob.setAutoReverse(true);
-        bob.setCycleCount(Animation.INDEFINITE);
-        bob.play();
-
-        btn.setOnMouseEntered(e -> {
-            bob.pause(); // stop bobbing on hover
-            btn.setScaleX(1.08);
-            btn.setScaleY(1.08);
-        });
-        btn.setOnMouseExited(e -> {
-            btn.setScaleX(1.0);
-            btn.setScaleY(1.0);
-            bob.play(); // resume bobbing
-        });
-
-        btn.setOnAction(e -> onClick.run());
-        return btn;
-    }
-
     private void showIntroSequence() {
-        // Black intro screen: game title -> creator team -> typed story.
-        StackPane root = new StackPane();
-        root.setStyle("-fx-background-color: #000000;");
-
+        StackPane intro = new StackPane();
+        intro.setStyle("-fx-background-color: #000;");
         VBox content = new VBox(18);
         content.setAlignment(Pos.CENTER);
-        content.setStyle("-fx-padding: 30;");
+        content.setStyle("-fx-padding:30;");
 
-        Text title = new Text("Save My GPA");
-        title.setFill(Color.WHITE);
-        title.setFont(cuteFont(46, FontWeight.BOLD));
-        title.setOpacity(0);
+        Text t1 = new Text("Save My GPA");
+        t1.setFill(Color.WHITE);
+        t1.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 56));
+        t1.setOpacity(0);
 
-        Text creators = new Text("ทีมผู้สร้าง SaveMyGPA Team");
-        creators.setFill(Color.WHITE);
-        creators.setFont(cuteFont(26, FontWeight.SEMI_BOLD));
-        creators.setOpacity(0);
+        Text t2 = new Text("ทีมผู้สร้าง SaveMyGPA Team");
+        t2.setFill(Color.WHITE);
+        t2.setFont(Font.font("Comic Sans MS", FontWeight.SEMI_BOLD, 32));
+        t2.setOpacity(0);
 
         Label story = new Label();
         story.setTextFill(Color.WHITE);
-        story.setFont(cuteFont(20));
+        story.setFont(Font.font("Comic Sans MS", 24));
         story.setWrapText(true);
-        story.setMaxWidth(760);
+        story.setMaxWidth(900);
         story.setAlignment(Pos.CENTER);
         story.setOpacity(0);
 
-        content.getChildren().addAll(title, creators, story);
-        root.getChildren().add(content);
+        content.getChildren().addAll(t1, t2, story);
+        intro.getChildren().add(content);
+        setContent(intro);
 
-        stage.setScene(new Scene(root, 960, 540));
-
-        String[] introSegments = new String[]{
+        String[] segs = {
                 "ในคืนที่นักศึกษาหญิงคนหนึ่งรอผลสอบ...",
-                "หัวใจเต้นแรงเมื่อรู้ว่า “เธอสอบติดแล้ว!”",
-                "คณะเทคโนโลยีสารสนเทศ",
-                "มหาวิทยาลัยพระจอมเกล้าเจ้าคุณทหารลาดกระบัง",
+                "หัวใจเต้นแรงเมื่อรู้ว่า \"เธอสอบติดแล้ว!\"",
+                "คณะเทคโนโลยีสารสนเทศ KMITL",
                 "แต่ก่อนจะก้าวไปสู่บทเรียนถัดไป...",
-                "เธอต้องยอมรับข้อตกลงบางอย่าง",
-                "และเลือกเส้นทางของตัวเอง"
+                "เธอต้องเลือกเส้นทางของตัวเอง"
         };
 
-        FadeTransition titleIn = new FadeTransition(Duration.seconds(1.0), title);
-        titleIn.setFromValue(0);
-        titleIn.setToValue(1);
+        FadeTransition i1 = fade(t1,0,1,1.0),
+                o1=fade(t1,1,0,0.8),
+                i2=fade(t2,0,1,0.9),
+                o2=fade(t2,1,0,0.8),
+                si=fade(story,0,1,0.8);
 
-        PauseTransition pause1 = new PauseTransition(Duration.seconds(0.6));
-
-        FadeTransition titleOut = new FadeTransition(Duration.seconds(0.8), title);
-        titleOut.setFromValue(1);
-        titleOut.setToValue(0);
-
-        FadeTransition creatorsIn = new FadeTransition(Duration.seconds(0.9), creators);
-        creatorsIn.setFromValue(0);
-        creatorsIn.setToValue(1);
-
-        PauseTransition pause2 = new PauseTransition(Duration.seconds(0.6));
-
-        FadeTransition creatorsOut = new FadeTransition(Duration.seconds(0.8), creators);
-        creatorsOut.setFromValue(1);
-        creatorsOut.setToValue(0);
-
-        FadeTransition storyIn = new FadeTransition(Duration.seconds(0.8), story);
-        storyIn.setFromValue(0);
-        storyIn.setToValue(1);
-        storyIn.setOnFinished(e -> typeTextSegments(
-                story,
-                introSegments,
-                Duration.millis(38),     // even slower typing (cute pacing)
-                Duration.seconds(0.85),  // pause after each segment
-                Duration.millis(260),    // fade out before next segment
-                Duration.millis(180),
-                this::showAgreement
-        ));
-
-        new SequentialTransition(
-                titleIn,
-                pause1,
-                titleOut,
-                creatorsIn,
-                pause2,
-                creatorsOut,
-                storyIn
-        ).play();
+        si.setOnFinished(e -> typeSegments(story, segs, this::showAgreement));
+        new SequentialTransition(i1, pause(0.6), o1, i2, pause(0.6), o2, si).play();
     }
 
     private void showAgreement() {
-        StackPane root = new StackPane();
-        root.setStyle("-fx-background-color: #000000;");
-
-        ImageView bg = new ImageView(loadImage("/images/acceptance/acceptance_page.jpg"));
-        bg.setPreserveRatio(true);
-        root.getChildren().add(bg);
-
-        Button accept = createAnimatedImageButton(
-                "/images/acceptance/accept_button.png",
-                300,
-                () -> {
-                    agreedToTerms = true;
-                    persistSave(true); // persist terms so next boot skips intro + agreement
-                    showMainMenu();
-                }
-        );
-
-        Button refuse = createAnimatedImageButton(
-                "/images/acceptance/refuse_button.png",
-                300,
-                this::showRefusalEnding
-        );
-
-        HBox buttons = new HBox(60, accept, refuse);
-        buttons.setAlignment(Pos.CENTER);
-        StackPane.setAlignment(buttons, Pos.CENTER);
-
-        root.getChildren().add(buttons);
-
-        Scene scene = new Scene(root, 960, 540);
-        stage.setScene(scene);
-
-        bg.fitWidthProperty().bind(scene.widthProperty());
-        bg.fitHeightProperty().bind(scene.heightProperty());
+        AcceptanceUI ui = new AcceptanceUI(new AcceptanceUI.Callbacks() {
+            @Override public void onAccept() {
+                agreedToTerms = true;
+                persistSave(true);
+                showMainMenu();
+            }
+            @Override public void onRefuse() { showRefusalEnding(); }
+        });
+        setContent(ui.buildView());
     }
 
     private void showMainMenu() {
-        Text title = new Text("🎓 Save My GPA");
-        title.setStyle("-fx-font-size: 24; -fx-font-weight: bold;");
+        actionLocked = false;
+        pauseOpen    = false;
+        MainMenuUI ui = new MainMenuUI(hasSavedGame, new MainMenuUI.Callbacks() {
+            @Override public void onContinue()  { runOnce(GameLauncher.this::showGameplayWithFadeIn); }
+            @Override public void onNewGame()   { runOnce(GameLauncher.this::startNewGame); }
+            @Override public void onHowToPlay() { runOnce(GameLauncher.this::showHowToPlay); }
+            @Override public void onSettings()  { runOnce(() -> showSettings(GameLauncher.this::showMainMenu)); }
+            @Override public void onCredits()   { runOnce(GameLauncher.this::showCredits); }
+            @Override public void onQuit()      { stage.close(); }
+        });
+        setContent(ui.buildView());
+    }
 
-        VBox root = new VBox(15);
-        root.setAlignment(Pos.CENTER);
-        root.setStyle("-fx-padding: 40;");
-        root.getChildren().add(title);
-
-        if (hasSavedGame) {
-            Button cont = new Button("▶ Continue");
-            cont.setPrefWidth(210);
-            cont.setOnAction(e -> showGameplay());
-            root.getChildren().add(cont);
-        }
-
-        Button start   = new Button("🆕 Start New Game");
-        Button how     = new Button("📖 How To Play");
-        Button credits = new Button("👥 Credits");
-        Button quit    = new Button("🚪 Quit");
-        for (Button b : new Button[]{start, how, credits, quit}) b.setPrefWidth(210);
-
-        start.setOnAction(e -> startNewGame());
-        how.setOnAction(e -> showHowToPlay());
-        credits.setOnAction(e -> showCredits());
-        quit.setOnAction(e -> stage.close());
-
-        root.getChildren().addAll(start, how, credits, quit);
-        stage.setScene(new Scene(root, 600, 450));
+    private void showSettings(Runnable onBack) {
+        SettingsUI ui = new SettingsUI(AudioManager.getInstance(),
+                () -> ActivityCutscene.transition(sceneRoot, onBack, null));
+        ActivityCutscene.transition(sceneRoot, () -> setContent(ui.buildView()), null);
     }
 
     private void showHowToPlay() {
-        Label text = new Label(
-                "🕹️ วิธีเล่น Save My GPA\n\n" +
-                        "📅 ตารางวัน:\n" +
-                        "  วัน 1-5  → เรียนปกติ\n" +
-                        "  วัน 6    → สอบ Programming รอบ 1\n" +
-                        "  วัน 7    → สอบ Math รอบ 1 (มีมินิเกม!)\n" +
-                        "  วัน 8    → INT รีเซ็ตเป็น 0 (Mood/Energy คงเดิม)\n" +
-                        "  วัน 8-12 → เรียนปกติ\n" +
-                        "  วัน 13   → สอบ Programming รอบ 2\n" +
-                        "  วัน 14   → สอบ Math รอบ 2 (มีมินิเกม!)\n\n" +
-                        "📊 Stats:\n" +
-                        "  🧠 INT (max 100)   — ยิ่งสูง คะแนนสอบยิ่งดี\n" +
-                        "  😊 Mood (max 100)  — ส่งผลต่อ INT ที่ได้จากการเรียน\n" +
-                        "  ⚡ Energy (max 10) — ต้องใช้ทำกิจกรรม\n\n" +
-                        "🎲 Event สุ่ม: สูงสุด 3 ครั้ง/วัน\n\n" +
-                        "🏆 เกรด: INT เฉลี่ย ≥70 → A | ≥40 → C | <40 → F"
-        );
-        text.setWrapText(true);
-        text.setStyle("-fx-font-size: 13;");
-
-        Button back = new Button("← กลับ");
-        back.setOnAction(e -> showMainMenu());
-
-        VBox root = new VBox(20, text, back);
-        root.setAlignment(Pos.CENTER);
-        root.setStyle("-fx-padding: 30;");
-        stage.setScene(new Scene(root, 650, 530));
+        ActivityCutscene.transition(sceneRoot, () -> {
+            StackPane root = new StackPane();
+            root.setStyle("-fx-background-color: linear-gradient(to bottom, #0d1b2a, #1b2a3b);");
+            VBox content = new VBox(20); content.setAlignment(Pos.CENTER);
+            content.setStyle("-fx-padding: 60;"); content.setMaxWidth(900);
+            Text title = new Text("🕹️  วิธีเล่น Save My GPA");
+            title.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 34));
+            title.setFill(Color.web("#ffe082"));
+            Label text = new Label(
+                    "วัน 1-5   →  เรียนปกติ\n" +
+                            "วัน 6      →  สอบ Programming รอบ 1\n" +
+                            "วัน 7      →  สอบ Math รอบ 1 (มินิเกม)\n" +
+                            "วัน 8      →  INT รีเซ็ต\n" +
+                            "วัน 8-12 →  เรียนปกติ\n" +
+                            "วัน 13    →  สอบ Programming รอบ 2\n" +
+                            "วัน 14    →  สอบ Math รอบ 2 (มินิเกม)\n\n" +
+                            "🏆  เกรด:  ≥80 → A  |  ≥70 → B  |  ≥60 → C  |  ≥50 → D  |  <50 → F");
+            text.setStyle("-fx-font-family:'Comic Sans MS'; -fx-font-size:20px; -fx-text-fill:#d0e8ff; -fx-line-spacing:6;");
+            text.setWrapText(true);
+            Button back = navBtn("←  กลับ");
+            back.setOnAction(e -> runOnce(() ->
+                    ActivityCutscene.transition(sceneRoot, GameLauncher.this::showMainMenu, null)));
+            content.getChildren().addAll(title, text, back);
+            content.setOpacity(0);
+            root.getChildren().add(content);
+            setContent(root);
+            FadeTransition ft = new FadeTransition(Duration.millis(400), content);
+            ft.setToValue(1); ft.play();
+        }, null);
     }
 
     private void showCredits() {
-        Label text = new Label("🎮 Save My GPA\n\nCreated by the SaveMyGPA Team\n\nขอบคุณทุกคนที่เล่น!");
-        text.setTextAlignment(TextAlignment.CENTER);
-        Button back = new Button("← กลับ");
-        back.setOnAction(e -> showMainMenu());
-        VBox root = new VBox(20, text, back);
-        root.setAlignment(Pos.CENTER);
-        root.setStyle("-fx-padding: 40;");
-        stage.setScene(new Scene(root, 500, 280));
+        ActivityCutscene.transition(sceneRoot, () -> {
+            StackPane root = new StackPane();
+            root.setStyle("-fx-background-color: linear-gradient(to bottom, #0d1b2a, #1b2a3b);");
+            VBox content = new VBox(20); content.setAlignment(Pos.CENTER);
+            content.setStyle("-fx-padding: 60;");
+            Text title = new Text("👥  เครดิต");
+            title.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 36));
+            title.setFill(Color.web("#ce93d8"));
+            Label text = new Label("🎮  Save My GPA\nCreated by the SaveMyGPA Team\n\nขอบคุณทุกคนที่เล่น! 🎉");
+            text.setStyle("-fx-font-family:'Comic Sans MS'; -fx-font-size:22px; -fx-text-fill:#e0d0f0; -fx-line-spacing:6;");
+            text.setTextAlignment(TextAlignment.CENTER);
+            Button back = navBtn("←  กลับ");
+            back.setOnAction(e -> runOnce(() ->
+                    ActivityCutscene.transition(sceneRoot, GameLauncher.this::showMainMenu, null)));
+            content.getChildren().addAll(title, text, back);
+            content.setOpacity(0);
+            root.getChildren().add(content);
+            setContent(root);
+            FadeTransition ft = new FadeTransition(Duration.millis(400), content);
+            ft.setToValue(1); ft.play();
+        }, null);
     }
 
-    // ── Gameplay ─────────────────────────────────────────────────────────────
+    // ── Outside (instant swap – used after day-end transitions) ──────────────
 
     private void showGameplay() {
         if (isGameOver()) { showEnding(); return; }
-
-        // Fire visit-triggered events on arriving at main map (outside)
+        if (outsideUI != null) outsideUI.stopAnimations();
+        outsideUI = new OutsideUI(player, timeSystem, eventManager, buildOutsideCallbacks());
+        setContent(outsideUI.buildView());
         eventManager.triggerVisit(player, timeSystem, Location.OUTSIDE);
-        updateStats();
-
-        int day = timeSystem.getCurrentDay();
-        Label header = new Label("📅 Day " + day + " — " + getDayTypeLabel());
-        header.setStyle("-fx-font-size: 15; -fx-font-weight: bold;");
-
-        Button busStop    = new Button("🚌 Bus Stop");
-        Button canteen    = new Button("🍽️ Canteen");
-        Button itBuilding = new Button("🏫 IT Building");
-        Button goHome     = new Button("🏠 Go Home");
-        Button mainMenu   = new Button("⏸ Main Menu");
-        for (Button b : new Button[]{busStop, canteen, itBuilding, goHome, mainMenu}) b.setPrefWidth(210);
-
-        busStop.setOnAction(e -> showBusStop());
-        canteen.setOnAction(e -> { perform(new EatActivity(), Location.CANTEEN); showGameplay(); });
-        itBuilding.setOnAction(e -> showITBuilding());
-        goHome.setOnAction(e -> doGoHome());
-        mainMenu.setOnAction(e -> showMainMenu());
-
-        VBox actions = new VBox(12, header, new Separator(),
-                busStop, canteen, itBuilding, goHome, mainMenu);
-        actions.setAlignment(Pos.CENTER);
-        actions.setStyle("-fx-padding: 20;");
-
-        BorderPane root = new BorderPane();
-        root.setCenter(actions);
-        root.setRight(statsPanel());
-        stage.setScene(new Scene(root, 850, 530));
-        updateStats();
+        outsideUI.refresh();
+        maybeSaveProgress(false);
     }
+
+    private OutsideUI.Callbacks buildOutsideCallbacks() {
+        return new OutsideUI.Callbacks() {
+            @Override public void onBusStop()    { runOnce(GameLauncher.this::showBusStop); }
+            @Override public void onCanteen()    { runOnce(GameLauncher.this::doCanteen); }
+            @Override public void onITBuilding() { runOnce(GameLauncher.this::showITBuilding); }
+            @Override public void onGoHome()     { runOnce(GameLauncher.this::doGoHome); }
+            @Override public void onPause()      { showPause(PauseOrigin.OUTSIDE); }
+            @Override public void showMessage(String t, String m) { showDialog(t, m, null); }
+            @Override public boolean doActivity(Activity a, Location l) { return performSilent(a, l); }
+        };
+    }
+
+    // ── Canteen ───────────────────────────────────────────────────────────────
+
+    private void doCanteen() {
+        EatActivity eat = new EatActivity();
+        RequirementReason r = eat.canPerform(player, timeSystem);
+        if (r != null) {
+            showDialog("ไม่สามารถทำได้", eat.getFailMessage(r), null);
+            if (outsideUI != null) outsideUI.sayFail();
+            return;
+        }
+        actionLocked = true;
+        ActivityCutscene.play(sceneRoot, ActivityCutscene.lineFor("EatActivity"), () -> {
+            eat.performActivity(player, timeSystem, eventManager);
+            eventManager.triggerAfterActivity(player, timeSystem, Location.CANTEEN);
+            if (outsideUI != null) { outsideUI.refresh(); outsideUI.saySuccess(); }
+            maybeSaveProgress(false);
+            actionLocked = false;
+        });
+    }
+
+    // ── Bus Stop ──────────────────────────────────────────────────────────────
 
     private void showBusStop() {
-        updateStats();
-
-        Label header = new Label("🚌 ป้ายรถเมล์");
-        header.setStyle("-fx-font-size: 15; -fx-font-weight: bold;");
-
-        Button kllc   = new Button("📚 ไป KLLC (เรียน)");
-        Button goHome = new Button("🏠 Go Home");
-        Button cancel = new Button("← กลับ");
-        for (Button b : new Button[]{kllc, goHome, cancel}) b.setPrefWidth(210);
-
-        kllc.setOnAction(e -> { perform(new KLLCActivity(), Location.BUS_STOP); showGameplay(); });
-        goHome.setOnAction(e -> doGoHome());
-        cancel.setOnAction(e -> showGameplay());
-
-        VBox center = new VBox(15, header, kllc, goHome, cancel);
-        center.setAlignment(Pos.CENTER);
-
-        BorderPane root = new BorderPane();
-        root.setCenter(center);
-        root.setRight(statsPanel());
-        stage.setScene(new Scene(root, 850, 530));
+        BusStopUI ui = new BusStopUI(sceneRoot, new BusStopUI.Callbacks() {
+            @Override public void onKLLC()   { performWithCutscene(new KLLCActivity(), Location.BUS_STOP, GameLauncher.this::showGameplay); }
+            @Override public void onGoHome() { doGoHome(); }
+            @Override public void onBack()   { /* overlay already dismissed */ }
+        });
+        ui.show();
     }
+
+    // ── IT Building ───────────────────────────────────────────────────────────
+    // OutsideUI.doITTransition() fades OUT rootPane to opacity=0, then calls
+    // cb.onITBuilding() → this method. Content is swapped while screen is dark,
+    // then we fade the new InsideUI view from 0→1 for a smooth transition.
 
     private void showITBuilding() {
-        // Fire visit-triggered events on arriving at IT building
         eventManager.triggerVisit(player, timeSystem, Location.IT_BUILDING);
-        updateStats();
+        if (outsideUI != null) outsideUI.refresh();
+        actionLocked = false;
 
-        Label header = new Label("🏫 IT Building — " + getDayTypeLabel());
-        header.setStyle("-fx-font-size: 15; -fx-font-weight: bold;");
+        InsideUI ui = new InsideUI(new InsideUI.Callbacks() {
+            @Override public boolean isProgExamDay()    { return GameLauncher.this.isProgExamDay(); }
+            @Override public boolean isMathExamDay()    { return GameLauncher.this.isMathExamDay(); }
+            @Override public void onPause()             { showPause(PauseOrigin.IT_BUILDING); }
+            @Override public Player       getPlayer()       { return player; }
+            @Override public TimeSystem   getTimeSystem()   { return timeSystem; }
+            @Override public EventManager getEventManager() { return eventManager; }
 
-        VBox center = new VBox(12);
-        center.setAlignment(Pos.CENTER);
-        center.setStyle("-fx-padding: 20;");
-        center.getChildren().addAll(header, new Separator());
+            @Override public void onClassroom() {
+                performWithCutscene(new ClassroomActivity(), Location.CLASSROOM,
+                        GameLauncher.this::showITBuilding);
+            }
+            @Override public void onAuditorium() {
+                performWithCutscene(new AuditoriumActivity(), Location.AUDITORIUM,
+                        GameLauncher.this::showITBuilding);
+            }
+            @Override public void onCoworking() {
+                showCoworkingSpace();
+            }
+            @Override public void onProgExam() { doProgExam(); }
+            @Override public void onMathExam() { doMathExam(); }
+            @Override public void onBack() {
+                if (actionLocked) return;
+                actionLocked = true;
+                ActivityCutscene.transition(sceneRoot, () -> {
+                    actionLocked = false;
+                    showGameplay();
+                }, null);
+            }
+        });
 
-        if (isProgExamDay()) {
-            Button examBtn    = new Button("💻 เข้าห้องสอบ Programming");
-            Button auditorium = new Button("🎭 Auditorium");
-            Button cowork     = new Button("💻 Coworking Space");
-            for (Button b : new Button[]{examBtn, auditorium, cowork}) b.setPrefWidth(210);
-
-            examBtn.setOnAction(e -> doProgExam());
-            auditorium.setOnAction(e -> { perform(new AuditoriumActivity(), Location.AUDITORIUM); showITBuilding(); });
-            cowork.setOnAction(e -> showCoworkingSpace());
-            center.getChildren().addAll(examBtn, auditorium, cowork);
-
-        } else if (isMathExamDay()) {
-            Button examBtn    = new Button("📐 เข้าห้องสอบ Math (มินิเกม)");
-            Button auditorium = new Button("🎭 Auditorium");
-            Button cowork     = new Button("💻 Coworking Space");
-            for (Button b : new Button[]{examBtn, auditorium, cowork}) b.setPrefWidth(220);
-
-            examBtn.setOnAction(e -> doMathExam());
-            auditorium.setOnAction(e -> { perform(new AuditoriumActivity(), Location.AUDITORIUM); showITBuilding(); });
-            cowork.setOnAction(e -> showCoworkingSpace());
-            center.getChildren().addAll(examBtn, auditorium, cowork);
-
-        } else {
-            Button classroom  = new Button("📖 Classroom");
-            Button auditorium = new Button("🎭 Auditorium");
-            Button cowork     = new Button("💻 Coworking Space");
-            for (Button b : new Button[]{classroom, auditorium, cowork}) b.setPrefWidth(210);
-
-            classroom.setOnAction(e -> { perform(new ClassroomActivity(), Location.CLASSROOM); showITBuilding(); });
-            auditorium.setOnAction(e -> { perform(new AuditoriumActivity(), Location.AUDITORIUM); showITBuilding(); });
-            cowork.setOnAction(e -> showCoworkingSpace());
-            center.getChildren().addAll(classroom, auditorium, cowork);
-        }
-
-        Button back = new Button("← กลับ");
-        back.setPrefWidth(210);
-        back.setOnAction(e -> showGameplay());
-        center.getChildren().addAll(new Separator(), back);
-
-        BorderPane root = new BorderPane();
-        root.setCenter(center);
-        root.setRight(statsPanel());
-        stage.setScene(new Scene(root, 850, 530));
+        // Build the view, start it invisible, swap content (screen already dark
+        // from OutsideUI's fade-out), then fade the new screen in.
+        javafx.scene.Node itView = ui.buildView();
+        itView.setOpacity(0);
+        setContent(itView);
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(300), itView);
+        fadeIn.setFromValue(0);
+        fadeIn.setToValue(1);
+        fadeIn.play();
     }
+
+    // ── Coworking Space ───────────────────────────────────────────────────────
 
     private void showCoworkingSpace() {
-        updateStats();
-
-        Label header = new Label("💻 Coworking Space");
-        header.setStyle("-fx-font-size: 15; -fx-font-weight: bold;");
-
-        Button relax  = new Button("😴 Relax (+Energy, +Mood)");
-        Button study  = new Button("📝 Study (+INT)");
-        Button cancel = new Button("← กลับ");
-        for (Button b : new Button[]{relax, study, cancel}) b.setPrefWidth(210);
-
-        relax.setOnAction(e -> { perform(new CoworkingRelaxActivity(), Location.COWORKING); showITBuilding(); });
-        study.setOnAction(e -> { perform(new CoworkingStudyActivity(), Location.COWORKING); showITBuilding(); });
-        cancel.setOnAction(e -> showITBuilding());
-
-        VBox center = new VBox(12, header, relax, study, cancel);
-        center.setAlignment(Pos.CENTER);
-
-        BorderPane root = new BorderPane();
-        root.setCenter(center);
-        root.setRight(statsPanel());
-        stage.setScene(new Scene(root, 850, 530));
+        CoworkingUI ui = new CoworkingUI(sceneRoot, new CoworkingUI.Callbacks() {
+            @Override public void onRelax() {
+                performWithCutscene(new CoworkingRelaxActivity(), Location.COWORKING,
+                        GameLauncher.this::showITBuilding);
+            }
+            @Override public void onStudy() {
+                performWithCutscene(new CoworkingStudyActivity(), Location.COWORKING,
+                        GameLauncher.this::showITBuilding);
+            }
+            @Override public void onBack() { /* overlay already dismissed */ }
+        });
+        ui.show();
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Exam execution
-    // ═════════════════════════════════════════════════════════════════════════
+    // ── Exams ─────────────────────────────────────────────────────────────────
 
-    /**
-     * Programming exam (day 6 & 13) — uses ExamActivity directly.
-     * Stats cost applied, ForgetID event may fire, score captured at day-end.
-     */
     private void doProgExam() {
-        ExamActivity exam = new ExamActivity();
-        RequirementReason reason = exam.canPerform(player, timeSystem);
-        if (reason != null) {
-            showPopup(exam.getFailMessage(reason));
+        if (progExamTakenToday) {
+            showDialog("สอบแล้ววันนี้",
+                    "คุณสอบ Programming ไปแล้ววันนี้\nผลคะแนนถูกบันทึกเรียบร้อย ✅", null);
             return;
         }
-
-        // เปิด CaptchaMiniGame ก่อน แล้วค่อย perform หลังจบ
-        CaptchaMiniGame[] gameRef = new CaptchaMiniGame[1];
-        gameRef[0] = new CaptchaMiniGame(player, () -> {
-            int score = gameRef[0].getTotalScore();
-
-            // perform หลังเล่นจบ
-            perform(exam, Location.CLASSROOM);
-
-            int day = timeSystem.getCurrentDay();
-            String round = (day <= 7) ? "รอบ 1" : "รอบ 2";
-            showPopup(
-                    "✅ สอบ Programming " + round + " เสร็จแล้ว!\n\n" +
-                            "🎯 คะแนนมินิเกม: " + score + " / 50\n\n" +
-                            "(คะแนนจะถูกบันทึกเมื่อคุณกลับบ้านสิ้นวันนี้)"
-            );
-            showITBuilding();
+        ExamActivity exam = new ExamActivity();
+        RequirementReason r = exam.canPerform(player, timeSystem);
+        if (r != null) { showDialog("ไม่สามารถสอบได้", exam.getFailMessage(r), null); return; }
+        progExamTakenToday = true;
+        actionLocked = true;
+        CaptchaMiniGame[] ref = new CaptchaMiniGame[1];
+        ref[0] = new CaptchaMiniGame(player, () -> {
+            performSilent(exam, Location.CLASSROOM);
+            String round = (timeSystem.getCurrentDay() <= 7) ? "รอบ 1" : "รอบ 2";
+            actionLocked = false;
+            showDialog("✅ สอบ Programming " + round + " เสร็จ!",
+                    "🎯 คะแนน: " + ref[0].getTotalScore() + " / 50",
+                    this::showITBuilding);
         });
-
-        stage.setScene(new Scene(gameRef[0].getView(), 700, 600));
-        stage.setFullScreenExitHint("");
-        stage.setFullScreen(true);
+        setContent(ref[0].getView());
+        stage.setFullScreenExitHint(""); stage.setFullScreen(true);
     }
 
-    /**
-     * Math exam (day 7 & 14) — launches CountingMiniGame.
-     * The minigame score is converted to INT bonus after completion.
-     * ExamActivity stat costs (mood/energy) still apply.
-     */
     private void doMathExam() {
-        ExamActivity exam = new ExamActivity();
-        RequirementReason reason = exam.canPerform(player, timeSystem);
-        if (reason != null) {
-            showPopup(exam.getFailMessage(reason));
+        if (mathExamTakenToday) {
+            showDialog("สอบแล้ววันนี้",
+                    "คุณสอบ Math ไปแล้ววันนี้\nผลคะแนนถูกบันทึกเรียบร้อย ✅", null);
             return;
         }
-
-        // Apply exam stat costs and ForgetID event BEFORE minigame
-        perform(exam, Location.CLASSROOM);
-
-        CountingMiniGame[] gameRef = new CountingMiniGame[1];
-        gameRef[0] = new CountingMiniGame(player, () -> {
-            int score = gameRef[0].getTotalScore(); // 0-50
-
-            int day = timeSystem.getCurrentDay();
-            String round = (day <= 7) ? "รอบ 1" : "รอบ 2";
-            showPopup(
-                    "✅ สอบ Math " + round + " เสร็จแล้ว!\n\n" +
-                            "🎮 คะแนนมินิเกม: " + score + " / 50\n" +
-                            "(คะแนนจะถูกบันทึกเมื่อคุณกลับบ้านสิ้นวันนี้)"
-            );
-            updateStats();
-            showITBuilding();
+        ExamActivity exam = new ExamActivity();
+        RequirementReason r = exam.canPerform(player, timeSystem);
+        if (r != null) { showDialog("ไม่สามารถสอบได้", exam.getFailMessage(r), null); return; }
+        mathExamTakenToday = true;
+        performSilent(exam, Location.CLASSROOM);
+        actionLocked = true;
+        CountingMiniGame[] ref = new CountingMiniGame[1];
+        ref[0] = new CountingMiniGame(player, () -> {
+            String round = (timeSystem.getCurrentDay() <= 7) ? "รอบ 1" : "รอบ 2";
+            actionLocked = false;
+            showDialog("✅ สอบ Math " + round + " เสร็จ!",
+                    "🎮 คะแนน: " + ref[0].getTotalScore() + " / 50",
+                    this::showITBuilding);
         });
-
-        stage.setScene(new Scene(gameRef[0].getView(), 650, 520));
-        stage.setFullScreenExitHint("");
-        stage.setFullScreen(true);
+        setContent(ref[0].getView());
+        stage.setFullScreenExitHint(""); stage.setFullScreen(true);
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -946,145 +602,282 @@ public class GameLauncher extends Application {
     // ═════════════════════════════════════════════════════════════════════════
 
     private void showEnding() {
-        if (!agreedToTerms) { showRefusalEnding(); return; }
+        int progAvg = (progExam1Score + progExam2Score) / 2;
+        int mathAvg = (mathExam1Score + mathExam2Score) / 2;
+        int overall = (progAvg + mathAvg) / 2;
+        String grade;
+        if      (overall >= 80) grade = "A";
+        else if (overall >= 70) grade = "B";
+        else if (overall >= 60) grade = "C";
+        else if (overall >= 50) grade = "D";
+        else                    grade = "F";
 
-        int progAvg    = (progExam1Score + progExam2Score) / 2;
-        int mathAvg    = (mathExam1Score + mathExam2Score) / 2;
-        int overallAvg = (progAvg + mathAvg) / 2;
+        StackPane blackScreen = new StackPane();
+        blackScreen.setStyle("-fx-background-color: #000000;");
+        blackScreen.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        Label storyLabel = new Label("");
+        storyLabel.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 32));
+        storyLabel.setTextFill(Color.WHITE);
+        storyLabel.setWrapText(true);
+        storyLabel.setMaxWidth(1000);
+        storyLabel.setTextAlignment(TextAlignment.CENTER);
+        storyLabel.setStyle("-fx-effect: dropshadow(gaussian,rgba(200,220,255,0.35),14,0.4,0,0);");
+        storyLabel.setOpacity(0);
+        blackScreen.getChildren().add(storyLabel);
+        setContent(blackScreen);
+        FadeTransition fadeIn = new FadeTransition(Duration.millis(900), blackScreen);
+        fadeIn.setFromValue(0); fadeIn.setToValue(1);
+        final String fg = grade; final int fP = progAvg, fM = mathAvg, fO = overall;
+        fadeIn.setOnFinished(e -> {
+            storyLabel.setOpacity(1);
+            typeSegments(storyLabel, endingStory(fg), () -> showEndingResult(fg, fO, fP, fM));
+        });
+        fadeIn.play();
+    }
 
-        String grade, emoji, message;
-        if (overallAvg >= 70) {
-            grade = "A"; emoji = "🏆";
-            message = "คุณทำได้ยอดเยี่ยม!\nการบริหารเวลาและการเรียนของคุณดีมาก\nGPA Saved! 🎉";
-        } else if (overallAvg >= 40) {
-            grade = "C"; emoji = "😅";
-            message = "คุณผ่านไปได้... แต่หวุดหวิด\nครั้งหน้าต้องพยายามมากกว่านี้!";
-        } else {
-            grade = "F"; emoji = "💀";
-            message = "GPA ไม่รอด...\nลองใหม่อีกครั้ง — คุณทำได้!";
-        }
-
-        Text title = new Text(emoji + " ผลการเรียน " + emoji);
-        title.setStyle("-fx-font-size: 22; -fx-font-weight: bold;");
-
+    private void showEndingResult(String grade, int overall, int progAvg, int mathAvg) {
+        String titleColor = endingColor(grade);
+        StackPane root = new StackPane();
+        root.setStyle("-fx-background-color: #000000;");
+        VBox content = new VBox(28); content.setAlignment(Pos.CENTER); content.setStyle("-fx-padding: 60;");
+        Text gradeText = new Text(grade);
+        gradeText.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 130));
+        gradeText.setFill(Color.web(titleColor));
+        gradeText.setStyle("-fx-effect: dropshadow(gaussian," + titleColor + ",44,0.65,0,0);");
+        Text titleText = new Text(endingTitle(grade));
+        titleText.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30));
+        titleText.setFill(Color.web(titleColor));
         Label scores = new Label(
                 "📊 สรุปผลการสอบ\n\n" +
-                        "💻 Programming:\n" +
-                        "   รอบ 1: " + progExam1Score +
-                        "  |  รอบ 2: " + progExam2Score +
-                        "  →  เฉลี่ย: " + progAvg + "\n\n" +
-                        "📐 Math:\n" +
-                        "   รอบ 1: " + mathExam1Score +
-                        "  |  รอบ 2: " + mathExam2Score +
-                        "  →  เฉลี่ย: " + mathAvg + "\n\n" +
-                        "📈 คะแนนรวมเฉลี่ย: " + overallAvg +
-                        "  |  🎓 เกรด: " + grade + "\n\n" +
-                        message
-        );
-        scores.setWrapText(true);
+                        "💻 Programming:  " + progExam1Score + "  |  " + progExam2Score + "  →  เฉลี่ย " + progAvg + "\n" +
+                        "📐 Math:              " + mathExam1Score + "  |  " + mathExam2Score + "  →  เฉลี่ย " + mathAvg + "\n\n" +
+                        "📈 คะแนนเฉลี่ยรวม:  " + overall);
+        scores.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:20px;-fx-text-fill:#c8d8f0;-fx-line-spacing:6;");
         scores.setTextAlignment(TextAlignment.CENTER);
-        scores.setStyle("-fx-font-size: 13;");
+        Button again = navBtn("🔄  เล่นใหม่");
+        Button quit  = navBtn("🚪  ออกจากเกม");
+        again.setOnAction(e -> runOnce(this::startNewGame));
+        quit .setOnAction(e -> stage.close());
+        HBox btns = new HBox(28, again, quit); btns.setAlignment(Pos.CENTER);
+        content.getChildren().addAll(gradeText, titleText, scores, btns);
+        content.setOpacity(0);
+        root.getChildren().add(content);
+        setContent(root);
+        FadeTransition ft = new FadeTransition(Duration.millis(600), content);
+        ft.setToValue(1); ft.play();
+    }
 
-        Button playAgain = new Button("🔄 เล่นใหม่");
-        Button quit      = new Button("🚪 ออกจากเกม");
-        playAgain.setPrefWidth(150);
-        quit.setPrefWidth(150);
+    private String[] endingStory(String grade) {
+        return switch (grade) {
+            case "A" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด A — ทุกวิชาผ่านด้วยคะแนนสูง",
+                    "ภาพย้อนกลับมา... คืนที่อ่านหนังสือข้ามวันข้ามคืน",
+                    "ทุกหยดเหงื่อที่ทุ่มเทลงไป — มันคุ้มค่า",
+                    "โทรหาเพื่อน — 'เฮ้! เราได้ A แล้วนะ!'",
+                    "กลับบ้าน นอนลงบนที่นอนนุ่มๆ","แล้วก็ยิ้ม... 'ปี 2 ฉันจะเอา A อีกครั้ง'"};
+            case "B" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด B — ไม่ใช่สิ่งที่หวัง แต่ก็ภูมิใจ",
+                    "MC นั่งคิด — 'ถ้าจัดเวลาให้ดีกว่านี้สักนิด...'",
+                    "Nobody is perfect — แต่ทุกคนพัฒนาได้",
+                    "MC พิมพ์โน้ตแผนการอ่านใหม่ พร้อมกว่าเดิม"};
+            case "C" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด C — รอดมาได้ แม้จะหนักแค่ไหน",
+                    "MC หายใจลึกๆ — 'อย่างน้อยก็ผ่าน'",
+                    "MC งีบหลับระหว่างทวน — ร่างกายต้องการพักบ้างแล้ว"};
+            case "D" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด D — ผ่านแบบ Probation ฉิวเฉียด",
+                    "น้ำตาไหลออกมาโดยไม่รู้ตัว",
+                    "'ฉันทำดีที่สุดแล้ว...' — MC พึมพำ",
+                    "ลมหายใจค่อยๆ นิ่ง — ใจยังก้าวต่อไปได้"};
+            default  -> new String[]{"ผลสอบออกมาแล้ว...","เกรด F — Retired จากคณะ",
+                    "น้ำตาหยดลงบนหน้าจอ","'ฉันทำดีที่สุดที่ฉันทำได้แล้ว'",
+                    "MC เปิดเว็บ TCAS ขึ้นมา เลื่อนดูคณะต่างๆ อย่างตั้งใจ",
+                    "Hope dies last — ความหวังไม่มีวันตาย"};
+        };
+    }
 
-        playAgain.setOnAction(e -> startNewGame());
-        quit.setOnAction(e -> stage.close());
+    private String endingTitle(String grade) {
+        return switch (grade) {
+            case "A" -> "Ending A  —  All Stars Passed";
+            case "B" -> "Ending B  —  Nobody Is Perfect";
+            case "C" -> "Ending C  —  Struggling Success";
+            case "D" -> "Ending D  —  Probation";
+            default  -> "Ending F  —  Hope Dies Last";
+        };
+    }
 
-        HBox buttons = new HBox(20, playAgain, quit);
-        buttons.setAlignment(Pos.CENTER);
-
-        VBox root = new VBox(20, title, scores, buttons);
-        root.setAlignment(Pos.CENTER);
-        root.setStyle("-fx-padding: 40;");
-        stage.setScene(new Scene(root, 650, 520));
+    private String endingColor(String grade) {
+        return switch (grade) {
+            case "A" -> "#ffe082"; case "B" -> "#80cbc4";
+            case "C" -> "#4fc3f7"; case "D" -> "#ce93d8";
+            default  -> "#ef9a9a";
+        };
     }
 
     private void showRefusalEnding() {
         agreedToTerms = false;
-
-        StackPane root = new StackPane();
-        root.setStyle("-fx-background-color: #000000;");
-
-        VBox content = new VBox(18);
-        content.setAlignment(Pos.CENTER);
-        content.setStyle("-fx-padding: 30;");
-
-        Text title = new Text("Secret Ending");
-        title.setFill(Color.WHITE);
-        title.setFont(cuteFont(36, FontWeight.BOLD));
-        title.setOpacity(0);
-
+        StackPane intro = new StackPane();
+        intro.setStyle("-fx-background-color:#000;");
         Label story = new Label();
         story.setTextFill(Color.WHITE);
-        story.setFont(cuteFont(20));
+        story.setFont(Font.font("Comic Sans MS", 24));
         story.setWrapText(true);
-        story.setMaxWidth(780);
-        story.setAlignment(Pos.CENTER);
+        story.setMaxWidth(900);
         story.setOpacity(0);
-
-        Button back = new Button("← กลับไปหน้าเริ่มเกม");
-        back.setOpacity(0);
-        back.setOnAction(e -> showIntroSequence());
-        // For refusal, we auto-exit after the typing sequence ends.
-        back.setVisible(false);
-        back.setManaged(false);
-
-        content.getChildren().addAll(title, story, back);
-        root.getChildren().add(content);
-
-        stage.setScene(new Scene(root, 960, 540));
-
-        String[] secretSegments = new String[]{
-                "นักศึกษาหญิงคนนั้นเลือกที่จะไม่เดินต่อบนเส้นทาง GPA",
-                "ในคืนที่ทุกอย่างเริ่มจะชัดเจน...",
-                "เธอกลับตัดสินใจฟังหัวใจตัวเองมากกว่าเหตุผล",
-                "บางครั้ง “การสอบติด” อาจไม่ใช่สิ่งที่ทำให้เราเติบโตที่สุด",
-                "เธอจึงไปทำอย่างอื่นที่อาจจะดีสำหรับตัวเธอมากกว่า",
-                "และพบความหมายของชีวิตในแบบที่แตกต่าง"
+        VBox c = new VBox(story);
+        c.setAlignment(Pos.CENTER);
+        c.setStyle("-fx-padding:60;");
+        intro.getChildren().add(c);
+        setContent(intro);
+        String[] segs = {
+                "คุณปฏิเสธที่จะเล่นเกม",
+                "บางครั้งการไม่ทำอะไรก็เป็นทางเลือก...",
+                "แต่ GPA ก็ไม่รอดเหมือนกัน 😢"
         };
-
-        FadeTransition titleIn = new FadeTransition(Duration.seconds(0.8), title);
-        titleIn.setFromValue(0);
-        titleIn.setToValue(1);
-
-        FadeTransition storyIn = new FadeTransition(Duration.seconds(0.8), story);
-        storyIn.setFromValue(0);
-        storyIn.setToValue(1);
-        storyIn.setOnFinished(e -> typeTextSegments(
-                story,
-                secretSegments,
-                Duration.millis(38),
-                Duration.seconds(0.85),
-                Duration.millis(260),
-                Duration.millis(220),
-                () -> {
-                    stage.close();
-                    javafx.application.Platform.exit();
-                }
-        ));
-
-        new SequentialTransition(
-                titleIn,
-                new PauseTransition(Duration.seconds(0.4)),
-                storyIn
-        ).play();
+        FadeTransition ft = fade(story, 0, 1, 0.8);
+        ft.setOnFinished(e -> typeSegments(story, segs, stage::close));
+        ft.play();
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Utility
-    // ═════════════════════════════════════════════════════════════════════════
+    // ── Save / Load ───────────────────────────────────────────────────────────
 
-    private void showPopup(String message) {
-        Alert alert = new Alert(Alert.AlertType.INFORMATION);
-        alert.setHeaderText(null);
-        alert.setContentText(message);
-        alert.showAndWait();
+    private Path getSavePath() { return Paths.get(System.getProperty("user.home"), SAVE_FILE_NAME); }
+
+    private void loadFromDisk() {
+        agreedToTerms = false; hasSavedGame = false;
+        Path path = getSavePath(); if (!Files.exists(path)) return;
+        Properties props = new Properties();
+        try (InputStream in = Files.newInputStream(path)) { props.load(in); } catch (Exception e) { return; }
+        agreedToTerms = Boolean.parseBoolean(props.getProperty("termsAgreed", "false"));
+        hasSavedGame  = Boolean.parseBoolean(props.getProperty("hasSavedGame", "false"));
+        AudioManager audio = AudioManager.getInstance();
+        try {
+            audio.setGameVolume(Double.parseDouble(props.getProperty("vol.game", "1.0")));
+            audio.setSfxVolume(Double.parseDouble(props.getProperty("vol.sfx", "0.8")));
+            audio.setMusicVolume(Double.parseDouble(props.getProperty("vol.music", "0.6")));
+            audio.setResolution(Integer.parseInt(props.getProperty("res.width", "1920")),
+                    Integer.parseInt(props.getProperty("res.height", "1080")));
+        } catch (NumberFormatException ignored) {}
+        if (!hasSavedGame) return;
+        try {
+            player = new Player(Integer.parseInt(props.getProperty("energy", "6")),
+                    Integer.parseInt(props.getProperty("intelligence", "0")),
+                    Integer.parseInt(props.getProperty("mood", "60")));
+            timeSystem = new TimeSystem();
+            timeSystem.setCurrentDay(Integer.parseInt(props.getProperty("day", "1")));
+            timeSystem.setCurrentHour(Integer.parseInt(props.getProperty("hour", "8")));
+            eventManager = new EventManager(); EventRegistry.registerAll(eventManager);
+            eventManager.setEventsToday(Integer.parseInt(props.getProperty("eventsToday", "0")));
+            progExam1Score = Integer.parseInt(props.getProperty("progExam1Score", "0"));
+            mathExam1Score = Integer.parseInt(props.getProperty("mathExam1Score", "0"));
+            progExam2Score = Integer.parseInt(props.getProperty("progExam2Score", "0"));
+            mathExam2Score = Integer.parseInt(props.getProperty("mathExam2Score", "0"));
+            progExamTakenToday = Boolean.parseBoolean(props.getProperty("progExamTakenToday", "false"));
+            mathExamTakenToday = Boolean.parseBoolean(props.getProperty("mathExamTakenToday", "false"));
+            int count = Integer.parseInt(props.getProperty("effectsCount", "0"));
+            for (int i = 0; i < count; i++) {
+                String cn = props.getProperty("effect." + i + ".class"); if (cn == null) continue;
+                int rem = Integer.parseInt(props.getProperty("effect." + i + ".remaining", "0"));
+                StatusEffect eff = (StatusEffect) Class.forName(cn).getDeclaredConstructor().newInstance();
+                if (eff instanceof SeniorNoteBuff snb) snb.setDaysRemaining(rem); else eff.setRemainingDuration(rem);
+                player.addEffect(eff);
+            }
+        } catch (Exception ignored) {
+            agreedToTerms = false; hasSavedGame = false;
+            player = null; timeSystem = null; eventManager = null;
+        }
     }
 
-    public static void main(String[] args) {
-        launch(args);
+    private void persistSave(boolean force) {
+        if (!force && System.currentTimeMillis() - lastSaveMillis < 2000) return;
+        lastSaveMillis = System.currentTimeMillis();
+        Properties props = new Properties();
+        props.setProperty("version", SAVE_VERSION);
+        props.setProperty("termsAgreed", String.valueOf(agreedToTerms));
+        props.setProperty("hasSavedGame", String.valueOf(hasSavedGame));
+        AudioManager audio = AudioManager.getInstance();
+        props.setProperty("vol.game",  String.valueOf(audio.getGameVolume()));
+        props.setProperty("vol.sfx",   String.valueOf(audio.getSfxVolume()));
+        props.setProperty("vol.music", String.valueOf(audio.getMusicVolume()));
+        props.setProperty("res.width",  String.valueOf(audio.getResolutionWidth()));
+        props.setProperty("res.height", String.valueOf(audio.getResolutionHeight()));
+        if (hasSavedGame && player != null && timeSystem != null && eventManager != null) {
+            props.setProperty("day",   String.valueOf(timeSystem.getCurrentDay()));
+            props.setProperty("hour",  String.valueOf(timeSystem.getCurrentHour()));
+            props.setProperty("energy",        String.valueOf(player.getStat(StatType.ENERGY)));
+            props.setProperty("intelligence",   String.valueOf(player.getStat(StatType.INTELLIGENCE)));
+            props.setProperty("mood",           String.valueOf(player.getStat(StatType.MOOD)));
+            props.setProperty("progExam1Score", String.valueOf(progExam1Score));
+            props.setProperty("mathExam1Score", String.valueOf(mathExam1Score));
+            props.setProperty("progExam2Score", String.valueOf(progExam2Score));
+            props.setProperty("mathExam2Score", String.valueOf(mathExam2Score));
+            props.setProperty("eventsToday",        String.valueOf(eventManager.getEventsToday()));
+            props.setProperty("progExamTakenToday", String.valueOf(progExamTakenToday));
+            props.setProperty("mathExamTakenToday", String.valueOf(mathExamTakenToday));
+            List<StatusEffect> effects = player.getActiveEffects();
+            props.setProperty("effectsCount", String.valueOf(effects.size()));
+            for (int i = 0; i < effects.size(); i++) {
+                StatusEffect eff = effects.get(i);
+                props.setProperty("effect." + i + ".class",     eff.getClass().getName());
+                props.setProperty("effect." + i + ".remaining", String.valueOf(eff.getRemainingDuration()));
+            }
+        }
+        try {
+            Path p = getSavePath();
+            Path par = p.getParent();
+            if (par != null) Files.createDirectories(par);
+            try (OutputStream out = Files.newOutputStream(p)) { props.store(out, "Save My GPA"); }
+        } catch (Exception ignored) {}
     }
+
+    private void maybeSaveProgress(boolean force) {
+        if (!agreedToTerms || !hasSavedGame || player == null || timeSystem == null || eventManager == null) return;
+        persistSave(force);
+    }
+
+    // ── Animation helpers ─────────────────────────────────────────────────────
+
+    private FadeTransition fade(javafx.scene.Node n, double from, double to, double secs) {
+        FadeTransition ft = new FadeTransition(Duration.seconds(secs), n);
+        ft.setFromValue(from); ft.setToValue(to); return ft;
+    }
+    private PauseTransition pause(double s) { return new PauseTransition(Duration.seconds(s)); }
+
+    private void typeSegments(Label target, String[] segs, Runnable onDone) {
+        target.setText("");
+        SequentialTransition seq = new SequentialTransition();
+        for (int idx = 0; idx < segs.length; idx++) {
+            String seg = segs[idx];
+            Timeline tl = new Timeline();
+            for (int i = 0; i < seg.length(); i++) {
+                final int next = i + 1;
+                tl.getKeyFrames().add(new KeyFrame(Duration.millis(48 * i),
+                        e -> target.setText(seg.substring(0, next))));
+            }
+            seq.getChildren().add(tl);
+            seq.getChildren().add(pause(1.1));
+            if (idx < segs.length - 1) {
+                FadeTransition out = fade(target, 1, 0, 0.3);
+                out.setOnFinished(e -> target.setText(""));
+                seq.getChildren().addAll(out, fade(target, 0, 1, 0.2));
+            }
+        }
+        if (onDone != null) seq.setOnFinished(e -> onDone.run());
+        seq.play();
+    }
+
+    private Button navBtn(String text) {
+        Button btn = new Button(text);
+        btn.setStyle("""
+            -fx-font-family: 'Comic Sans MS';
+            -fx-font-size: 18px;
+            -fx-background-color: rgba(79,195,247,0.85);
+            -fx-text-fill: #0a1628;
+            -fx-font-weight: bold;
+            -fx-background-radius: 14;
+            -fx-padding: 10 28 10 28;
+            -fx-cursor: hand;
+        """);
+        btn.setOnMouseEntered(e -> btn.setOpacity(0.82));
+        btn.setOnMouseExited(e  -> btn.setOpacity(1.00));
+        return btn;
+    }
+
+    public static void main(String[] args) { launch(args); }
 }
