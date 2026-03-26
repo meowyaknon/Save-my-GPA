@@ -37,6 +37,9 @@ public class CountingMiniGame {
 
     private Timeline countdownTimer;
     private Timeline barAnim;
+    private Timeline colorAnim; // เพิ่มตรงนี้
+    private final javafx.scene.effect.ColorAdjust colorAdjust =
+            new javafx.scene.effect.ColorAdjust(); // เพิ่มตรงนี้
 
     private final Image[] duckImages = new Image[5];
     private final Image[] lizardImages = new Image[4];
@@ -124,69 +127,113 @@ public class CountingMiniGame {
     private void loadRound() {
         answerField.setOnAction(e -> handleAnswer());
         timerLabel.setText("");
-        timerBarFill.setWidth(BAR_WIDTH);
 
         contentArea.getChildren().clear();
 
-        // --- Timer bar ---
-        timerBarBg.setFill(Color.web("#2e2e4e"));
-        timerBarBg.setArcWidth(12); timerBarBg.setArcHeight(12);
-        timerBarFill.setFill(Color.web("#4fc3f7"));
-        timerBarFill.setArcWidth(12); timerBarFill.setArcHeight(12);
+        // --- roundLabel ตำแหน่ง x=1080 y=935 ---
+        roundLabel.setStyle("-fx-font-size: 9px; -fx-text-fill: #cccccc;");
 
-        StackPane timerBar = new StackPane();
-        timerBar.setAlignment(Pos.CENTER_LEFT);
-        timerBar.getChildren().addAll(timerBarBg, timerBarFill);
+// --- timerLabel ตำแหน่ง x=925 y=964 ---
+        timerLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;");
 
-        timerLabel.setStyle("-fx-font-size: 20px; -fx-font-weight: bold; -fx-text-fill: #4fc3f7;");
-        VBox timerBox = new VBox(4, timerLabel, timerBar);
-        timerBox.setAlignment(Pos.CENTER);
-        timerBox.setMaxWidth(BAR_WIDTH);
-
-        roundLabel.setStyle("-fx-font-size: 22px; -fx-text-fill: #cccccc;");
-
-        answerField.setMaxWidth(150);
+// --- answerField อยู่ใน text_bar (x=775 y=992 w=231 h=54) ---
+// กลาง x = 775 + 231/2 = 890.5, กลาง y = 992 + 54/2 = 1019
+// padding กันไม่ชิดกรอบ ~10px แต่ละด้าน
+        answerField.setMaxWidth(211); // 231 - 20
+        answerField.setPrefHeight(34); // 54 - 20
         answerField.setPromptText("0");
         answerField.setStyle("""
-            -fx-font-size: 24px;
-            -fx-alignment: center;
-            -fx-background-color: #16213e;
-            -fx-text-fill: white;
-            -fx-border-color: #4fc3f7;
-            -fx-border-radius: 8;
-            -fx-background-radius: 8;
-            """);
+        -fx-font-size: 30px;
+        -fx-alignment: center;
+        -fx-background-color: transparent;
+        -fx-text-fill: white;
+        -fx-border-color: transparent;
+        """);
 
-        submitButton.setStyle("""
-            -fx-font-size: 18px;
-            -fx-background-color: #4fc3f7;
-            -fx-text-fill: #1a1a2e;
-            -fx-font-weight: bold;
-            -fx-background-radius: 8;
-            -fx-cursor: hand;
-            -fx-padding: 10 28;
-            """);
+// วาง label และ answerField ด้วย Pane absolute position
+        Pane overlayPane = new Pane();
+        overlayPane.setPrefSize(1920, 1080);
+        overlayPane.setPickOnBounds(false);
+
+        roundLabel.setLayoutX(1080);
+        roundLabel.setLayoutY(935);
+
+        timerLabel.setLayoutX(925);
+        timerLabel.setLayoutY(964);
+
+        answerField.setLayoutX(780); // 775 + padding 5
+        answerField.setLayoutY(997); // 992 + padding 5
+
+        resultLabel.setLayoutX(30);
+        resultLabel.setLayoutY(20);
+        scoreLabel.setLayoutX(30);
+        scoreLabel.setLayoutY(45);
+
+        overlayPane.getChildren().addAll(roundLabel, timerLabel, answerField, resultLabel, scoreLabel);
+
+        submitButton.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
         submitButton.setOnAction(e -> handleAnswer());
 
-        HBox inputRow = new HBox(12, answerField, submitButton);
-        inputRow.setAlignment(Pos.CENTER);
+        ImageView timeBarImg = new ImageView(new Image(
+                getClass().getResourceAsStream("/images/exam/math/ingame/time_bar.png")));
+        timeBarImg.setPreserveRatio(false);
+        timeBarImg.setFitWidth(361);
+        timeBarImg.setFitHeight(timeBarImg.getImage().getHeight()); // ความสูงตามไฟล์จริง
 
-        resultLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #ffffff;");
-        scoreLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #f0e68c;");
+        Rectangle clip = new Rectangle(361, timeBarImg.getImage().getHeight());
+        timeBarImg.setClip(clip);
 
-        // --- UI overlay บน bg ---
-        VBox uiOverlay = new VBox(16, roundLabel, timerBox, inputRow, resultLabel, scoreLabel);
-        uiOverlay.setAlignment(Pos.BOTTOM_CENTER);
-        uiOverlay.setPadding(new Insets(0, 0, 40, 0));
+// วาง timeBarImg ที่ตำแหน่ง x=775 y=956
+        timeBarImg.setTranslateX(0); // จะใช้ Pane แทน
+        Pane timeBarPane = new Pane(timeBarImg);
+        timeBarImg.setLayoutX(775);
+        timeBarImg.setLayoutY(956);
+        timeBarPane.setPrefSize(1920, 1080);
+        timeBarPane.setPickOnBounds(false);
 
-        // --- animalPane วางบน bg ---
-        animalPane.setPrefSize(1920, 1080);
+        // --- time_bar_stroke (ขอบตกแต่ง) ---
+        ImageView timeBarStroke = new ImageView(new Image(
+                getClass().getResourceAsStream("/images/exam/math/ingame/time_bar_stroke.png")));
+        timeBarStroke.setPreserveRatio(true);
+        timeBarStroke.setFitWidth(1920);
+        timeBarStroke.setFitHeight(1080);
+
+        // --- text_bar (พื้นหลัง input) ---
+        ImageView textBarImg = new ImageView(new Image(
+                getClass().getResourceAsStream("/images/exam/math/ingame/text_bar.png")));
+        textBarImg.setPreserveRatio(true);
+        textBarImg.setFitWidth(1920);
+        textBarImg.setFitHeight(1080);
+
+        // --- apply (ปุ่มยืนยัน) ---
+        ImageView applyImg = new ImageView(new Image(
+                getClass().getResourceAsStream("/images/exam/math/ingame/apply.png")));
+        applyImg.setPreserveRatio(true);
+        applyImg.setFitWidth(1920);
+        applyImg.setFitHeight(1080);
+
+        applyButtonEffect(applyImg, () -> handleAnswer());
 
         // --- BG ---
         ImageView bg = loadFullImg("/images/exam/math/Suan.jpg");
 
-        // ซ้อน bg > animalPane > ui
-        StackPane gameStack = new StackPane(bg, animalPane, uiOverlay);
+        // --- animalPane ---
+        animalPane.setPrefSize(1920, 1080);
+
+        // --- ซ้อน layer ---
+        // bg > animalPane > timeBar > timeBarStroke > inputStack > applyImg > roundLabel/scoreLabel
+        resultLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #ffffff;");
+        scoreLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #f0e68c;");
+
+        StackPane gameStack = new StackPane(
+                bg,
+                animalPane,
+                timeBarPane,
+                timeBarStroke,
+                textBarImg,   // text_bar เป็น layer ปกติ
+                applyImg,
+                overlayPane   // label + answerField อยู่บนสุด
+        );
         gameStack.setStyle("-fx-background-color: #0a0a0a;");
 
         contentArea.getChildren().add(gameStack);
@@ -196,7 +243,7 @@ public class CountingMiniGame {
         answerField.clear();
         answerField.setDisable(false);
         submitButton.setDisable(false);
-        submitButton.setText("ยืนยัน ✔");
+        submitButton.setText("");
 
         int[] counts = generateCounts();
         currentDuckCount = counts[0];
@@ -205,7 +252,7 @@ public class CountingMiniGame {
         scoreLabel.setText("คะแนน: " + totalScore + " / " + (TOTAL_ROUNDS * POINTS_PER_ROUND));
 
         buildAnimalPane(currentDuckCount, counts[1]);
-        startTimerBar();
+        startTimerBar(clip, timeBarImg);
         answerField.requestFocus();
     }
     private static final int[][][] PED_POSITIONS = {
@@ -274,19 +321,38 @@ public class CountingMiniGame {
         }
     }
 
-    private void startTimerBar() {
+    private void startTimerBar(Rectangle clip, ImageView timeBarImg) {
         if (countdownTimer != null) countdownTimer.stop();
         if (barAnim != null) barAnim.stop();
+        if (colorAnim != null) colorAnim.stop();
 
-        timerBarFill.setWidth(BAR_WIDTH);
-        timerBarFill.setFill(Color.web("#4fc3f7"));
-        timerLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #4fc3f7;");
+        double fullWidth = 370;
+        clip.setWidth(fullWidth);
+        clip.setHeight(timeBarImg.getImage().getHeight());
 
         barAnim = new Timeline(
-                new KeyFrame(Duration.ZERO, new KeyValue(timerBarFill.widthProperty(), BAR_WIDTH)),
-                new KeyFrame(Duration.seconds(getSecondsPerRound()), new KeyValue(timerBarFill.widthProperty(), 0))
+                new KeyFrame(Duration.ZERO,
+                        new KeyValue(clip.widthProperty(), fullWidth)),
+                new KeyFrame(Duration.seconds(getSecondsPerRound()),
+                        new KeyValue(clip.widthProperty(), 0))
         );
         barAnim.play();
+
+        colorAdjust.setHue(0.0);
+        colorAdjust.setSaturation(0.0);
+        timeBarImg.setEffect(colorAdjust);
+
+        colorAnim = new Timeline(
+                new KeyFrame(Duration.ZERO,
+                        new KeyValue(colorAdjust.hueProperty(), 0.0),
+                        new KeyValue(colorAdjust.saturationProperty(), 0.0)
+                ),
+                new KeyFrame(Duration.seconds(getSecondsPerRound()),
+                        new KeyValue(colorAdjust.hueProperty(), -0.08),
+                        new KeyValue(colorAdjust.saturationProperty(), 1.0)
+                )
+        );
+        colorAnim.play();
 
         int[] timeLeft = {getSecondsPerRound()};
         updateTimerLabel(timeLeft[0]);
@@ -294,16 +360,18 @@ public class CountingMiniGame {
         countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             timeLeft[0]--;
             updateTimerLabel(timeLeft[0]);
-            if (timeLeft[0] <= 3) {
-                timerBarFill.setFill(Color.web("#ef5350"));
-                timerLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #ef5350;");
-            } else if (timeLeft[0] <= 6) {
-                timerBarFill.setFill(Color.web("#ffa726"));
-                timerLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #ffa726;");
-            }
+
+            double ratio = 1.0 - (double) timeLeft[0] / getSecondsPerRound();
+            int r = Math.min(255, (int)(238 * ratio) + 17);
+            int g = Math.min(255, (int)(255 * (1 - ratio)));
+            int b = Math.min(255, (int)(255 * (1 - ratio)));
+            String color = String.format("#%02x%02x%02x", r, g, b);
+            timerLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
+
             if (timeLeft[0] <= 0) {
                 countdownTimer.stop();
                 barAnim.stop();
+                colorAnim.stop();
                 timeUp();
             }
         }));
@@ -312,12 +380,13 @@ public class CountingMiniGame {
     }
 
     private void updateTimerLabel(int t) {
-        timerLabel.setText("⏱  " + t + " วินาที");
+        timerLabel.setText(t + " วินาที");
     }
 
     private void timeUp() {
         if (countdownTimer != null) countdownTimer.stop();
         if (barAnim != null) barAnim.stop();
+        if (colorAnim != null) colorAnim.stop();
 
         String input = answerField.getText().trim();
         answerField.setDisable(true);
@@ -353,6 +422,7 @@ public class CountingMiniGame {
 
         if (countdownTimer != null) countdownTimer.stop();
         if (barAnim != null) barAnim.stop();
+        if (colorAnim != null) colorAnim.stop();
 
         answerField.setDisable(true);
         submitButton.setDisable(true);
