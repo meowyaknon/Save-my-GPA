@@ -162,13 +162,13 @@ public class GameLauncher extends Application {
     }
 
     private boolean isProgExamDay() { int d = timeSystem.getCurrentDay(); return d == 6 || d == 13; }
-    private boolean isMathExamDay() { int d = timeSystem.getCurrentDay(); return d == 7 || d == 14; }
+    private boolean isMathExamDay() { int d = timeSystem.getCurrentDay(); return d == 1 || d == 14; }
     private boolean isGameOver()    { return timeSystem.getCurrentDay() > TOTAL_DAYS; }
 
     private void onDayEnd() {
         int day = timeSystem.getCurrentDay();
         if (day == 6)  progExam1Score = player.getStat(StatType.INTELLIGENCE);
-        if (day == 7)  mathExam1Score = player.getStat(StatType.INTELLIGENCE);
+        if (day == 1)  mathExam1Score = player.getStat(StatType.INTELLIGENCE);
         if (day == 13) progExam2Score = player.getStat(StatType.INTELLIGENCE);
         if (day == 14) mathExam2Score = player.getStat(StatType.INTELLIGENCE);
         player.getEffect(SeniorNoteBuff.class).ifPresent(b -> b.tickDay(player));
