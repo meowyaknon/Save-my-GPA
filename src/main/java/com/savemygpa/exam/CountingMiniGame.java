@@ -54,12 +54,11 @@ public class CountingMiniGame {
     private final Rectangle timerBarBg = new Rectangle(BAR_WIDTH, 18);
     private final Pane animalPane = new Pane();
     private final Label resultLabel = new Label();
-    private final Label scoreLabel = new Label();
     private final TextField answerField = new TextField();
     private final Button submitButton = new Button("ยืนยัน ✔");
 
     private int getSecondsPerRound() {
-        return 5 + (player.getStat(StatType.MOOD) / 25);
+        return 5 + (player.getStat(StatType.MOOD) / 20);
     }
 
     public CountingMiniGame(Player player, Runnable onFinish) {
@@ -132,10 +131,10 @@ public class CountingMiniGame {
         contentArea.getChildren().clear();
 
         // --- roundLabel ตำแหน่ง x=1080 y=935 ---
-        roundLabel.setStyle("-fx-font-size: 9px; -fx-text-fill: #cccccc;");
+        roundLabel.setStyle("-fx-font-size: 15px; -fx-text-fill: #171b30;");
 
 // --- timerLabel ตำแหน่ง x=925 y=964 ---
-        timerLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: white;");
+        timerLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #171b30;");
 
 // --- answerField อยู่ใน text_bar (x=775 y=992 w=231 h=54) ---
 // กลาง x = 775 + 231/2 = 890.5, กลาง y = 992 + 54/2 = 1019
@@ -171,18 +170,16 @@ public class CountingMiniGame {
         roundLabel.setLayoutX(1080);
         roundLabel.setLayoutY(935);
 
-        timerLabel.setLayoutX(925);
-        timerLabel.setLayoutY(964);
+        timerLabel.setLayoutX(935);
+        timerLabel.setLayoutY(960);
 
-        answerField.setLayoutX(792);
+        answerField.setLayoutX(790);
         answerField.setLayoutY(985);
 
         resultLabel.setLayoutX(30);
         resultLabel.setLayoutY(20);
-        scoreLabel.setLayoutX(30);
-        scoreLabel.setLayoutY(45);
 
-        overlayPane.getChildren().addAll(roundLabel, timerLabel, answerField, resultLabel, scoreLabel);
+        overlayPane.getChildren().addAll(roundLabel, timerLabel, answerField, resultLabel);
 
         submitButton.setStyle("-fx-background-color: transparent; -fx-border-color: transparent;");
         submitButton.setOnAction(e -> handleAnswer());
@@ -246,9 +243,8 @@ public class CountingMiniGame {
         animalPane.setPrefSize(1920, 1080);
 
         // --- ซ้อน layer ---
-        // bg > animalPane > timeBar > timeBarStroke > inputStack > applyImg > roundLabel/scoreLabel
-        resultLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #ffffff;");
-        scoreLabel.setStyle("-fx-font-size: 18px; -fx-text-fill: #f0e68c;");
+        // bg > animalPane > timeBar > timeBarStroke > inputStack > applyImg > roundLabel
+        resultLabel.setStyle("-fx-font-size: 48px; -fx-text-fill: #ffffff;");
 
         StackPane gameStack = new StackPane(
                 bg,
@@ -275,7 +271,6 @@ public class CountingMiniGame {
         currentDuckCount = counts[0];
 
         roundLabel.setText("รอบที่ " + currentRound + " / " + TOTAL_ROUNDS);
-        scoreLabel.setText("คะแนน: " + totalScore + " / " + (TOTAL_ROUNDS * POINTS_PER_ROUND));
 
         buildAnimalPane(currentDuckCount, counts[1]);
         startTimerBar(clip, timeBarImg);
@@ -391,8 +386,12 @@ public class CountingMiniGame {
             int r = Math.min(255, (int)(238 * ratio) + 17);
             int g = Math.min(255, (int)(255 * (1 - ratio)));
             int b = Math.min(255, (int)(255 * (1 - ratio)));
-            String color = String.format("#%02x%02x%02x", r, g, b);
+
+            String color = "#171b30";
             timerLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
+
+            //String color = String.format("#%02x%02x%02x", r, g, b);
+            //timerLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
 
             if (timeLeft[0] <= 0) {
                 countdownTimer.stop();
@@ -425,14 +424,13 @@ public class CountingMiniGame {
 
         if (!input.isEmpty() && answer == currentDuckCount) {
             totalScore += POINTS_PER_ROUND;
-            resultLabel.setText("✅  ถูกต้อง! (ส่งทันเวลาพอดี) +" + POINTS_PER_ROUND + " คะแนน  |  เป็ด " + currentDuckCount + " ตัว");
+            resultLabel.setText("✅ ถูกต้อง! (ส่งทันเวลาพอดี) +" + POINTS_PER_ROUND + " คะแนน  |  เป็ด " + currentDuckCount + " ตัว");
             resultLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #66bb6a;");
         } else {
-            resultLabel.setText("⏰  หมดเวลา! เป็ดมีทั้งหมด " + currentDuckCount + " ตัว");
+            resultLabel.setText("หมดเวลา! เป็ดมีทั้งหมด " + currentDuckCount + " ตัว");
             resultLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #ef5350;");
         }
 
-        scoreLabel.setText("คะแนน: " + totalScore + " / " + (TOTAL_ROUNDS * POINTS_PER_ROUND));
         proceedAfterAnswer();
     }
 
@@ -463,7 +461,6 @@ public class CountingMiniGame {
             resultLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #ef5350;");
         }
 
-        scoreLabel.setText("คะแนน: " + totalScore + " / " + (TOTAL_ROUNDS * POINTS_PER_ROUND));
         proceedAfterAnswer();
     }
 
@@ -649,9 +646,9 @@ public class CountingMiniGame {
         StatTier tier = player.getStatTier(player.getStat(StatType.INTELLIGENCE));
         int duckMin, duckMax, lizardMin, lizardMax;
         switch (tier) {
-            case HIGH   -> { duckMin = 5;  duckMax = 10;  lizardMin = 0; lizardMax = 3; }
-            case MEDIUM -> { duckMin = 10;  duckMax = 15; lizardMin = 3; lizardMax = 6; }
-            default     -> { duckMin = 15; duckMax = 20; lizardMin = 6; lizardMax = 9; }
+            case HIGH   -> { duckMin = 8;  duckMax = 13;  lizardMin = 0; lizardMax = 6; }
+            case MEDIUM -> { duckMin = 12;  duckMax = 17; lizardMin = 4; lizardMax = 8; }
+            default     -> { duckMin = 15; duckMax = 20; lizardMin = 6; lizardMax = 10; }
         }
         return new int[]{
                 random.nextInt(duckMax - duckMin + 1) + duckMin,
