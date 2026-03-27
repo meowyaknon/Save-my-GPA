@@ -219,7 +219,7 @@ public class GameLauncher extends Application {
         showGameplay();
     }
 
-    // ── Day-8 score panel ─────────────────────────────────────────────────────
+// ── Day-8 score panel ─────────────────────────────────────────────────────
 
     private void showDay8ScorePanel() {
         StackPane overlay = new StackPane();
@@ -273,40 +273,66 @@ public class GameLauncher extends Application {
         scores.setTextAlignment(TextAlignment.CENTER);
         scores.setAlignment(Pos.CENTER);
 
-        body.getChildren().addAll(heading, sep, scores);
+        // ── Continue image button (replaces red ✕) ────────────────────────────
+        var btnUrl = getClass().getResource("/images/menu/menu_continue.png");
+        javafx.scene.Node closeNode;
+        if (btnUrl != null) {
+            ImageView continueIv = new ImageView(new Image(btnUrl.toExternalForm()));
+            continueIv.setFitWidth(280);
+            continueIv.setPreserveRatio(true);
+            continueIv.setCursor(javafx.scene.Cursor.HAND);
+            continueIv.setOnMouseEntered(e  -> { continueIv.setScaleX(1.06); continueIv.setScaleY(1.06); continueIv.setOpacity(0.88); });
+            continueIv.setOnMouseExited(e   -> { continueIv.setScaleX(1.0);  continueIv.setScaleY(1.0);  continueIv.setOpacity(1.0);  });
+            continueIv.setOnMousePressed(e  -> { continueIv.setScaleX(0.94); continueIv.setScaleY(0.94); e.consume(); });
+            continueIv.setOnMouseReleased(e -> { continueIv.setScaleX(1.0);  continueIv.setScaleY(1.0); });
+            continueIv.setOnMouseClicked(e -> {
+                e.consume();
+                FadeTransition fo = new FadeTransition(Duration.millis(150), overlay);
+                fo.setToValue(0);
+                fo.setOnFinished(ev -> {
+                    overlay.prefWidthProperty().unbind();
+                    overlay.prefHeightProperty().unbind();
+                    root.getChildren().remove(overlay);
+                    showGameplay();
+                });
+                fo.play();
+            });
+            closeNode = continueIv;
+        } else {
+            // Fallback plain button
+            Button fallback = new Button("ต่อไป ▶");
+            fallback.setStyle("""
+                -fx-font-family:'Comic Sans MS';-fx-font-size:18px;
+                -fx-background-color:#4fc3f7;-fx-text-fill:#0a1628;-fx-font-weight:bold;
+                -fx-background-radius:14;-fx-padding:10 28 10 28;-fx-cursor:hand;
+            """);
+            fallback.setOnAction(e -> {
+                FadeTransition fo = new FadeTransition(Duration.millis(150), overlay);
+                fo.setToValue(0);
+                fo.setOnFinished(ev -> {
+                    overlay.prefWidthProperty().unbind();
+                    overlay.prefHeightProperty().unbind();
+                    root.getChildren().remove(overlay);
+                    showGameplay();
+                });
+                fo.play();
+            });
+            closeNode = fallback;
+        }
+
+        body.getChildren().addAll(heading, sep, scores, closeNode);
         StackPane.setAlignment(body, Pos.CENTER);
         card.getChildren().add(body);
 
-        StackPane closeBtn = new StackPane();
-        closeBtn.setPrefSize(42, 42);
-        closeBtn.setMaxSize(42, 42);
-        closeBtn.setStyle("""
-            -fx-background-color: #e53935;
-            -fx-background-radius: 21;
-            -fx-cursor: hand;
-            -fx-effect: dropshadow(gaussian,rgba(0,0,0,0.55),7,0.5,0,2);
-        """);
-        Text xMark = new Text("✕");
-        xMark.setFill(Color.WHITE);
-        xMark.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 18));
-        closeBtn.getChildren().add(xMark);
-        closeBtn.setOnMouseEntered(e -> closeBtn.setOpacity(0.80));
-        closeBtn.setOnMouseExited(e  -> closeBtn.setOpacity(1.00));
-        closeBtn.setOnMouseClicked(e -> {
-            FadeTransition fo = new FadeTransition(Duration.millis(150), overlay);
-            fo.setToValue(0);
-            fo.setOnFinished(ev -> {
-                overlay.prefWidthProperty().unbind();
-                overlay.prefHeightProperty().unbind();
-                root.getChildren().remove(overlay);
-                showGameplay();
-            });
-            fo.play();
-        });
-        StackPane.setAlignment(closeBtn, Pos.TOP_RIGHT);
-        closeBtn.setTranslateX(-10);
-        closeBtn.setTranslateY(10);
-        card.getChildren().add(closeBtn);
+        // Scale card with window zoom
+        javafx.scene.transform.Scale cardScale = new javafx.scene.transform.Scale(1, 1);
+        cardScale.pivotXProperty().bind(javafx.beans.binding.Bindings.divide(card.widthProperty(), 2));
+        cardScale.pivotYProperty().bind(javafx.beans.binding.Bindings.divide(card.heightProperty(), 2));
+        cardScale.xProperty().bind(javafx.beans.binding.Bindings.createDoubleBinding(
+                () -> Math.min(root.getWidth() / 1920.0, root.getHeight() / 1080.0),
+                root.widthProperty(), root.heightProperty()));
+        cardScale.yProperty().bind(cardScale.xProperty());
+        card.getTransforms().add(cardScale);
 
         overlay.getChildren().add(card);
         root.getChildren().add(overlay);
@@ -318,7 +344,6 @@ public class GameLauncher extends Application {
         ft.setToValue(1);
         st.play(); ft.play();
     }
-
     private void doGoHome() {
         if (actionLocked) return;
         actionLocked = true;
