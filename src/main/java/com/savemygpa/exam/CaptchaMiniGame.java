@@ -24,106 +24,113 @@ import java.util.Random;
 
 public class CaptchaMiniGame {
 
-    private static final int TOTAL_ROUNDS = 5;
-    private static final int POINTS_PER_ROUND = 10;
-    private static final double BAR_WIDTH = 350;
+    private static final int    TOTAL_ROUNDS       = 5;
+    private static final int    POINTS_PER_ROUND   = 10;
+    private static final double FULL_BAR_WIDTH      = 700;
+    private static final long   ENTER_COOLDOWN_MS   = 400;
     private static final String CHARS = "ABCDEFGHJKMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789";
 
-    private final Player player;
-    private final Random random = new Random();
+    private final Player   player;
+    private final Random   random   = new Random();
     private final Runnable onFinish;
 
-    private int totalScore = 0;
-    private int currentRound = 0;
-    private String currentCaptcha = "";
-    private boolean isWaitingForNext = false;
+    private int     totalScore    = 0;
+    private int     currentRound  = 0;
+    private String  currentCaptcha = "";
+
+    // ── สถานะ ──────────────────────────────────────────────────────────────
+    private boolean isWaitingForNext = false; // รอกด Enter ไปรอบถัดไป
+    private boolean isProcessing     = false; // กำลังประมวลผล ห้ามแทรก
+    private long    lastEnterTime    = 0;     // cooldown timestamp
+
+    // ── Timer pause ────────────────────────────────────────────────────────
+    private boolean isTimerPaused  = false;
+    private double  pausedBarWidth = 0;
 
     private Timeline countdownTimer;
     private Timeline barAnim;
 
-    private final StackPane root = new StackPane();
-    // [FIX 2] ขยาย contentArea ให้เต็มพื้นที่จอคอมสีดำ (ประมาณ 835x515)
-    private final VBox contentArea = new VBox(20);
-    private final ImageView screenImageView = new ImageView();
+    // ── UI nodes ───────────────────────────────────────────────────────────
+    private final StackPane root             = new StackPane();
+    private final VBox      contentArea      = new VBox(20);
+    private final ImageView screenImageView  = new ImageView();
     private final ImageView characterImageView = new ImageView();
-    private final Label warningLabel = new Label("⚠ Warning Captcha");
-
-    // [FIX 2] ขยาย BAR_WIDTH ให้เต็มจอ
-    private static final double FULL_BAR_WIDTH = 700;
-    private final Rectangle timerBarFill = new Rectangle(FULL_BAR_WIDTH, 20);
-    private final Rectangle timerBarBg = new Rectangle(FULL_BAR_WIDTH, 20);
-    // [FIX 2] ขยาย Canvas ให้เต็มจอ
-    private final Canvas captchaCanvas = new Canvas(700, 120);
-    private final TextField answerField = new TextField();
-    private final Button submitButton = new Button("ยืนยัน ✔");
-    private final Label resultLabel = new Label();
-    private final Label roundTextLabel = new Label();
-
-    private boolean isProcessing = false; // ตัวล็อกกัน Enter รัว
+    private final Label     warningLabel     = new Label("⚠ Warning Captcha");
+    private final Rectangle timerBarFill     = new Rectangle(FULL_BAR_WIDTH, 20);
+    private final Rectangle timerBarBg       = new Rectangle(FULL_BAR_WIDTH, 20);
+    private final Canvas    captchaCanvas    = new Canvas(700, 120);
+    private final TextField answerField      = new TextField();
+    private final Button    submitButton     = new Button("ยืนยัน ✔");
+    private final Label     resultLabel      = new Label();
+    private final Label     roundTextLabel   = new Label();
+    private final Label     countdownLabel   = new Label(); // นับถอยหลังตอนหยุดเวลา
 
     public CaptchaMiniGame(Player player, Runnable onFinish) {
-        this.player = player;
+        this.player   = player;
         this.onFinish = onFinish;
     }
 
+    // =========================================================================
+    // getView
+    // =========================================================================
     public StackPane getView() {
         root.getChildren().clear();
         root.setStyle("-fx-background-color: black;");
 
-        // 1. Background
         ImageView bg = new ImageView(new Image(getClass().getResourceAsStream("/images/exam/code/computer_screen.png")));
         bg.setFitWidth(1920); bg.setFitHeight(1080);
 
-        // 2. จอคอม (1round, 2round...)
         screenImageView.setFitWidth(1100);
         screenImageView.setFitHeight(600);
         screenImageView.setPreserveRatio(false);
         screenImageView.setTranslateY(-115);
 
-        // 3. ตัวละคร (ซ้ายล่าง)
         characterImageView.setFitWidth(600);
         characterImageView.setPreserveRatio(true);
         characterImageView.setMouseTransparent(true);
         characterImageView.setTranslateX(-89);
         StackPane.setAlignment(characterImageView, Pos.BOTTOM_LEFT);
 
-        // [FIX 2] ขยาย contentArea ให้เต็มพื้นที่จอคอมสีดำ
         contentArea.setAlignment(Pos.CENTER);
         contentArea.setMaxSize(780, 490);
         contentArea.setPrefSize(780, 490);
         contentArea.setTranslateY(-75);
         contentArea.setVisible(false);
 
-        // 5. Warning
         warningLabel.setStyle("-fx-font-size: 60px; -fx-text-fill: red; -fx-font-weight: bold; -fx-background-color: rgba(0,0,0,0.8); -fx-padding: 20;");
         warningLabel.setTranslateY(-75);
         warningLabel.setVisible(false);
 
+        countdownLabel.setStyle("-fx-font-size: 32px; -fx-text-fill: #4fc3f7; -fx-font-weight: bold;");
+
         root.getChildren().addAll(bg, screenImageView, characterImageView, contentArea, warningLabel);
 
-        // 1. ดัก Enter ที่ Root (สำหรับจังหวะ "ไปต่อ")
+        // ── Enter handler กลาง (root) ─────────────────────────────────────
         root.setFocusTraversable(true);
         root.setOnKeyPressed(e -> {
-            if (e.getCode() == javafx.scene.input.KeyCode.ENTER) {
-                if (!isProcessing && isWaitingForNext) {
-                    handleAnswer();
-                }
-            }
+            if (e.getCode() != javafx.scene.input.KeyCode.ENTER) return;
+            long now = System.currentTimeMillis();
+            if (now - lastEnterTime < ENTER_COOLDOWN_MS) return; // cooldown
+            lastEnterTime = now;
+            if (!isProcessing) handleAnswer();
         });
 
-        // 2. ดัก Enter ที่ TextField (สำหรับจังหวะ "ส่งคำตอบ")
+        // ── Enter ใน TextField (ส่งคำตอบ) ───────────────────────────────
         answerField.setOnAction(e -> {
-            if (!isProcessing && !isWaitingForNext) {
-                handleAnswer();
-            }
+            long now = System.currentTimeMillis();
+            if (now - lastEnterTime < ENTER_COOLDOWN_MS) return;
+            lastEnterTime = now;
+            if (!isProcessing && !isWaitingForNext) handleAnswer();
         });
 
         startNextRoundSequence();
         return root;
     }
 
+    // =========================================================================
+    // Round sequence
+    // =========================================================================
     private void startNextRoundSequence() {
-        isProcessing = true;
         if (currentRound >= TOTAL_ROUNDS) {
             showScoreSummary();
             return;
@@ -131,29 +138,23 @@ public class CaptchaMiniGame {
 
         currentRound++;
         isWaitingForNext = false;
-        isProcessing = true; // ล็อกทันทีห้ามกดแทรกจังหวะ GIF/Warning
+        isProcessing     = true; // ล็อกระหว่าง GIF/Warning
 
         contentArea.setVisible(false);
         warningLabel.setVisible(false);
         screenImageView.setVisible(true);
 
         String fileName = currentRound + "round.gif";
-        try {
-            screenImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/" + fileName)));
-            characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/before_captcha2.gif")));
-        } catch (Exception e) { System.err.println("File not found: " + fileName); }
+        screenImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/" + fileName)));
+        characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/before_captcha2.gif")));
 
         PauseTransition p1 = new PauseTransition(Duration.seconds(4));
         p1.setOnFinished(e -> {
             screenImageView.setVisible(false);
             warningLabel.setVisible(true);
             characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/met_captcha.png")));
-
             PauseTransition p2 = new PauseTransition(Duration.seconds(3));
-            p2.setOnFinished(ev -> {
-                warningLabel.setVisible(false);
-                prepareExamTask();
-            });
+            p2.setOnFinished(ev -> { warningLabel.setVisible(false); prepareExamTask(); });
             p2.play();
         });
         p1.play();
@@ -169,19 +170,25 @@ public class CaptchaMiniGame {
         submitButton.setDisable(false);
         submitButton.setText("ยืนยัน ✔");
 
+        // ล้าง countdownLabel ถ้าค้างอยู่
+        contentArea.getChildren().remove(countdownLabel);
+        countdownLabel.setText("");
+
         setupExamUI();
         currentCaptcha = generateCaptchaText();
         drawCaptcha(currentCaptcha);
         startTimerBar();
 
-        isProcessing = false; // พร้อมให้กด Enter ส่งคำตอบได้แล้ว
+        isTimerPaused = false;
+        isProcessing  = false; // พร้อมรับ input
         answerField.requestFocus();
     }
 
+    // =========================================================================
+    // handleAnswer — จุดเดียวที่ตัดสินคำตอบ
+    // =========================================================================
     private void handleAnswer() {
-        if (isProcessing) return; // บล็อกรัวๆ
-
-        // ถ้าอยู่ในหน้าเฉลยแล้วกด Enter ให้ไปรอบถัดไป
+        // ── กด Enter ไปรอบถัดไป ──────────────────────────────────────────
         if (isWaitingForNext) {
             isProcessing = true;
             characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/before_captcha2.gif")));
@@ -189,10 +196,16 @@ public class CaptchaMiniGame {
             return;
         }
 
-        isProcessing = true; // ล็อกทันทีเพื่อประมวลผลคำตอบ
-        stopTimers();
-
+        // ── ช่องว่าง → แจ้งเตือน + หยุดเวลา ─────────────────────────────
         String input = answerField.getText().trim();
+        if (input.isEmpty()) {
+            showEmptyWarning();
+            return;
+        }
+
+        // ── ตรวจคำตอบ ────────────────────────────────────────────────────
+        isProcessing = true;
+        stopTimers();
         answerField.setDisable(true);
         submitButton.setDisable(true);
         isWaitingForNext = true;
@@ -203,15 +216,15 @@ public class CaptchaMiniGame {
             resultLabel.setStyle("-fx-font-size: 22px; -fx-text-fill: #66bb6a; -fx-font-weight: bold;");
             characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/pass.png")));
         } else {
-            resultLabel.setText("❌ ผิด! เฉลย: " + currentCaptcha + " (Enter เพื่อไปต่อ)");
+            resultLabel.setText("❌ ผิด! เฉลย: " + currentCaptcha + "  (Enter เพื่อไปต่อ)");
             resultLabel.setStyle("-fx-font-size: 22px; -fx-text-fill: #ef5350; -fx-font-weight: bold;");
             characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/fail.png")));
         }
 
-        // หน่วงเวลา 0.8 วินาที ก่อนจะอนุญาตให้กด Enter "ไปต่อ" ได้
+        // หน่วง 800ms ก่อนปลดล็อก "ไปต่อ"
         PauseTransition delay = new PauseTransition(Duration.millis(800));
         delay.setOnFinished(e -> {
-            isProcessing = false; // ปลดล็อก
+            isProcessing = false;
             submitButton.setDisable(false);
             submitButton.setText("ไปต่อ (Enter) →");
             root.requestFocus();
@@ -219,68 +232,152 @@ public class CaptchaMiniGame {
         delay.play();
     }
 
+    // =========================================================================
+    // Empty warning + timer pause/resume
+    // =========================================================================
+    private void showEmptyWarning() {
+        // หยุดเวลาครั้งแรกที่เตือน (ถ้ายังไม่ได้หยุด)
+        if (!isTimerPaused) {
+            isTimerPaused  = true;
+            pausedBarWidth = timerBarFill.getWidth();
+            stopTimers();
+        }
+
+        answerField.setDisable(true);  // ← ล็อกไม่ให้พิมพ์
+        submitButton.setDisable(true); // ← ล็อกปุ่มด้วย
+
+        resultLabel.setText("⚠ กรุณากรอก CAPTCHA ก่อนกด Enter!");
+        resultLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #ffe082; -fx-font-weight: bold;");
+
+        // ถ้า countdownLabel ยังไม่อยู่ใน contentArea ให้เพิ่มเข้าไป
+        if (!contentArea.getChildren().contains(countdownLabel)) {
+            contentArea.getChildren().add(countdownLabel);
+        }
+
+        isProcessing = true; // ล็อกระหว่างนับถอยหลัง
+
+        Timeline countdown = new Timeline(
+                new KeyFrame(Duration.millis(0),    e -> countdownLabel.setText("▶ เดินเวลาใน 3...")),
+                new KeyFrame(Duration.millis(1000), e -> countdownLabel.setText("▶ เดินเวลาใน 2...")),
+                new KeyFrame(Duration.millis(2000), e -> countdownLabel.setText("▶ เดินเวลาใน 1...")),
+                new KeyFrame(Duration.millis(3000), e -> {
+                    countdownLabel.setText("");
+                    contentArea.getChildren().remove(countdownLabel);
+                    resultLabel.setText("");
+                    isProcessing = false; // ปลดล็อก
+                    resumeTimerBar();
+                    answerField.requestFocus();
+                })
+        );
+        countdown.play();
+    }
+
+    private void resumeTimerBar() {
+        isTimerPaused = false;
+        answerField.setDisable(false);  // ← ปลดล็อก
+        submitButton.setDisable(false); // ← ปลดล็อก
+        answerField.clear();            // ← ล้างช่องด้วยเผื่อมีอะไรค้าง
+        double ratio        = pausedBarWidth / FULL_BAR_WIDTH;
+        int    remainingSec = Math.max(1, (int) Math.ceil(ratio * 10));
+
+        timerBarFill.setWidth(pausedBarWidth);
+
+        barAnim = new Timeline(new KeyFrame(
+                Duration.seconds(remainingSec),
+                new KeyValue(timerBarFill.widthProperty(), 0)
+        ));
+        barAnim.play();
+
+        countdownTimer = new Timeline(new KeyFrame(
+                Duration.seconds(remainingSec), e -> handleAnswer()
+        ));
+        countdownTimer.play();
+    }
+
+    // =========================================================================
+    // UI setup
+    // =========================================================================
     private void setupExamUI() {
         contentArea.getChildren().clear();
+
         roundTextLabel.setText("ROUND " + currentRound + " / " + TOTAL_ROUNDS);
         roundTextLabel.setStyle("-fx-font-size: 30px; -fx-text-fill: white; -fx-font-weight: bold;");
 
         timerBarBg.setFill(Color.web("#2e2e4e"));
+        timerBarBg.setWidth(FULL_BAR_WIDTH);
         timerBarFill.setFill(Color.web("#4fc3f7"));
         timerBarFill.setWidth(FULL_BAR_WIDTH);
+
         StackPane timerBox = new StackPane(timerBarBg, timerBarFill);
         timerBox.setAlignment(Pos.CENTER_LEFT);
         timerBox.setMaxWidth(FULL_BAR_WIDTH);
 
         answerField.setMaxWidth(400);
         answerField.setStyle("-fx-font-size: 22px;");
-        answerField.setOnAction(null); // ยกเลิก Action ภายในเพื่อกันรัว
 
         submitButton.setPrefWidth(220);
         submitButton.setStyle("-fx-font-size: 20px; -fx-background-color: #4fc3f7; -fx-font-weight: bold;");
-        submitButton.setOnAction(e -> { if(!isProcessing) handleAnswer(); });
+        submitButton.setOnAction(e -> {
+            long now = System.currentTimeMillis();
+            if (now - lastEnterTime < ENTER_COOLDOWN_MS) return;
+            lastEnterTime = now;
+            if (!isProcessing) handleAnswer();
+        });
 
         contentArea.getChildren().addAll(roundTextLabel, timerBox, captchaCanvas, answerField, submitButton, resultLabel);
     }
 
+    // =========================================================================
+    // Timer
+    // =========================================================================
     private void startTimerBar() {
         stopTimers();
-        int sec = 10;
-        timerBarFill.setWidth(FULL_BAR_WIDTH); // [FIX 2] ใช้ FULL_BAR_WIDTH
-
-        barAnim = new Timeline(new KeyFrame(Duration.seconds(sec), new KeyValue(timerBarFill.widthProperty(), 0)));
+        timerBarFill.setWidth(FULL_BAR_WIDTH);
+        barAnim = new Timeline(new KeyFrame(Duration.seconds(10), new KeyValue(timerBarFill.widthProperty(), 0)));
         barAnim.play();
-
-        countdownTimer = new Timeline(new KeyFrame(Duration.seconds(sec), e -> handleAnswer()));
+        countdownTimer = new Timeline(new KeyFrame(Duration.seconds(10), e -> handleAnswer()));
         countdownTimer.play();
     }
 
+    private void stopTimers() {
+        if (countdownTimer != null) countdownTimer.stop();
+        if (barAnim != null)        barAnim.stop();
+    }
+
+    // =========================================================================
+    // CAPTCHA generation
+    // =========================================================================
     private String generateCaptchaText() {
+        int intel = player.getStat(StatType.INTELLIGENCE);
+        int length;
+        if      (intel >= 80) length = 8;
+        else if (intel >= 40) length = 10;
+        else                  length = 12;
+
         StringBuilder sb = new StringBuilder();
-        for (int i = 0; i < 8; i++) sb.append(CHARS.charAt(random.nextInt(CHARS.length())));
+        for (int i = 0; i < length; i++) sb.append(CHARS.charAt(random.nextInt(CHARS.length())));
         return sb.toString();
     }
 
     private void drawCaptcha(String text) {
         GraphicsContext gc = captchaCanvas.getGraphicsContext2D();
-        double w = captchaCanvas.getWidth(); double h = captchaCanvas.getHeight();
+        double w = captchaCanvas.getWidth(), h = captchaCanvas.getHeight();
         gc.clearRect(0, 0, w, h);
-        gc.setFill(Color.web("#0d1b2a", 0.95)); gc.fillRoundRect(0, 0, w, h, 20, 20);
+        gc.setFill(Color.web("#0d1b2a", 0.95));
+        gc.fillRoundRect(0, 0, w, h, 20, 20);
         gc.setFill(Color.WHITE);
         gc.setFont(Font.font("Consolas", FontWeight.BOLD, 50));
-        gc.fillText(text, w/2 - 100, h/2 + 15);
+        gc.fillText(text, w / 2 - 100, h / 2 + 15);
     }
 
-    private void stopTimers() {
-        if (countdownTimer != null) countdownTimer.stop();
-        if (barAnim != null) barAnim.stop();
-    }
-
+    // =========================================================================
+    // Score summary
+    // =========================================================================
     private void showScoreSummary() {
-        isProcessing = true; // บล็อกถาวรจนกว่าจะพร้อม
+        isProcessing = true;
         contentArea.setVisible(false);
         screenImageView.setVisible(false);
 
-        // เปลี่ยนรูปตัวละครตามผลคะแนน
         String charImg = (totalScore >= 30)
                 ? "/images/exam/code/pass.png"
                 : "/images/exam/code/fail.png";
@@ -292,23 +389,32 @@ public class CaptchaMiniGame {
         summaryBox.setTranslateY(-115);
         summaryBox.setStyle("-fx-background-color: rgba(10,20,40,0.95); -fx-background-radius: 30; -fx-padding: 50;");
 
-        Label title = new Label("Summary Score");
+        Label title = new Label("สรุปผลคะแนน");
         title.setStyle("-fx-font-size: 35px; -fx-text-fill: #ffe082; -fx-font-weight: bold;");
 
         Label score = new Label(totalScore + " / 50");
-        score.setStyle("-fx-font-size: 70px; -fx-font-weight: bold; -fx-text-fill: " + (totalScore >= 30 ? "#66bb6a" : "#ef5350"));
+        score.setStyle("-fx-font-size: 70px; -fx-font-weight: bold; -fx-text-fill: "
+                + (totalScore >= 30 ? "#66bb6a" : "#ef5350") + ";");
 
         Button finishBtn = new Button("ดำเนินการต่อ  ▶");
-        finishBtn.setStyle("-fx-font-size: 22px; -fx-background-color: #4fc3f7; -fx-font-weight: bold;");
+        finishBtn.setStyle("-fx-font-size: 22px; -fx-background-color: #4fc3f7; -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 10 28 10 28;");
         finishBtn.setOnAction(e -> onFinish.run());
 
         summaryBox.getChildren().addAll(title, score, finishBtn);
         root.getChildren().add(summaryBox);
 
+        summaryBox.setOpacity(0);
+        javafx.animation.FadeTransition ft = new javafx.animation.FadeTransition(Duration.millis(500), summaryBox);
+        ft.setFromValue(0); ft.setToValue(1); ft.play();
+
+        // หลัง 1.5 วิ ปลดล็อกให้กด Enter ได้
         PauseTransition p = new PauseTransition(Duration.seconds(1.5));
         p.setOnFinished(e -> {
             isProcessing = false;
-            root.setOnKeyPressed(ev -> { if(ev.getCode() == javafx.scene.input.KeyCode.ENTER) onFinish.run(); });
+            root.setOnKeyPressed(ev -> {
+                if (ev.getCode() == javafx.scene.input.KeyCode.ENTER) onFinish.run();
+            });
+            root.requestFocus();
         });
         p.play();
     }
