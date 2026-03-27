@@ -6,15 +6,26 @@ import javafx.scene.image.*;
 import javafx.scene.layout.*;
 import javafx.util.Duration;
 
+/**
+ * PauseMenuUI — pause overlay.
+ *
+ * FIX (scaling): The root overlay now has its preferred size bound to the
+ * UNSCALED scene root (passed in via the constructor) so the dim fills the
+ * entire physical window at any resolution / windowed size.
+ *
+ * API CHANGE: constructor now accepts the unscaled scene root StackPane from
+ * GameLauncher (`root`, not `overlayLayer`).  GameLauncher must be updated to
+ * pass `root` when constructing PauseMenuUI and to add/remove the result from
+ * `root` instead of `overlayLayer`.
+ */
 public class PauseMenuUI {
 
-    // ── Image paths ───────────────────────────────────────────────────────────
-    private static final String BG_V      = "/images/popup/big_block_black_V.png";
-    private static final String BTN_RESUME = "/images/menu/menu_continue.png";
-    private static final String BTN_SETTINGS= "/images/menu/menu_setting.png";
-    private static final String BTN_MENU  = "/images/menu/back_to_menu.png";
+    private static final String BG_V       = "/images/popup/big_block_black_V.png";
+    private static final String BTN_RESUME   = "/images/menu/menu_continue.png";
+    private static final String BTN_SETTINGS = "/images/menu/menu_setting.png";
+    private static final String BTN_MENU     = "/images/menu/back_to_menu.png";
 
-    private static final double BTN_W = 340;
+    private static final double BTN_W  = 340;
     private static final double CARD_W = 420;
 
     public interface Callbacks {
@@ -23,17 +34,28 @@ public class PauseMenuUI {
         void onMainMenu();
     }
 
-    private final Callbacks cb;
+    private final Callbacks  cb;
+    private final StackPane  sceneRoot;   // FIX: unscaled outermost pane
 
-    public PauseMenuUI(Callbacks cb) { this.cb = cb; }
+    // FIX: sceneRoot is the unscaled GameLauncher `root` pane
+    public PauseMenuUI(StackPane sceneRoot, Callbacks cb) {
+        this.sceneRoot = sceneRoot;
+        this.cb        = cb;
+    }
 
+    /**
+     * Builds and SHOWS the pause overlay, adding it directly to sceneRoot.
+     * Returns the overlay StackPane so the caller can remove it later.
+     */
     public StackPane buildView() {
+        // FIX: bind dim overlay to scene root so it covers the full window
         StackPane root = new StackPane();
         root.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        // Semi-transparent dim overlay — game is still visible behind it
         root.setStyle("-fx-background-color: rgba(0,0,0,0.58);");
+        root.prefWidthProperty().bind(sceneRoot.widthProperty());
+        root.prefHeightProperty().bind(sceneRoot.heightProperty());
 
-        // ── Card (vertical image bg + buttons stacked inside) ─────────────────
+        // ── Card ─────────────────────────────────────────────────────────────
         StackPane card = new StackPane();
         card.setMaxWidth(CARD_W);
 
@@ -44,7 +66,6 @@ public class PauseMenuUI {
             bgIv.setPreserveRatio(true);
             card.getChildren().add(bgIv);
         } else {
-            // Fallback plain dark card if image is missing
             card.setStyle("""
                 -fx-background-color: rgba(6,10,28,0.92);
                 -fx-background-radius: 22;
@@ -53,11 +74,8 @@ public class PauseMenuUI {
             """);
         }
 
-        // ── Button column inside the card ─────────────────────────────────────
         VBox btnCol = new VBox(20);
         btnCol.setAlignment(Pos.CENTER);
-        // Top padding gives room for any title area in the image;
-        // adjust if the image has a different internal layout.
         btnCol.setStyle("-fx-padding: 60 30 50 30;");
 
         ImageView resumeBtn   = makeBtn(BTN_RESUME,   BTN_W, cb::onResume);
@@ -70,13 +88,12 @@ public class PauseMenuUI {
 
         root.getChildren().add(card);
 
-        // ESC closes the pause menu (resume)
         root.setFocusTraversable(true);
         root.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) cb.onResume();
         });
 
-        // ── Entrance animation ────────────────────────────────────────────────
+        // Entrance animation
         card.setScaleX(0.88); card.setScaleY(0.88); card.setOpacity(0);
         ScaleTransition st = new ScaleTransition(Duration.millis(200), card);
         st.setToX(1); st.setToY(1);
@@ -88,12 +105,22 @@ public class PauseMenuUI {
         return root;
     }
 
-    // ── Image button factory ──────────────────────────────────────────────────
+    /** Fade out and remove the pause overlay from sceneRoot. */
+    public static void dismiss(StackPane sceneRoot, StackPane overlay, Runnable onDone) {
+        FadeTransition ft = new FadeTransition(Duration.millis(180), overlay);
+        ft.setToValue(0);
+        ft.setOnFinished(e -> {
+            overlay.prefWidthProperty().unbind();
+            overlay.prefHeightProperty().unbind();
+            sceneRoot.getChildren().remove(overlay);
+            if (onDone != null) onDone.run();
+        });
+        ft.play();
+    }
 
     private ImageView makeBtn(String path, double width, Runnable onClick) {
         var url = getClass().getResource(path);
         if (url == null) {
-            // Invisible placeholder — caller should supply the asset
             ImageView placeholder = new ImageView();
             placeholder.setFitWidth(width);
             placeholder.setFitHeight(60);

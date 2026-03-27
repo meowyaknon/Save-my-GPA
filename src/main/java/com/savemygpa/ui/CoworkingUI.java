@@ -92,7 +92,6 @@ public class CoworkingUI {
     }
 
     private void dismiss(StackPane overlay, Runnable callback) {
-        // FIX: unbind before removing
         overlay.prefWidthProperty().unbind();
         overlay.prefHeightProperty().unbind();
 

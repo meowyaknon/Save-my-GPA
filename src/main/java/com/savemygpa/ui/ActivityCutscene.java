@@ -13,19 +13,18 @@ import javafx.util.Duration;
 /**
  * ActivityCutscene — black-overlay typewriter cutscene for activity actions.
  *
- * TYPING SPEED CHANGE:
- *   Location: typeText() → Duration.millis(TYPING_MS * i)
- *   Was: 70 ms per character
- *   Now: 110 ms per character  (TYPING_MS constant below)
+ * FIX (scaling): The overlay is now added to the UNSCALED scene root
+ * (the outermost StackPane in GameLauncher) so it fills the entire window
+ * at any resolution / windowed size.  The overlay's preferred size is bound
+ * to the scene root's size, exactly like BusStopUI and CoworkingUI do.
  *
- * This affects every activity cutscene popup (classroom, auditorium,
- * coworking, eat, KLLC, exam, go-home, and the generic "กำลังดำเนินการ").
- * GameLauncher story/ending cutscenes use their own TYPING_MS constant (80ms).
+ * IMPORTANT: callers must pass GameLauncher's `root` field (the outermost
+ * StackPane), NOT `overlayLayer` (which is scaled).
+ *
+ * TYPING SPEED: 110 ms per character (unchanged).
  */
 public class ActivityCutscene {
 
-    // CHANGE: slowed from 70 ms to 110 ms per character
-    // LINE TO CHANGE: Duration.millis(TYPING_MS * i)  inside typeText()
     private static final int TYPING_MS = 110;
 
     public static String lineFor(String activityKey) {
@@ -43,16 +42,14 @@ public class ActivityCutscene {
     }
 
     // ── Full cutscene (black overlay + typewriter + audio) ───────────────────
+    //
+    // `sceneRoot` = GameLauncher's `root` (outermost, unscaled StackPane).
 
-    public static void play(StackPane root, String text, Runnable onDone) {
+    public static void play(StackPane sceneRoot, String text, Runnable onDone) {
         AudioManager.getInstance().playMusic(AudioManager.Music.CUTSCENE);
 
-        StackPane overlay = new StackPane();
-        overlay.setStyle("-fx-background-color: #000000;");
-        overlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        overlay.setOpacity(0);
+        StackPane overlay = buildOverlay(sceneRoot);
 
-        // Centred label — wider max-width so long Thai sentences fit on one line
         Label typeLabel = new Label("");
         typeLabel.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 40));
         typeLabel.setTextFill(Color.WHITE);
@@ -65,10 +62,11 @@ public class ActivityCutscene {
         """);
         typeLabel.setOpacity(0);
         overlay.getChildren().add(typeLabel);
-        root.getChildren().add(overlay);
+        sceneRoot.getChildren().add(overlay);
 
         FadeTransition fadeIn = new FadeTransition(Duration.millis(420), overlay);
-        fadeIn.setFromValue(0); fadeIn.setToValue(1);
+        fadeIn.setFromValue(0);
+        fadeIn.setToValue(1);
         fadeIn.setOnFinished(e -> {
             typeLabel.setOpacity(1);
             typeText(typeLabel, text, () -> {
@@ -78,9 +76,10 @@ public class ActivityCutscene {
                     lblOut.setToValue(0);
                     lblOut.setOnFinished(le -> {
                         FadeTransition fadeOut = new FadeTransition(Duration.millis(420), overlay);
-                        fadeOut.setFromValue(1); fadeOut.setToValue(0);
+                        fadeOut.setFromValue(1);
+                        fadeOut.setToValue(0);
                         fadeOut.setOnFinished(fe -> {
-                            root.getChildren().remove(overlay);
+                            dismissOverlay(sceneRoot, overlay);
                             if (onDone != null) onDone.run();
                         });
                         fadeOut.play();
@@ -95,21 +94,20 @@ public class ActivityCutscene {
 
     // ── Silent transition (screen swap only, no audio change) ────────────────
 
-    public static void transition(StackPane root, Runnable onSwap, Runnable onDone) {
-        StackPane overlay = new StackPane();
-        overlay.setStyle("-fx-background-color: #000000;");
-        overlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        overlay.setOpacity(0);
-        root.getChildren().add(overlay);
+    public static void transition(StackPane sceneRoot, Runnable onSwap, Runnable onDone) {
+        StackPane overlay = buildOverlay(sceneRoot);
+        sceneRoot.getChildren().add(overlay);
 
         FadeTransition fadeIn = new FadeTransition(Duration.millis(300), overlay);
-        fadeIn.setFromValue(0); fadeIn.setToValue(1);
+        fadeIn.setFromValue(0);
+        fadeIn.setToValue(1);
         fadeIn.setOnFinished(e -> {
             if (onSwap != null) onSwap.run();
             FadeTransition fadeOut = new FadeTransition(Duration.millis(300), overlay);
-            fadeOut.setFromValue(1); fadeOut.setToValue(0);
+            fadeOut.setFromValue(1);
+            fadeOut.setToValue(0);
             fadeOut.setOnFinished(fe -> {
-                root.getChildren().remove(overlay);
+                dismissOverlay(sceneRoot, overlay);
                 if (onDone != null) onDone.run();
             });
             fadeOut.play();
@@ -117,13 +115,27 @@ public class ActivityCutscene {
         fadeIn.play();
     }
 
-    // ── Typewriter with per-character typing SFX ──────────────────────────────
+    // ── Helpers ───────────────────────────────────────────────────────────────
 
-    /**
-     * TYPING SPEED CHANGE — this is the method to edit.
-     * Duration.millis(TYPING_MS * i) controls speed.
-     * TYPING_MS = 110 ms/char (was 70).
-     */
+    private static StackPane buildOverlay(StackPane sceneRoot) {
+        StackPane overlay = new StackPane();
+        overlay.setStyle("-fx-background-color: #000000;");
+        overlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        // Bind to scene root so the dim covers the full window at any size
+        overlay.prefWidthProperty().bind(sceneRoot.widthProperty());
+        overlay.prefHeightProperty().bind(sceneRoot.heightProperty());
+        overlay.setOpacity(0);
+        return overlay;
+    }
+
+    private static void dismissOverlay(StackPane sceneRoot, StackPane overlay) {
+        overlay.prefWidthProperty().unbind();
+        overlay.prefHeightProperty().unbind();
+        sceneRoot.getChildren().remove(overlay);
+    }
+
+    // ── Typewriter ────────────────────────────────────────────────────────────
+
     private static void typeText(Label label, String text, Runnable onDone) {
         label.setText("");
         Timeline tl = new Timeline();
@@ -132,7 +144,6 @@ public class ActivityCutscene {
         for (int i = 0; i < text.length(); i++) {
             final int idx = i + 1;
             final char ch = text.charAt(i);
-            // CHANGE: 110 ms per character (was 70)
             tl.getKeyFrames().add(new KeyFrame(Duration.millis(TYPING_MS * i), e -> {
                 label.setText(text.substring(0, idx));
                 if (ch != ' ' && ch != '\n') {
