@@ -27,5 +27,5 @@ public class DeanTreatsEvent extends Event {
     public String getName() { return "ท่านคณบดีเลี้ยงไอติม"; }
     @Override
     public String getDescription() { return "ท่านคณบดีเหมาไอติมมาแจกเด็กๆ พลังใจเต็มเปี่ยม"; }
-    @Override public double getChance() { return 0.15; }
+    @Override public double getChance() { return 0.07; }
 }
