@@ -8,7 +8,7 @@
 
     <groupId>com.meowyaknon</groupId>
     <artifactId>Save-my-GPA</artifactId>
-    <version>1.0-SNAPSHOT</version>
+    <version>1.0</version>
 
     <properties>
         <maven.compiler.source>21</maven.compiler.source>
