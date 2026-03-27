@@ -462,11 +462,9 @@ public class CountingMiniGame {
 
         if (answer == currentDuckCount) {
             totalScore += POINTS_PER_ROUND;
-            resultLabel.setText("✅  ถูกต้อง! +" + POINTS_PER_ROUND + " คะแนน  |  เป็ด " + currentDuckCount + " ตัว");
-            resultLabel.setStyle("-fx-font-family: 'IBM Plex Sans Thai Medium'; -fx-font-size: 14px; -fx-text-fill: #66bb6a;");
+            resultLabel.setText("✅");
         } else {
-            resultLabel.setText("❌  ผิด! เป็ดมีทั้งหมด " + currentDuckCount + " ตัว");
-            resultLabel.setStyle("-fx-font-family: 'IBM Plex Sans Thai Medium'; -fx-font-size: 14px; -fx-text-fill: #ef5350;");
+            resultLabel.setText("❌");
         }
 
         proceedAfterAnswer();
@@ -502,6 +500,7 @@ public class CountingMiniGame {
 
         StackPane layered = new StackPane(bg, btnImg, scoreEndLabel);
         layered.setStyle("-fx-background-color: #0a0a0a;");
+        applyEnterKey(layered, () -> onFinish.run());
         contentArea.getChildren().add(layered);
     }
 
@@ -523,11 +522,11 @@ public class CountingMiniGame {
 
         Label answerLabel = new Label("ในสวนมีเป็ดทั้งหมด " + currentDuckCount + " ตัว");
         answerLabel.setStyle("""
-    -fx-font-family: 'IBM Plex Sans Thai Medium';
-    -fx-font-size: 39px;
-    -fx-font-weight: bold;
-    -fx-text-fill: black;
-    """);
+                            -fx-font-family: 'IBM Plex Sans Thai Medium';
+                            -fx-font-size: 39px;
+                            -fx-font-weight: bold;
+                            -fx-text-fill: black;
+                            """);
         StackPane.setAlignment(answerLabel, Pos.TOP_LEFT);
         answerLabel.setTranslateX(1176);
         answerLabel.setTranslateY(481);
@@ -536,10 +535,12 @@ public class CountingMiniGame {
         if (currentRound >= TOTAL_ROUNDS) {
             StackPane layered = new StackPane(bg, rightendImg, bigPed, btnImg, answerLabel);
             layered.setStyle("-fx-background-color: #0a0a0a;");
+            applyEnterKey(layered, () -> showEndScreen());
             contentArea.getChildren().add(layered);
         } else{
             StackPane layered = new StackPane(bg, rightendImg, bigPed, btnImg, answerLabel);
             layered.setStyle("-fx-background-color: #0a0a0a;");
+            applyEnterKey(layered, () -> loadRound());
             contentArea.getChildren().add(layered);
         }
     }
@@ -575,10 +576,12 @@ public class CountingMiniGame {
         if (currentRound >= TOTAL_ROUNDS) {
             StackPane layered = new StackPane(bg, explosion, wrongendImg, bigPed, btnImg, answerLabel);
             layered.setStyle("-fx-background-color: #0a0a0a;");
+            applyEnterKey(layered, () -> showEndScreen());
             contentArea.getChildren().add(layered);
         }else{
             StackPane layered = new StackPane(bg, explosion, wrongImg, bigPed, btnImg, answerLabel);
             layered.setStyle("-fx-background-color: #0a0a0a;");
+            applyEnterKey(layered, () -> loadRound());
             contentArea.getChildren().add(layered);
         }
     }
@@ -606,6 +609,7 @@ public class CountingMiniGame {
         // timeLabel อยู่บน btnImg
         StackPane layered = new StackPane(bg, blockStart, bigPedHere, btnImg, timeLabel);
         layered.setStyle("-fx-background-color: #0a0a0a;");
+        applyEnterKey(layered, () -> loadRound());
         contentArea.getChildren().add(layered);
     }
 
@@ -616,6 +620,14 @@ public class CountingMiniGame {
         btnImg.setOnMouseExited  (e -> btnImg.setOpacity(1.00)); // เอาเมาส์ออก -> กลับมาสว่าง 100%
         btnImg.setOnMousePressed (e -> btnImg.setOpacity(0.60)); // กดค้าง -> มืดลงไปเลยให้รู้ว่ากดแล้ว
         btnImg.setOnMouseReleased(e -> { btnImg.setOpacity(0.80); onClick.run(); }); // ปล่อยคลิก -> คืนความสว่าง แล้วทำงาน
+    }
+    /** ให้ StackPane รับการกด Enter ที่ Keyborad แล้วเรียก onClick เหมือนกดปุ่ม */
+    private void applyEnterKey(StackPane pane, Runnable onClick) {
+        pane.setFocusTraversable(true);
+        pane.setOnKeyPressed(e -> {
+            if (e.getCode() == javafx.scene.input.KeyCode.ENTER) onClick.run();
+        });
+        javafx.application.Platform.runLater(pane::requestFocus);
     }
 
     private ImageView loadFullImg(String path) {
