@@ -79,11 +79,12 @@ public class CaptchaMiniGame {
         screenImageView.setTranslateY(-115);
 
         // 3. ตัวละคร (ซ้ายล่าง)
-        characterImageView.setFitWidth(550);
+        characterImageView.setFitWidth(600);
         characterImageView.setPreserveRatio(true);
         characterImageView.setMouseTransparent(true);
+        characterImageView.setTranslateX(-89);
         StackPane.setAlignment(characterImageView, Pos.BOTTOM_LEFT);
-        StackPane.setMargin(characterImageView, new Insets(0, 0, 20, 20));
+        //StackPane.setMargin(characterImageView, new Insets(0, 500, 0, 0));
 
         // [FIX 2] ขยาย contentArea ให้เต็มพื้นที่จอคอมสีดำ
         contentArea.setAlignment(Pos.CENTER);
@@ -295,7 +296,7 @@ public class CaptchaMiniGame {
                         "-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.8), 24, 0.6, 0, 4);"
         );
 
-        javafx.scene.text.Text title = new javafx.scene.text.Text("📋 สรุปผลการสอบ");
+        javafx.scene.text.Text title = new javafx.scene.text.Text("สรุปผลการสอบ");
         title.setFill(javafx.scene.paint.Color.web("#ffe082"));
         title.setFont(javafx.scene.text.Font.font("Comic Sans MS", javafx.scene.text.FontWeight.BOLD, 32));
 
