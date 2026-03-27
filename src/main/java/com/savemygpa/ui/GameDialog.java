@@ -14,15 +14,6 @@ import javafx.scene.shape.Rectangle;
 import javafx.scene.text.*;
 import javafx.util.Duration;
 
-/**
- * GameDialog — cool horizontal-rectangle in-game modal popup.
- *
- * All popups (info, confirm, event, settings) use this style:
- *   • Wide landscape rectangle  (~780 × auto)
- *   • Dark translucent gradient background with coloured accent bar on left
- *   • Comic Sans, gold title, white body text
- *   • Scale + fade entrance animation
- */
 public class GameDialog {
 
     // ── Accent colours per dialog type ───────────────────────────────────────
@@ -95,12 +86,6 @@ public class GameDialog {
     }
 
     // ── Settings panel ────────────────────────────────────────────────────────
-    /**
-     * Opens a horizontal settings overlay.
-     * Content VBox is returned to the caller to populate with controls.
-     * The caller must call {@code closeBtn.setOnAction(e -> SettingsUI.dismiss(root, overlay, onClose))}
-     * — or use {@link SettingsUI#show} which wraps this.
-     */
     public static StackPane[] openPanel(StackPane root, String title, String accent) {
         StackPane overlay = overlay();
         HBox box = buildBox(accent);

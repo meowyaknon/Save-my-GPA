@@ -24,7 +24,9 @@ public class FreeFoodEvent extends Event {
         player.addEffect(new IndefatigableBuff());
     }
 
-    @Override protected String getName() { return "รุ่นพี่เลี้ยงไก่ทอด"; }
-    @Override protected String getDescription() { return "รุ่นพี่แสนใจดีสั่งไก่ทอดผู้พันมาเลี้ยง อิ่มทั้งกายและใจ"; }
+    @Override
+    public String getName() { return "รุ่นพี่เลี้ยงไก่ทอด"; }
+    @Override
+    public String getDescription() { return "รุ่นพี่แสนใจดีสั่งไก่ทอดผู้พันมาเลี้ยง อิ่มทั้งกายและใจ"; }
     @Override public double getChance() { return 0.3; }
 }

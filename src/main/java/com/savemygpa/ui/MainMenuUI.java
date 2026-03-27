@@ -8,13 +8,6 @@ import javafx.scene.image.*;
 import javafx.scene.layout.*;
 import javafx.util.Duration;
 
-/**
- * MainMenuUI — main menu with:
- *  • Background image (menu_bg.jpg)
- *  • Separate logo image (logo.png) above the buttons, with a continuous wiggle animation
- *  • Staggered fade+slide-in entrance for buttons (unchanged)
- *  • Image-based buttons with hover/press interactions (unchanged)
- */
 public class MainMenuUI {
 
     public interface Callbacks {

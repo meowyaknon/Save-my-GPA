@@ -20,16 +20,6 @@ import javafx.util.Duration;
 
 import java.util.Random;
 
-/**
- * OutsideUI — main campus map (1920×1080).
- *
- * FIX: Pixel-perfect hit detection now converts mouse coordinates from the
- * StackPane wrapper space into ImageView local space before sampling the
- * pixel reader.  The original code used wrapper-relative coords directly,
- * which worked only when the image happened to be top-left aligned; because
- * StackPane centres its children the lookup was offset and clicks fell outside
- * the opaque region, silently discarding every click.
- */
 public class OutsideUI {
 
     private static final String BG          = "/images/map/outside_it/map_outside.jpg";
@@ -151,14 +141,12 @@ public class OutsideUI {
         rootPane.requestFocus();
 
         refresh();
-        startCharacterBob();
         scheduleIdleSpeech();
         return rootPane;
     }
 
     // ── IT Building transition ────────────────────────────────────────────────
     private void doITTransition() {
-        stopAnimations();
         FadeTransition fadeOut = new FadeTransition(Duration.millis(300), rootPane);
         fadeOut.setFromValue(1.0);
         fadeOut.setToValue(0.0);
@@ -172,12 +160,12 @@ public class OutsideUI {
 
     void buildHudNodes() {
         clockImage = new ImageView();
-        clockImage.setFitWidth(106); clockImage.setFitHeight(106); clockImage.setPreserveRatio(true);
+        clockImage.setFitWidth(150); clockImage.setFitHeight(150); clockImage.setPreserveRatio(true);
 
         dayLabel = new Label();
         dayLabel.setStyle("""
             -fx-font-family: 'Comic Sans MS';
-            -fx-font-size: 20px;
+            -fx-font-size: 30px;
             -fx-font-weight: bold;
             -fx-text-fill: white;
             -fx-effect: dropshadow(gaussian, black, 4, 0.8, 0, 0);
@@ -187,7 +175,7 @@ public class OutsideUI {
         effectsLabel.setWrapText(true); effectsLabel.setMaxWidth(580);
         effectsLabel.setStyle("""
             -fx-font-family: 'Comic Sans MS';
-            -fx-font-size: 17px;
+            -fx-font-size: 24px;
             -fx-text-fill: #ffe082;
             -fx-effect: dropshadow(gaussian, black, 3, 0.9, 0, 0);
         """);
@@ -199,15 +187,15 @@ public class OutsideUI {
         speechBubbleLabel.setMaxWidth(320);
         speechBubbleLabel.setStyle("""
             -fx-font-family: 'IBMplexSansThai-Regular', 'Comic Sans MS';
-            -fx-font-size: 20px;
+            -fx-font-size: 24px;
             -fx-text-fill: #ffffff;
             -fx-padding: 16 20 16 20;
             -fx-line-spacing: 3;
         """);
         speechBubble = new StackPane(speechBubbleLabel);
         speechBubble.setStyle("""
-            -fx-background-color: rgba(0,0,0,0.80);
-            -fx-background-radius: 20;
+            -fx-background-color: rgba(0,0,0,0.60);
+            -fx-background-radius: 40;
             -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.50), 12, 0.5, 0, 3);
             -fx-border-color: rgba(255,255,255,0.18);
             -fx-border-radius: 20;
@@ -217,7 +205,7 @@ public class OutsideUI {
         speechBubble.setOpacity(0);
 
         playerSprite = new ImageView();
-        playerSprite.setFitHeight(500); playerSprite.setPreserveRatio(true);
+        playerSprite.setFitHeight(470); playerSprite.setPreserveRatio(true);
     }
 
     void addHudToCanvas(Pane canvas) {
@@ -232,15 +220,15 @@ public class OutsideUI {
         AnchorPane.setLeftAnchor(statsNode, 10.0);
         statsNode.setMouseTransparent(true);
 
-        AnchorPane.setBottomAnchor(effectsLabel, 80.0);
+        AnchorPane.setBottomAnchor(effectsLabel, 330.0);
         AnchorPane.setLeftAnchor(effectsLabel, 16.0);
         effectsLabel.setMouseTransparent(true);
 
         VBox charStack = new VBox(8, speechBubble, playerSprite);
         charStack.setAlignment(Pos.BOTTOM_CENTER);
         HBox charArea = new HBox(charStack);
-        AnchorPane.setBottomAnchor(charArea, 50.0);
-        AnchorPane.setLeftAnchor(charArea, 630.0);
+        AnchorPane.setBottomAnchor(charArea, -20.0);
+        AnchorPane.setLeftAnchor(charArea, 610.0);
         charArea.setMouseTransparent(true);
 
         canvas.getChildren().addAll(clockPanel, effectsLabel, statsNode, charArea);
@@ -398,26 +386,6 @@ public class OutsideUI {
         else if (mood   <= 25) pool = IDLE_BADMOOD;
         else                   pool = IDLE_NORMAL;
         return pool[rng.nextInt(pool.length)];
-    }
-
-    // ═════════════════════════════════════════════════════════════════════════
-    // Bob animation
-    // ═════════════════════════════════════════════════════════════════════════
-
-    private void startCharacterBob() {
-        if (bobTimeline != null) bobTimeline.stop();
-        bobTimeline = new Timeline(
-                new KeyFrame(Duration.ZERO,        new KeyValue(playerSprite.translateYProperty(), 0)),
-                new KeyFrame(Duration.millis(750), new KeyValue(playerSprite.translateYProperty(), -10))
-        );
-        bobTimeline.setAutoReverse(true);
-        bobTimeline.setCycleCount(Animation.INDEFINITE);
-        bobTimeline.play();
-    }
-
-    public void stopAnimations() {
-        if (bobTimeline != null) { bobTimeline.stop(); bobTimeline = null; }
-        if (idleTimer   != null) { idleTimer.stop();   idleTimer   = null; }
     }
 
     // ═════════════════════════════════════════════════════════════════════════

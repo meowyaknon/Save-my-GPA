@@ -20,7 +20,7 @@ public class HowToPlayUI {
     private static final String BG_PATH  = "/images/menu/menu_no_logo.jpg";
     // CHANGE: horizontal block image for the content card
     private static final String CARD_BG  = "/images/popup/big_block_black.png";
-    private static final String BTN_BACK = "/images/menu/menu_quit.png";
+    private static final String BTN_BACK = "/images/menu/backward.png";
     private static final double BTN_W    = 300;
     private static final double CARD_W   = 820;
 

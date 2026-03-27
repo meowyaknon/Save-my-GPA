@@ -22,7 +22,9 @@ public class BrokenDoorEvent extends Event {
         timeSystem.advanceTime(1);
     }
 
-    @Override protected String getName() { return "ประตูอัตโนมัติไม่เปิด"; }
-    @Override protected String getDescription() { return "ชนประตูกระดังปัง เซนเซอร์ไม่ทำงาน เสียเวลาและอารมณ์"; }
+    @Override
+    public String getName() { return "ประตูอัตโนมัติไม่เปิด"; }
+    @Override
+    public String getDescription() { return "ชนประตูกระดังปัง เซนเซอร์ไม่ทำงาน เสียเวลาและอารมณ์"; }
     @Override public double getChance() { return 0.25; }
 }

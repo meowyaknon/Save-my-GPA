@@ -14,30 +14,27 @@ import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
 import javafx.util.Duration;
 
-/**
- * InsideUI — IT Building interior.
- *
- * FIX: Pixel-perfect hit detection converts mouse event coordinates from
- * the StackPane wrapper into ImageView local space via sceneToLocal().
- *
- * FIX: Back button repositioned to middle-right (vertically centred,
- * anchored to the right edge) instead of bottom-left.
- */
 public class InsideUI {
 
     private static final String IT_BG         = "/images/map/inside_it/map_inside.jpg";
     private static final String BTN_CLASSROOM  = "/images/map/inside_it/classroom.png";
     private static final String BTN_AUDITORIUM = "/images/map/inside_it/auditorium.png";
     private static final String BTN_COMMON     = "/images/map/inside_it/common.png";
+    private static final String BTN_BACK_IMG   = "/images/menu/back_button.png";
 
     private static final String GLOW_CLASSROOM  = "#4fc3f7";
     private static final String GLOW_AUDITORIUM = "#ce93d8";
     private static final String GLOW_COMMON     = "#80cbc4";
     private static final String GLOW_EXAM       = "#ef9a9a";
+    private static final String GLOW_BACK       = "#4fc3f7";
 
-    private static final double CLASSROOM_X  =  60,  CLASSROOM_Y  = 20,  CLASSROOM_W  = 420;
-    private static final double AUDITORIUM_X = 880,  AUDITORIUM_Y =  0,  AUDITORIUM_W = 480;
-    private static final double COMMON_X     = 650,  COMMON_Y     = 520, COMMON_W     = 800;
+    private static final double CLASSROOM_X  = 13,  CLASSROOM_Y     = 0,  CLASSROOM_W   = 545;
+    private static final double AUDITORIUM_X = 1250 ,  AUDITORIUM_Y = 0,  AUDITORIUM_W  = 685;
+    private static final double COMMON_X     = 870 ,  COMMON_Y      = 708, COMMON_W     = 1080;
+
+    private static final double BACK_W        = 330;
+    private static final double BACK_RIGHT    = 20;
+    private static final double BACK_TOP      = 560;
 
     public interface Callbacks {
         void onClassroom();
@@ -56,13 +53,11 @@ public class InsideUI {
 
     private final Callbacks cb;
 
-    public InsideUI(Callbacks cb) {
-        this.cb = cb;
-    }
+    public InsideUI(Callbacks cb) { this.cb = cb; }
 
-    // ═════════════════════════════════════════════════════════════════════════
+    // =========================================================================
     // Build
-    // ═════════════════════════════════════════════════════════════════════════
+    // =========================================================================
 
     public StackPane buildView() {
         StackPane root = new StackPane();
@@ -73,23 +68,19 @@ public class InsideUI {
         var bgUrl = getClass().getResource(IT_BG);
         if (bgUrl != null) {
             ImageView bg = new ImageView(new Image(bgUrl.toExternalForm()));
-            bg.setFitWidth(1920);
-            bg.setFitHeight(1080);
-            bg.setPreserveRatio(false);
-            bg.setMouseTransparent(true);
+            bg.setFitWidth(1920); bg.setFitHeight(1080);
+            bg.setPreserveRatio(false); bg.setMouseTransparent(true);
             root.getChildren().add(bg);
         }
 
         // ── Game layer ────────────────────────────────────────────────────────
         AnchorPane gameLayer = new AnchorPane();
-        gameLayer.setMaxSize(1920, 1080);
-        gameLayer.setPrefSize(1920, 1080);
+        gameLayer.setMaxSize(1920, 1080); gameLayer.setPrefSize(1920, 1080);
         gameLayer.setMouseTransparent(false);
 
         // ── HUD layer ─────────────────────────────────────────────────────────
         AnchorPane hudLayer = new AnchorPane();
-        hudLayer.setMaxSize(1920, 1080);
-        hudLayer.setPrefSize(1920, 1080);
+        hudLayer.setMaxSize(1920, 1080); hudLayer.setPrefSize(1920, 1080);
         hudLayer.setMouseTransparent(true);
 
         // ── Room buttons ──────────────────────────────────────────────────────
@@ -110,7 +101,7 @@ public class InsideUI {
                     BTN_COMMON,     COMMON_W,     GLOW_COMMON,     COMMON_X,     COMMON_Y,     cb::onCoworking);
         }
 
-        // ── Back button — FIX: middle-right ───────────────────────────────────
+        // ── Back button (image, middle-right) ─────────────────────────────────
         addBackButton(gameLayer);
 
         // ── HUD ───────────────────────────────────────────────────────────────
@@ -128,26 +119,26 @@ public class InsideUI {
         return root;
     }
 
+    // =========================================================================
+    // Room buttons
+    // =========================================================================
+
     private void addRoomButtons(Pane gameLayer,
                                 String img1, double w1, String glow1, double x1, double y1, Runnable action1,
                                 String img2, double w2, String glow2, double x2, double y2, Runnable action2,
                                 String img3, double w3, String glow3, double x3, double y3, Runnable action3) {
-
         StackPane btn1 = mapBtn(img1, w1, glow1, action1);
         StackPane btn2 = mapBtn(img2, w2, glow2, action2);
         StackPane btn3 = mapBtn(img3, w3, glow3, action3);
-        AnchorPane.setLeftAnchor(btn1, x1);
-        AnchorPane.setTopAnchor(btn1, y1);
-        AnchorPane.setLeftAnchor(btn2, x2);
-        AnchorPane.setTopAnchor(btn2, y2);
-        AnchorPane.setLeftAnchor(btn3, x3);
-        AnchorPane.setTopAnchor(btn3, y3);
+        AnchorPane.setLeftAnchor(btn1, x1); AnchorPane.setTopAnchor(btn1, y1);
+        AnchorPane.setLeftAnchor(btn2, x2); AnchorPane.setTopAnchor(btn2, y2);
+        AnchorPane.setLeftAnchor(btn3, x3); AnchorPane.setTopAnchor(btn3, y3);
         gameLayer.getChildren().addAll(btn1, btn2, btn3);
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
+    // =========================================================================
     // Map button — pixel-perfect hit detection
-    // ═════════════════════════════════════════════════════════════════════════
+    // =========================================================================
 
     private StackPane mapBtn(String imgPath, double fitWidth, String glowColor, Runnable onClick) {
         var url = getClass().getResource(imgPath);
@@ -165,7 +156,7 @@ public class InsideUI {
         wrapper.setPickOnBounds(false);
         wrapper.setCursor(javafx.scene.Cursor.HAND);
 
-        DropShadow glow = new DropShadow(20, Color.web(glowColor));
+        DropShadow glow = new DropShadow(20, Color.LIGHTBLUE);
         Timeline pulse = new Timeline(
                 new KeyFrame(Duration.ZERO,
                         new KeyValue(glow.radiusProperty(), 20),
@@ -212,25 +203,18 @@ public class InsideUI {
         return wrapper;
     }
 
-    // ── Back button — FIX: middle-right ──────────────────────────────────────
-    //
-    // Anchored to the RIGHT edge, vertically centred by anchoring top to
-    // (1080/2 - half button height).  Using right+top anchors keeps it
-    // at the correct position regardless of content layout.
+    // =========================================================================
+    // Back button — image-based, middle-right
+    // =========================================================================
 
     private void addBackButton(Pane gameLayer) {
-        String backImgPath = "/images/map/inside_it/button_back.png";
-        var backUrl = getClass().getResource(backImgPath);
-
+        var backUrl = getClass().getResource(BTN_BACK_IMG);
         if (backUrl != null) {
-            StackPane backBtn = mapBtn(backImgPath, 200, "#4fc3f7", cb::onBack);
-            // Right edge with a small margin; vertically centred (1080/2 ≈ 540,
-            // minus ~half the button height ~100px → top ≈ 440)
-            AnchorPane.setRightAnchor(backBtn, 24.0);
-            AnchorPane.setTopAnchor(backBtn, 440.0);   // ≈ vertical centre for a ~200px tall button
+            StackPane backBtn = mapBtn(BTN_BACK_IMG, BACK_W, GLOW_BACK, cb::onBack);
+            AnchorPane.setRightAnchor(backBtn, BACK_RIGHT);
+            AnchorPane.setTopAnchor(backBtn, BACK_TOP);
             gameLayer.getChildren().add(backBtn);
         } else {
-            // Text fallback
             javafx.scene.control.Button back = new javafx.scene.control.Button("← กลับ");
             back.setStyle("""
                 -fx-font-family: 'Comic Sans MS';
@@ -245,8 +229,8 @@ public class InsideUI {
             back.setOnMouseEntered(e -> back.setOpacity(0.82));
             back.setOnMouseExited(e  -> back.setOpacity(1.00));
             back.setOnAction(e -> cb.onBack());
-            AnchorPane.setRightAnchor(back, 24.0);
-            AnchorPane.setTopAnchor(back, 490.0);
+            AnchorPane.setRightAnchor(back, BACK_RIGHT);
+            AnchorPane.setTopAnchor(back, BACK_TOP);
             gameLayer.getChildren().add(back);
         }
     }

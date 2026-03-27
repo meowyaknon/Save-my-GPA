@@ -23,7 +23,9 @@ public class SlowBusEvent extends Event {
         player.changeStat(StatType.MOOD, -15);
     }
 
-    @Override protected String getName() { return "รถพระจอมไม่มา"; }
-    @Override protected String getDescription() { return "รอนานจนเกือบซึม รถบัสที่รอคอยไม่โผล่มา"; }
+    @Override
+    public String getName() { return "รถพระจอมไม่มา"; }
+    @Override
+    public String getDescription() { return "รอนานจนเกือบซึม รถบัสที่รอคอยไม่โผล่มา"; }
     @Override public double getChance() { return 0.4; }
 }

@@ -25,7 +25,9 @@ public class LuckyDragonEvent extends Event {
         player.addEffect(new AuraOfLuckBuff());
     }
 
-    @Override protected String getName() { return "น้องเงินทอง"; }
-    @Override protected String getDescription() { return "A golden cat naps in the sun. Today feels lucky!"; }
+    @Override
+    public String getName() { return "น้องเงินทอง"; }
+    @Override
+    public String getDescription() { return "A golden cat naps in the sun. Today feels lucky!"; }
     @Override public double getChance() { return 0.4; }
 }

@@ -6,11 +6,21 @@ import com.savemygpa.player.Player;
 
 public class EventManager {
 
+    public interface EventListener {
+        void onEvent(String name, String description);
+    }
+
     private List<Event> events = new ArrayList<>();
     private Random random = new Random();
 
     private int eventsToday = 0;
     private static final int MAX_EVENTS_PER_DAY = 3;
+
+    private EventListener eventListener;
+
+    public void setEventListener(EventListener listener) {
+        this.eventListener = listener;
+    }
 
     public int getEventsToday() {
         return eventsToday;
@@ -60,6 +70,10 @@ public class EventManager {
         if (random.nextDouble() <= effectiveChance) {
             chosen.occur(player, timeSystem);
             eventsToday++;
+            // Notify the UI
+            if (eventListener != null) {
+                eventListener.onEvent(chosen.getName(), chosen.getDescription());
+            }
         }
     }
 }
