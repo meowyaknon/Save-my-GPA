@@ -24,13 +24,13 @@ public class StatsBarUI {
 
     // ── Rendered panel size (used by OutsideUI for positioning) ──────────────
     public static final double IMG_W = 620;
-    public static final double IMG_H = 290;
+    public static final double IMG_H = 310;
 
     // ── Bar geometry ──────────────────────────────────────────────────────────
     private static final double PAD_H       = 36;
-    private static final double PAD_V       = 22;
-    private static final double BAR_W       = IMG_W - PAD_H * 2;   // ≈ 548
-    private static final double BAR_H       = 40;
+    private static final double PAD_V       = 6;
+    private static final double BAR_W       = IMG_W - PAD_H * 2;
+    private static final double BAR_H       = 38;
     private static final double BAR_RADIUS  = 20;
     private static final double V_SPACING   = 16;
 

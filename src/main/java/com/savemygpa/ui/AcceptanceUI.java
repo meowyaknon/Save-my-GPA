@@ -39,14 +39,14 @@ public class AcceptanceUI {
         root.getChildren().add(bg);
 
         // Buttons — start hidden, will slide+fade in after the root fades in
-        ImageView acceptBtn = makeButton(ACCEPT_PATH, 280, cb::onAccept);
-        ImageView refuseBtn = makeButton(REFUSE_PATH, 280, cb::onRefuse);
+        ImageView acceptBtn = makeButton(ACCEPT_PATH, 350, cb::onAccept);
+        ImageView refuseBtn = makeButton(REFUSE_PATH, 350, cb::onRefuse);
         acceptBtn.setOpacity(0);
         refuseBtn.setOpacity(0);
 
-        HBox buttons = new HBox(60, acceptBtn, refuseBtn);
+        VBox buttons = new VBox(80, acceptBtn, refuseBtn);
         buttons.setAlignment(Pos.CENTER);
-        buttons.setTranslateY(120);
+        buttons.setTranslateY(240);
         root.getChildren().add(buttons);
 
         // Phase 1: fade the whole screen in
@@ -57,11 +57,11 @@ public class AcceptanceUI {
             slideIn(acceptBtn, 0);
             slideIn(refuseBtn, 140);
 
-            // Phase 3: start bob after buttons are visible
+            // Phase 3: start wiggle after buttons are visible
             PauseTransition bobDelay = new PauseTransition(Duration.millis(500));
             bobDelay.setOnFinished(ev -> {
-                startBob(acceptBtn, 0);
-                startBob(refuseBtn, 300);
+                startWiggle(acceptBtn, 0);
+                startWiggle(refuseBtn, 400);
             });
             bobDelay.play();
         });
@@ -98,13 +98,23 @@ public class AcceptanceUI {
         return iv;
     }
 
-    private void startBob(ImageView iv, int delayMs) {
-        TranslateTransition bob = new TranslateTransition(Duration.millis(700), iv);
-        bob.setFromY(0); bob.setToY(-9);
-        bob.setAutoReverse(true);
-        bob.setCycleCount(Animation.INDEFINITE);
-        bob.setDelay(Duration.millis(delayMs));
-        bob.play();
+    private void startWiggle(ImageView iv, int delayMs) {
+
+        Timeline wiggle = new Timeline(
+                new KeyFrame(Duration.millis(0),
+                        new KeyValue(iv.rotateProperty(), -3, Interpolator.DISCRETE)
+                ),
+                new KeyFrame(Duration.millis(400),
+                        new KeyValue(iv.rotateProperty(), 3, Interpolator.DISCRETE)
+                ),
+                new KeyFrame(Duration.millis(800),
+                        new KeyValue(iv.rotateProperty(), -3, Interpolator.DISCRETE)
+                )
+        );
+
+        wiggle.setCycleCount(Animation.INDEFINITE);
+        wiggle.setDelay(Duration.millis(delayMs));
+        wiggle.play();
     }
 
     private ImageView loadImg(String path) {

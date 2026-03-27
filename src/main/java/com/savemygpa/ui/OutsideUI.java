@@ -15,6 +15,7 @@ import javafx.scene.image.*;
 import javafx.scene.input.KeyCode;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
+import javafx.scene.transform.Scale;
 import javafx.util.Duration;
 
 import java.util.Random;
@@ -22,15 +23,12 @@ import java.util.Random;
 /**
  * OutsideUI — main campus map (1920×1080).
  *
- * IT Building transition FIX:
- *   Old: ActivityCutscene.transition(rootPane, null, cb::onITBuilding)
- *     → fades a black overlay IN on rootPane, onSwap=null does nothing,
- *       overlay fades back OUT (screen unchanged!), THEN fires onITBuilding.
- *       Result: overlay blinks for no reason, then content snaps instantly.
- *
- *   New: fade rootPane itself 1→0, fire callback at darkest point.
- *     GameLauncher.showITBuilding() swaps content (invisible), fades 0→1.
- *     Clean, smooth fade-out → fade-in with no overlay hack.
+ * FIX: Pixel-perfect hit detection now converts mouse coordinates from the
+ * StackPane wrapper space into ImageView local space before sampling the
+ * pixel reader.  The original code used wrapper-relative coords directly,
+ * which worked only when the image happened to be top-left aligned; because
+ * StackPane centres its children the lookup was offset and clicks fell outside
+ * the opaque region, silently discarding every click.
  */
 public class OutsideUI {
 
@@ -102,26 +100,52 @@ public class OutsideUI {
     // ═════════════════════════════════════════════════════════════════════════
 
     public StackPane buildView() {
-        Pane canvas = new Pane();
+        AnchorPane canvas = new AnchorPane();
         canvas.setPrefSize(1920, 1080);
 
+        Scale scale = new Scale();
+        canvas.getTransforms().add(scale);
+
         ImageView bg = loadImg(BG);
-        bg.setFitWidth(1920); bg.setFitHeight(1080);
+        bg.fitWidthProperty().bind(canvas.widthProperty());
+        bg.fitHeightProperty().bind(canvas.heightProperty());
         bg.setPreserveRatio(false); bg.setMouseTransparent(true);
         canvas.getChildren().add(bg);
 
-        StackPane busBtn     = mapBtn(BUS_IMG,     295,  "#4fc3f7", cb::onBusStop);
-        StackPane itBtn      = mapBtn(IT_IMG,      1450, "#ffe082", this::doITTransition);
-        StackPane canteenBtn = mapBtn(CANTEEN_IMG, 765,  "#66bb6a", cb::onCanteen);
-        busBtn    .setLayoutX(100);  busBtn    .setLayoutY(431);
-        itBtn     .setLayoutX(319);  itBtn     .setLayoutY(0);
-        canteenBtn.setLayoutX(1155); canteenBtn.setLayoutY(786);
+        StackPane busBtn     = mapBtn(BUS_IMG,     295,  cb::onBusStop);
+        StackPane itBtn      = mapBtn(IT_IMG,      1450, this::doITTransition);
+        StackPane canteenBtn = mapBtn(CANTEEN_IMG, 765,  cb::onCanteen);
+        AnchorPane.setLeftAnchor(busBtn, 172.0);
+        AnchorPane.setTopAnchor(busBtn, 431.0);
+
+        AnchorPane.setLeftAnchor(itBtn, 319.0);
+        AnchorPane.setTopAnchor(itBtn, 0.0);
+
+        AnchorPane.setLeftAnchor(canteenBtn, 1155.0);
+        AnchorPane.setTopAnchor(canteenBtn, 786.0);
         canvas.getChildren().addAll(busBtn, itBtn, canteenBtn);
 
         buildHudNodes();
         addHudToCanvas(canvas);
 
         rootPane = new StackPane(canvas);
+
+        rootPane.widthProperty().addListener((obs, oldVal, newVal) -> {
+            double scaleX = newVal.doubleValue() / 1920;
+            double scaleY = rootPane.getHeight() / 1080;
+            double scaleFactor = Math.min(scaleX, scaleY);
+            scale.setX(scaleFactor);
+            scale.setY(scaleFactor);
+        });
+
+        rootPane.heightProperty().addListener((obs, oldVal, newVal) -> {
+            double scaleX = rootPane.getWidth() / 1920;
+            double scaleY = newVal.doubleValue() / 1080;
+            double scaleFactor = Math.min(scaleX, scaleY);
+            scale.setX(scaleFactor);
+            scale.setY(scaleFactor);
+        });
+
         rootPane.setFocusTraversable(true);
         rootPane.setOnKeyPressed(e -> { if (e.getCode() == KeyCode.ESCAPE && cb != null) cb.onPause(); });
         rootPane.requestFocus();
@@ -132,12 +156,9 @@ public class OutsideUI {
         return rootPane;
     }
 
-    // ── IT Building transition (FIXED) ────────────────────────────────────────
+    // ── IT Building transition ────────────────────────────────────────────────
     private void doITTransition() {
-        AudioManager.getInstance().playClick();
-        stopAnimations();   // stop bob + idle before we leave
-
-        // Fade out THIS screen, then let GameLauncher swap + fade the new one in
+        stopAnimations();
         FadeTransition fadeOut = new FadeTransition(Duration.millis(300), rootPane);
         fadeOut.setFromValue(1.0);
         fadeOut.setToValue(0.0);
@@ -174,45 +195,52 @@ public class OutsideUI {
         statsBar = new StatsBarUI();
 
         speechBubbleLabel = new Label("สวัสดี!");
-        speechBubbleLabel.setWrapText(true); speechBubbleLabel.setMaxWidth(230);
+        speechBubbleLabel.setWrapText(true);
+        speechBubbleLabel.setMaxWidth(320);
         speechBubbleLabel.setStyle("""
-            -fx-font-family: 'IBMplexSansThai-Regular';
-            -fx-font-size: 17px;
-            -fx-text-fill: #1a1a2e;
-            -fx-padding: 10 14 10 14;
+            -fx-font-family: 'IBMplexSansThai-Regular', 'Comic Sans MS';
+            -fx-font-size: 20px;
+            -fx-text-fill: #ffffff;
+            -fx-padding: 16 20 16 20;
+            -fx-line-spacing: 3;
         """);
         speechBubble = new StackPane(speechBubbleLabel);
         speechBubble.setStyle("""
-            -fx-background-color: white;
-            -fx-background-radius: 16;
-            -fx-effect: dropshadow(gaussian,rgba(0,0,0,0.30),8,0.4,0,2);
+            -fx-background-color: rgba(0,0,0,0.80);
+            -fx-background-radius: 20;
+            -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.50), 12, 0.5, 0, 3);
+            -fx-border-color: rgba(255,255,255,0.18);
+            -fx-border-radius: 20;
+            -fx-border-width: 1.5;
         """);
-        speechBubble.setMaxWidth(260); speechBubble.setOpacity(0);
+        speechBubble.setMaxWidth(360);
+        speechBubble.setOpacity(0);
 
         playerSprite = new ImageView();
-        playerSprite.setFitHeight(260); playerSprite.setPreserveRatio(true);
+        playerSprite.setFitHeight(500); playerSprite.setPreserveRatio(true);
     }
 
     void addHudToCanvas(Pane canvas) {
         VBox clockPanel = new VBox(4, clockImage, dayLabel);
         clockPanel.setAlignment(Pos.TOP_LEFT);
-        clockPanel.setLayoutX(18); clockPanel.setLayoutY(18);
+        AnchorPane.setTopAnchor(clockPanel, 18.0);
+        AnchorPane.setLeftAnchor(clockPanel, 18.0);
         clockPanel.setMouseTransparent(true);
 
         VBox statsNode = statsBar.getNode();
-        statsNode.setLayoutX(10);
-        statsNode.setLayoutY(1080 - StatsBarUI.IMG_H - 10);
+        AnchorPane.setBottomAnchor(statsNode, 10.0);
+        AnchorPane.setLeftAnchor(statsNode, 10.0);
         statsNode.setMouseTransparent(true);
 
-        effectsLabel.setLayoutX(16);
-        effectsLabel.setLayoutY(1080 - StatsBarUI.IMG_H - 38);
+        AnchorPane.setBottomAnchor(effectsLabel, 80.0);
+        AnchorPane.setLeftAnchor(effectsLabel, 16.0);
         effectsLabel.setMouseTransparent(true);
 
         VBox charStack = new VBox(8, speechBubble, playerSprite);
         charStack.setAlignment(Pos.BOTTOM_CENTER);
         HBox charArea = new HBox(charStack);
-        charArea.setLayoutX(10 + StatsBarUI.IMG_W + 14);
-        charArea.setLayoutY(1080 - 320);
+        AnchorPane.setBottomAnchor(charArea, 50.0);
+        AnchorPane.setLeftAnchor(charArea, 630.0);
         charArea.setMouseTransparent(true);
 
         canvas.getChildren().addAll(clockPanel, effectsLabel, statsNode, charArea);
@@ -222,7 +250,7 @@ public class OutsideUI {
     // Map button
     // ═════════════════════════════════════════════════════════════════════════
 
-    private StackPane mapBtn(String imgPath, double fitWidth, String glowColor, Runnable onClick) {
+    private StackPane mapBtn(String imgPath, double fitWidth, Runnable onClick) {
         Image image = loadImgObj(imgPath);
         PixelReader reader = image.getPixelReader();
 
@@ -232,6 +260,7 @@ public class OutsideUI {
         iv.setMouseTransparent(false);
 
         StackPane wrapper = new StackPane(iv);
+        StackPane.setAlignment(iv, Pos.TOP_LEFT);
         wrapper.setPickOnBounds(false);
         wrapper.setCursor(javafx.scene.Cursor.HAND);
 
@@ -247,25 +276,29 @@ public class OutsideUI {
         pulse.setAutoReverse(true);
         pulse.setCycleCount(Animation.INDEFINITE);
 
-        java.util.function.BiFunction<Double, Double, Boolean> isOpaque = (mx, my) -> {
-            double imgW = iv.getBoundsInLocal().getWidth();
-            double imgH = iv.getBoundsInLocal().getHeight();
-            if (mx < 0 || my < 0 || mx > imgW || my > imgH) return false;
-            double scaleX = image.getWidth() / imgW;
-            double scaleY = image.getHeight() / imgH;
-            int px = (int)(mx * scaleX), py = (int)(my * scaleY);
-            if (px < 0 || py < 0 || px >= image.getWidth() || py >= image.getHeight()) return false;
+        java.util.function.BiFunction<Double, Double, Boolean> isOpaque = (sceneX, sceneY) -> {
+            javafx.geometry.Point2D local = iv.sceneToLocal(sceneX, sceneY);
+            double lx = local.getX(), ly = local.getY();
+            double ivW = iv.getBoundsInLocal().getWidth();
+            double ivH = iv.getBoundsInLocal().getHeight();
+            if (lx < 0 || ly < 0 || lx > ivW || ly > ivH) return false;
+            double scaleX = image.getWidth()  / ivW;
+            double scaleY = image.getHeight() / ivH;
+            int px = (int)(lx * scaleX), py = (int)(ly * scaleY);
+            if (px < 0 || py < 0 || px >= (int) image.getWidth() || py >= (int) image.getHeight()) return false;
             return ((reader.getArgb(px, py) >> 24) & 0xff) > 10;
         };
 
         wrapper.setOnMouseMoved(e -> {
-            if (isOpaque.apply(e.getX(), e.getY())) {
+            if (isOpaque.apply(e.getSceneX(), e.getSceneY())) {
                 if (iv.getEffect() == null) { iv.setEffect(glow); pulse.play(); }
-            } else { pulse.stop(); iv.setEffect(null); }
+            } else {
+                pulse.stop(); iv.setEffect(null);
+            }
         });
         wrapper.setOnMouseExited(e -> { pulse.stop(); iv.setEffect(null); });
         wrapper.setOnMouseClicked(e -> {
-            if (!isOpaque.apply(e.getX(), e.getY())) return;
+            if (!isOpaque.apply(e.getSceneX(), e.getSceneY())) return;
             javafx.scene.effect.ColorAdjust flash = new javafx.scene.effect.ColorAdjust();
             flash.setBrightness(0.8);
             iv.setEffect(flash);
@@ -306,8 +339,8 @@ public class OutsideUI {
     private void updateCharacterSprite() {
         int mood = player.getStat(StatType.MOOD), energy = player.getStat(StatType.ENERGY);
         String path;
-        if      (energy <= 2)  path = PLAYER_TIRED;
-        else if (mood   <= 25) path = PLAYER_BADMOOD;
+        if      (energy <= 3)  path = PLAYER_TIRED;
+        else if (mood   <= 30) path = PLAYER_BADMOOD;
         else                   path = PLAYER_NORMAL;
         playerSprite.setImage(loadImgObj(path));
     }
@@ -327,9 +360,10 @@ public class OutsideUI {
         out.play();
     }
 
-    public void saySuccess()          { say(SUCCESS_LINES[rng.nextInt(SUCCESS_LINES.length)]); }
-    public void sayFail()             { say(FAIL_LINES   [rng.nextInt(FAIL_LINES   .length)]); }
-    public void sayEvent(String desc) { say("🎲 " + desc); }
+    public void saySuccess()              { say(SUCCESS_LINES[rng.nextInt(SUCCESS_LINES.length)]); }
+    public void sayFail()                 { say(FAIL_LINES[rng.nextInt(FAIL_LINES.length)]); }
+    public void sayFail(String message)   { say("❌ " + message); }
+    public void sayEvent(String desc)     { say("🎲 " + desc); }
 
     private void scheduleIdleSpeech() {
         cancelIdle();
