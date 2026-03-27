@@ -1,26 +1,29 @@
 package com.savemygpa.exam;
 
+import java.util.Random;
+
 import com.savemygpa.player.Player;
-import com.savemygpa.player.StatTier;
 import com.savemygpa.player.StatType;
+
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
 import javafx.animation.PauseTransition;
 import javafx.animation.Timeline;
-import javafx.geometry.Insets;
 import javafx.geometry.Pos;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
-import javafx.scene.control.*;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.layout.*;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
-import java.util.Random;
 
 public class CaptchaMiniGame {
 
@@ -300,7 +303,7 @@ public class CaptchaMiniGame {
     private void setupExamUI() {
         contentArea.getChildren().clear();
 
-        roundTextLabel.setText("ROUND " + currentRound + " / " + TOTAL_ROUNDS);
+        roundTextLabel.setText("รอบที่ " + currentRound + " / " + TOTAL_ROUNDS);
         roundTextLabel.setStyle("-fx-font-size: 30px; -fx-text-fill: white; -fx-font-weight: bold;");
 
         timerBarBg.setFill(Color.web("#2e2e4e"));
