@@ -12,7 +12,7 @@ import javafx.util.Duration;
 
 public class ActivityCutscene {
 
-    private static final int TYPING_MS = 110;
+    private static final int TYPING_MS = 80;
 
     public static String lineFor(String activityKey) {
         return switch (activityKey) {
