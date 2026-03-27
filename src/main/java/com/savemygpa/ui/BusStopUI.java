@@ -1,12 +1,21 @@
 package com.savemygpa.ui;
 
-import com.savemygpa.audio.AudioManager;
 import javafx.animation.*;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Pos;
 import javafx.scene.image.*;
 import javafx.scene.layout.*;
+import javafx.scene.transform.Scale;
 import javafx.util.Duration;
 
+/**
+ * BusStopUI — bus-stop destination popup.
+ *
+ * FIX (scaling): The card is built at its natural pixel size, then a Scale
+ * transform bound to sceneRoot.width / 1920 shrinks/grows it with the window.
+ * The dim overlay is unscaled and bound to sceneRoot size so it fills the
+ * full physical window at any resolution.
+ */
 public class BusStopUI {
 
     private static final String POPUP_BG   = "/images/popup/popup_bg_black.png";
@@ -14,8 +23,10 @@ public class BusStopUI {
     private static final String BTN_HOME   = "/images/popup/button_home_black.png";
     private static final String BTN_CANCEL = "/images/popup/button_cancel_black.png";
 
+    // Natural (1920-px-space) sizes
     private static final double BTN_ACTION_W = 360;
     private static final double BTN_CANCEL_W = 200;
+    private static final double CARD_W       = 520;
 
     public interface Callbacks {
         void onKLLC();
@@ -24,11 +35,7 @@ public class BusStopUI {
     }
 
     private final Callbacks cb;
-    // FIX: accept the unscaled scene root (the outermost StackPane in GameLauncher)
-    // so the dim overlay fills the entire window including black bars.
     private final StackPane sceneRoot;
-
-    // FIX: guard against double-open on fast click
     private boolean showing = false;
 
     public BusStopUI(StackPane sceneRoot, Callbacks cb) {
@@ -37,33 +44,42 @@ public class BusStopUI {
     }
 
     public void show() {
-        // FIX: prevent double-open
         if (showing) return;
         showing = true;
 
+        // ── Full-window dim overlay ───────────────────────────────────────────
         StackPane overlay = new StackPane();
-        // FIX: fill the entire scene root (including black bars) with the dim
         overlay.setStyle("-fx-background-color: rgba(0,0,0,0.55);");
         overlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        // Ensure overlay covers the full scene, not just its preferred size
         overlay.prefWidthProperty().bind(sceneRoot.widthProperty());
         overlay.prefHeightProperty().bind(sceneRoot.heightProperty());
 
+        // ── Card at natural size ──────────────────────────────────────────────
         StackPane card = buildCard(overlay);
+
+        // ── Scale card to match current window zoom ───────────────────────────
+        Scale cardScale = new Scale(1, 1);
+        cardScale.pivotXProperty().bind(Bindings.divide(card.widthProperty(), 2));
+        cardScale.pivotYProperty().bind(Bindings.divide(card.heightProperty(), 2));
+        cardScale.xProperty().bind(Bindings.createDoubleBinding(
+                () -> Math.min(sceneRoot.getWidth() / 1920.0, sceneRoot.getHeight() / 1080.0),
+                sceneRoot.widthProperty(), sceneRoot.heightProperty()));
+        cardScale.yProperty().bind(cardScale.xProperty());
+        card.getTransforms().add(cardScale);
+
         overlay.getChildren().add(card);
         sceneRoot.getChildren().add(overlay);
 
-        card.setScaleX(0.88); card.setScaleY(0.88); card.setOpacity(0);
-        ScaleTransition st = new ScaleTransition(Duration.millis(220), card);
-        st.setToX(1); st.setToY(1);
+        // Entrance animation
+        card.setOpacity(0);
         FadeTransition ft = new FadeTransition(Duration.millis(220), card);
         ft.setToValue(1);
-        st.play(); ft.play();
+        ft.play();
     }
 
     private StackPane buildCard(StackPane overlay) {
         ImageView bg = loadImg(POPUP_BG);
-        bg.setFitWidth(520);
+        bg.setFitWidth(CARD_W);
         bg.setPreserveRatio(true);
 
         ImageView kllcBtn   = makeBtn(BTN_KLLC,   BTN_ACTION_W, () -> dismiss(overlay, cb::onKLLC));
@@ -75,7 +91,7 @@ public class BusStopUI {
         btnStack.setStyle("-fx-padding: 48 40 36 40;");
 
         StackPane card = new StackPane(bg, btnStack);
-        card.setMaxWidth(520);
+        card.setMaxWidth(CARD_W);
         return card;
     }
 
@@ -84,11 +100,10 @@ public class BusStopUI {
         iv.setFitWidth(width);
         iv.setPreserveRatio(true);
         iv.setCursor(javafx.scene.Cursor.HAND);
-
         iv.setOnMouseEntered(e  -> { iv.setScaleX(1.05); iv.setScaleY(1.05); iv.setOpacity(0.88); });
         iv.setOnMouseExited(e   -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  iv.setOpacity(1.0);  });
         iv.setOnMousePressed(e  -> { iv.setScaleX(0.95); iv.setScaleY(0.95); e.consume(); });
-        iv.setOnMouseReleased(e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  });
+        iv.setOnMouseReleased(e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0); });
         iv.setOnMouseClicked(e  -> { e.consume(); onClick.run(); });
         return iv;
     }
@@ -96,7 +111,6 @@ public class BusStopUI {
     private void dismiss(StackPane overlay, Runnable callback) {
         overlay.prefWidthProperty().unbind();
         overlay.prefHeightProperty().unbind();
-
         FadeTransition ft = new FadeTransition(Duration.millis(150), overlay);
         ft.setToValue(0);
         ft.setOnFinished(e -> {

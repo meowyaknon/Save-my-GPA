@@ -24,7 +24,9 @@ public class RainEvent extends Event {
         player.addEffect(new WetFeetDebuff());
     }
 
-    @Override protected String getName() { return "ฝนตกหนัก"; }
-    @Override protected String getDescription() { return "ฝนตกหนัก ถุงเท้าเปียก อารมณ์ไม่ดี"; }
+    @Override
+    public String getName() { return "ฝนตกหนัก"; }
+    @Override
+    public String getDescription() { return "ฝนตกหนัก ถุงเท้าเปียก อารมณ์ไม่ดี"; }
     @Override public double getChance() { return 0.3; }
 }

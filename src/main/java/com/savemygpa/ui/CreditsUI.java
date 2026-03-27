@@ -9,20 +9,13 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.*;
 import javafx.util.Duration;
 
-/**
- * CreditsUI — Credits page.
- *
- * CHANGE: Content card now uses /images/popup/big_block_black.png (horizontal
- * image) as its background instead of the plain rgba rounded rectangle.
- */
 public class CreditsUI {
 
     private static final String BG_PATH  = "/images/menu/menu_no_logo.jpg";
-    // CHANGE: horizontal block image for the card overlay
     private static final String CARD_BG  = "/images/popup/big_block_black.png";
-    private static final String BTN_BACK = "/images/menu/menu_quit.png";
+    private static final String BTN_BACK = "/images/menu/backward.png";
     private static final double BTN_W    = 300;
-    private static final double CARD_W   = 700;
+    private static final double CARD_W   = 820;
 
     private final Runnable onBack;
 

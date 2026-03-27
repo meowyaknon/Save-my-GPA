@@ -21,7 +21,9 @@ public class SeniorAdviceEvent extends Event {
         player.changeStat(StatType.INTELLIGENCE, 5);
     }
 
-    @Override protected String getName() { return "รุ่นพี่ชวนคุยเรื่องโปรเจค"; }
-    @Override protected String getDescription() { return "ระหว่างนั่งพัก มีรุ่นพี่มาทักและให้คำปรึกษาเรื่องโปรเจค ได้ทริคดีๆ กลับไปเพียบ!"; }
+    @Override
+    public String getName() { return "รุ่นพี่ชวนคุยเรื่องโปรเจค"; }
+    @Override
+    public String getDescription() { return "ระหว่างนั่งพัก มีรุ่นพี่มาทักและให้คำปรึกษาเรื่องโปรเจค ได้ทริคดีๆ กลับไปเพียบ!"; }
     @Override public double getChance() { return 0.35; }
 }

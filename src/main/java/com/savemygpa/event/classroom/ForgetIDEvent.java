@@ -24,7 +24,9 @@ public class ForgetIDEvent extends Event {
         player.changeStat(StatType.ENERGY, -6);
     }
 
-    @Override protected String getName() { return "บัตร นศ. หาย"; }
-    @Override protected String getDescription() { return "ตกใจสุดขีด ต้องรีบไปทำเรื่องหน้าห้องสอบ เสียพลังงานและขวัญกำลังใจ"; }
+    @Override
+    public String getName() { return "บัตร นศ. หาย"; }
+    @Override
+    public String getDescription() { return "ตกใจสุดขีด ต้องรีบไปทำเรื่องหน้าห้องสอบ เสียพลังงานและขวัญกำลังใจ"; }
     @Override public double getChance() { return 0.25; }
 }

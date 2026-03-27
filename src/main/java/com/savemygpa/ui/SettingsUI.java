@@ -10,20 +10,11 @@ import javafx.scene.paint.Color;
 import javafx.scene.text.*;
 import javafx.util.Duration;
 
-/**
- * SettingsUI — Settings page.
- *
- * CHANGE: The content card now uses /images/popup/big_block_black.png as a
- * horizontal image background (instead of a plain rgba rounded rectangle).
- * The menu background image remains unchanged.
- * Back button is still image-based (/images/menu/menu_quit.png).
- */
 public class SettingsUI {
 
     private static final String BG_PATH    = "/images/menu/menu_no_logo.jpg";
-    // CHANGE: horizontal block image for the card overlay
     private static final String CARD_BG    = "/images/popup/big_block_black.png";
-    private static final String BTN_BACK   = "/images/menu/menu_quit.png";
+    private static final String BTN_BACK   = "/images/menu/backward.png";
     private static final double BTN_W      = 300;
     private static final double CARD_W     = 820;
 

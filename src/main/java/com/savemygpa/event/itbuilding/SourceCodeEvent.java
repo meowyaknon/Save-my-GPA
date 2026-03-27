@@ -18,7 +18,7 @@ public class SourceCodeEvent extends Event {
         if (hasOccurred) return false;
         if (context.getLocation() != Location.IT_BUILDING) return false;
         int day = timeSystem.getCurrentDay();
-        return (day >= 1 && day <= 5) || (day >= 8 && day <= 12);
+        return (day >= 5 && day <= 6) || (day >= 12 && day <= 13);
     }
 
     @Override
@@ -27,7 +27,9 @@ public class SourceCodeEvent extends Event {
         player.changeStat(StatType.INTELLIGENCE, 25);
     }
 
-    @Override protected String getName() { return "ได้รับ Source Code"; }
-    @Override protected String getDescription() { return "รุ่นพีใจดีเดินเอาไฟล์สรุปและแนวข้อสอบมาให้"; }
+    @Override
+    public String getName() { return "ได้รับ Source Code"; }
+    @Override
+    public String getDescription() { return "รุ่นพีใจดีเดินเอาไฟล์สรุปและแนวข้อสอบมาให้"; }
     @Override public double getChance() { return 0.2; }
 }

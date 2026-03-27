@@ -24,7 +24,9 @@ public class HurtHeadEvent extends Event {
         player.addEffect(new WhyDizzyDebuff());
     }
 
-    @Override protected String getName() { return "โป๊กกระได"; }
-    @Override protected String getDescription() { return "ก้าวเข้ามาแล้วโขกบรรไดเจ้ากรรม มึนตึบเลย"; }
+    @Override
+    public String getName() { return "โป๊กกระได"; }
+    @Override
+    public String getDescription() { return "ก้าวเข้ามาแล้วโขกบรรไดเจ้ากรรม มึนตึบเลย"; }
     @Override public double getChance() { return 0.25; }
 }

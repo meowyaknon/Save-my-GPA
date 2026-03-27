@@ -22,7 +22,9 @@ public class PerfectCompileEvent extends Event {
         player.changeStat(StatType.INTELLIGENCE, 2);
     }
 
-    @Override protected String getName() { return "Compile ผ่านในครั้งเดียว"; }
-    @Override protected String getDescription() { return "โค้ดยาวเที้ยมดัน Run ผ่านฉลุยไม่มี Error ความฟินพุ่งทะลุหลอด"; }
+    @Override
+    public String getName() { return "Compile ผ่านในครั้งเดียว"; }
+    @Override
+    public String getDescription() { return "โค้ดยาวเที้ยมดัน Run ผ่านฉลุยไม่มี Error ความฟินพุ่งทะลุหลอด"; }
     @Override public double getChance() { return 0.2; }
 }

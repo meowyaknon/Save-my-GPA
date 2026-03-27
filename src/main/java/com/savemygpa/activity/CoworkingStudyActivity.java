@@ -42,8 +42,8 @@ public class CoworkingStudyActivity extends Activity {
         };
 
         player.changeStat(StatType.INTELLIGENCE, intelligenceGain);
-        player.changeStat(StatType.MOOD, StatConfig.REVIEW_MOOD_LOSS);
-        player.changeStat(StatType.ENERGY, StatConfig.REVIEW_ENERGY_LOSS);
+        player.changeStat(StatType.MOOD, -StatConfig.REVIEW_MOOD_LOSS);
+        player.changeStat(StatType.ENERGY, -StatConfig.REVIEW_ENERGY_LOSS);
     }
 
     @Override

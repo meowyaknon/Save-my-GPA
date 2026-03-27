@@ -18,8 +18,8 @@ public final class StatConfig {
 
     // Classroom
     public static final int CLASSROOM_LOW_INTELLIGENCE_GAIN = 3;
-    public static final int CLASSROOM_MEDIUM_INTELLIGENCE_GAIN = 5;
-    public static final int CLASSROOM_HIGH_INTELLIGENCE_GAIN = 7;
+    public static final int CLASSROOM_MEDIUM_INTELLIGENCE_GAIN = 4;
+    public static final int CLASSROOM_HIGH_INTELLIGENCE_GAIN = 6;
     public static final int CLASSROOM_MOOD_LOSS = 20;
     public static final int CLASSROOM_ENERGY_LOSS = 4;
 
@@ -28,7 +28,7 @@ public final class StatConfig {
 
     // Auditorium
     public static final int AUDITORIUM_MOOD_GAIN = 25;
-    public static final int AUDITORIUM_ENERGY_LOSS = 2;
+    public static final int AUDITORIUM_ENERGY_LOSS = 1;
 
     public static final int AUDITORIUM_ENERGY_REQUIREMENT = 2;
 
@@ -45,13 +45,6 @@ public final class StatConfig {
 
     public static final int REVIEW_ENERGY_REQUIREMENT = 1;
     public static final int REVIEW_MOOD_REQUIREMENT = 5;
-
-    // EXAM
-    public static final int EXAM_MOOD_LOSS = 30;
-    public static final int EXAM_ENERGY_LOSS = 4;
-
-    public static final int EXAM_MOOD_REQUIREMENT = 30;
-    public static final int EXAM_ENERGY_REQUIREMENT = 4;
 
     private StatConfig() {}
 
