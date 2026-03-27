@@ -1,28 +1,31 @@
 package com.savemygpa.exam;
 
-import com.savemygpa.player.Player;
-import com.savemygpa.player.StatTier;
-import com.savemygpa.player.StatType;
-import javafx.animation.KeyFrame;
-import javafx.animation.KeyValue;
-import javafx.animation.Timeline;
-import javafx.geometry.Insets;
-import javafx.geometry.Pos;
-import javafx.scene.control.*;
-import javafx.scene.image.Image;
-import javafx.scene.image.ImageView;
-import javafx.scene.layout.*;
-import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
-import javafx.scene.text.Font;
-import javafx.util.Duration;
-import java.util.Random;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.function.UnaryOperator;
 
+import com.savemygpa.player.Player;
+import com.savemygpa.player.StatTier;
+import com.savemygpa.player.StatType;
+
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
+import javafx.geometry.Pos;
+import javafx.scene.control.Button;
+import javafx.scene.control.Label;
+import javafx.scene.control.TextField;
+import javafx.scene.control.TextFormatter;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
+import javafx.scene.shape.Rectangle;
 import javafx.scene.text.Font;
+import javafx.util.Duration;
 
 public class CountingMiniGame {
 
@@ -436,7 +439,16 @@ public class CountingMiniGame {
         try {
             answer = Integer.parseInt(input);
         } catch (NumberFormatException e) {
-            resultLabel.setText("กรุณากรอกตัวเลข");
+            resultLabel.setText("⚠ กรุณากรอกตัวเลข");
+            resultLabel.setLayoutX(770);
+            resultLabel.setLayoutY(910);
+            resultLabel.setStyle("""
+                -fx-font-family: 'IBM Plex Sans Thai';
+                -fx-font-size: 36px;
+                -fx-font-weight: bold;
+                -fx-text-fill: #ffa726;
+                -fx-effect: dropshadow(gaussian, white, 4, 1, 0, 0);
+            """);
             return;
         }
 
