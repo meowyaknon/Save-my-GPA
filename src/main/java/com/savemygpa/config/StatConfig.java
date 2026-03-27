@@ -28,7 +28,7 @@ public final class StatConfig {
 
     // Auditorium
     public static final int AUDITORIUM_MOOD_GAIN = 25;
-    public static final int AUDITORIUM_ENERGY_LOSS = 2;
+    public static final int AUDITORIUM_ENERGY_LOSS = 1;
 
     public static final int AUDITORIUM_ENERGY_REQUIREMENT = 2;
 
