@@ -80,6 +80,7 @@ public class GameLauncher extends Application {
     // =========================================================================
     @Override
     public void start(Stage stage) {
+        Font.loadFont(getClass().getResourceAsStream("/fonts/IBMPlexSansThai-Medium.ttf"), 14);
         this.stage = stage;
         stage.setTitle("Save My GPA");
 
@@ -174,6 +175,7 @@ public class GameLauncher extends Application {
                     "ตื่นเต้น... กลัว... แต่ก็พร้อมสู้!",
                     "2 สัปดาห์ข้างหน้าจะเป็นยังไง?",
                     "ทุกอย่างขึ้นอยู่กับตัวเอง..."
+
             }, () -> {
                 FadeTransition fo = new FadeTransition(Duration.millis(700), black);
                 fo.setToValue(0);
@@ -622,7 +624,7 @@ public class GameLauncher extends Application {
         CaptchaMiniGame[] ref = new CaptchaMiniGame[1];
         ref[0] = new CaptchaMiniGame(player, () -> {
             performSilent(exam, Location.CLASSROOM);
-            if (timeSystem.getCurrentDay() <= 7) progExam1Score = ref[0].getTotalScore();
+            if (timeSystem.getCurrentDay() <= 6) progExam1Score = ref[0].getTotalScore();
             else                                  progExam2Score = ref[0].getTotalScore();
             actionLocked = false;
             showITBuilding();

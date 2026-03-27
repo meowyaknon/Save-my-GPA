@@ -22,6 +22,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.function.UnaryOperator;
 
+import javafx.scene.text.Font;
+
 public class CountingMiniGame {
 
     private static final int TOTAL_ROUNDS = 5;
@@ -58,7 +60,7 @@ public class CountingMiniGame {
     private final Button submitButton = new Button("ยืนยัน ✔");
 
     private int getSecondsPerRound() {
-        return 5 + (player.getStat(StatType.MOOD) / 20);
+        return 4 + (player.getStat(StatType.MOOD) / 20);
     }
 
     public CountingMiniGame(Player player, Runnable onFinish) {
@@ -131,10 +133,10 @@ public class CountingMiniGame {
         contentArea.getChildren().clear();
 
         // --- roundLabel ตำแหน่ง x=1080 y=935 ---
-        roundLabel.setStyle("-fx-font-size: 15px; -fx-text-fill: #171b30;");
+        roundLabel.setStyle("-fx-font-family: 'IBM Plex Sans Thai Medium';-fx-font-size: 15px; -fx-text-fill: #171b30;");
 
 // --- timerLabel ตำแหน่ง x=925 y=964 ---
-        timerLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: #171b30;");
+        timerLabel.setStyle("-fx-font-family: 'IBM Plex Sans Thai Medium'; -fx-font-size: 15px; -fx-font-weight: bold; -fx-padding: 10 0 10 0; -fx-text-fill: #171b30;");
 
 // --- answerField อยู่ใน text_bar (x=775 y=992 w=231 h=54) ---
 // กลาง x = 775 + 231/2 = 890.5, กลาง y = 992 + 54/2 = 1019
@@ -143,6 +145,7 @@ public class CountingMiniGame {
         answerField.setPrefHeight(34); // 54 - 20
         answerField.setPromptText("0");
         answerField.setStyle("""
+        -fx-font-family: 'IBM Plex Sans Thai Medium';
         -fx-font-size: 30px;
         -fx-alignment: center;
         -fx-background-color: transparent;
@@ -154,8 +157,10 @@ public class CountingMiniGame {
             String newText = change.getControlNewText();
 
             if (newText.matches("\\d{0,4}")) {
+                resultLabel.setText("");
                 return change;
             }
+            resultLabel.setText("กรุณากรอกตัวเลข");
             return null;
         };
 
@@ -167,17 +172,17 @@ public class CountingMiniGame {
         overlayPane.setPrefSize(1920, 1080);
         overlayPane.setPickOnBounds(false);
 
-        roundLabel.setLayoutX(1080);
-        roundLabel.setLayoutY(935);
+        roundLabel.setLayoutX(1073);
+        roundLabel.setLayoutY(933);
 
-        timerLabel.setLayoutX(935);
-        timerLabel.setLayoutY(960);
+        timerLabel.setLayoutX(940);
+        timerLabel.setLayoutY(947);
 
         answerField.setLayoutX(790);
         answerField.setLayoutY(985);
 
-        resultLabel.setLayoutX(30);
-        resultLabel.setLayoutY(20);
+        resultLabel.setLayoutX(10);
+        resultLabel.setLayoutY(5);
 
         overlayPane.getChildren().addAll(roundLabel, timerLabel, answerField, resultLabel);
 
@@ -244,7 +249,7 @@ public class CountingMiniGame {
 
         // --- ซ้อน layer ---
         // bg > animalPane > timeBar > timeBarStroke > inputStack > applyImg > roundLabel
-        resultLabel.setStyle("-fx-font-size: 48px; -fx-text-fill: #ffffff;");
+        resultLabel.setStyle("-fx-font-family: 'IBM Plex Sans Thai Medium';-fx-font-size: 48px; -fx-text-fill: #dd1616;");
 
         StackPane gameStack = new StackPane(
                 bg,
@@ -262,6 +267,7 @@ public class CountingMiniGame {
 
         currentRound++;
         resultLabel.setText("");
+        resultLabel.setFont(Font.font("IBM Plex Sans Thai Medium", 14));
         answerField.clear();
         answerField.setDisable(false);
         submitButton.setDisable(false);
@@ -374,24 +380,14 @@ public class CountingMiniGame {
                 )
         );
         colorAnim.play();
-
         int[] timeLeft = {getSecondsPerRound()};
         updateTimerLabel(timeLeft[0]);
+
+        timerLabel.setStyle("-fx-font-family: 'IBM Plex Sans Thai Medium'; -fx-font-size: 15px; -fx-font-weight: bold; -fx-padding: 10 0 10 0; -fx-text-fill: #171b30;");
 
         countdownTimer = new Timeline(new KeyFrame(Duration.seconds(1), e -> {
             timeLeft[0]--;
             updateTimerLabel(timeLeft[0]);
-
-            double ratio = 1.0 - (double) timeLeft[0] / getSecondsPerRound();
-            int r = Math.min(255, (int)(238 * ratio) + 17);
-            int g = Math.min(255, (int)(255 * (1 - ratio)));
-            int b = Math.min(255, (int)(255 * (1 - ratio)));
-
-            String color = "#171b30";
-            timerLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
-
-            //String color = String.format("#%02x%02x%02x", r, g, b);
-            //timerLabel.setStyle("-fx-font-size: 15px; -fx-font-weight: bold; -fx-text-fill: " + color + ";");
 
             if (timeLeft[0] <= 0) {
                 countdownTimer.stop();
@@ -425,10 +421,10 @@ public class CountingMiniGame {
         if (!input.isEmpty() && answer == currentDuckCount) {
             totalScore += POINTS_PER_ROUND;
             resultLabel.setText("✅ ถูกต้อง! (ส่งทันเวลาพอดี) +" + POINTS_PER_ROUND + " คะแนน  |  เป็ด " + currentDuckCount + " ตัว");
-            resultLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #66bb6a;");
+            resultLabel.setStyle("-fx-font-family: 'IBM Plex Sans Thai Medium'; -fx-font-size: 14px; -fx-text-fill: #66bb6a;");
         } else {
             resultLabel.setText("หมดเวลา! เป็ดมีทั้งหมด " + currentDuckCount + " ตัว");
-            resultLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #ef5350;");
+            resultLabel.setStyle("-fx-font-family: 'IBM Plex Sans Thai Medium'; -fx-font-size: 14px; -fx-text-fill: #ef5350;");
         }
 
         proceedAfterAnswer();
@@ -440,7 +436,7 @@ public class CountingMiniGame {
         try {
             answer = Integer.parseInt(input);
         } catch (NumberFormatException e) {
-            resultLabel.setText("⚠ กรุณากรอกตัวเลข");
+            resultLabel.setText("กรุณากรอกตัวเลข");
             return;
         }
 
@@ -455,94 +451,44 @@ public class CountingMiniGame {
         if (answer == currentDuckCount) {
             totalScore += POINTS_PER_ROUND;
             resultLabel.setText("✅  ถูกต้อง! +" + POINTS_PER_ROUND + " คะแนน  |  เป็ด " + currentDuckCount + " ตัว");
-            resultLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #66bb6a;");
+            resultLabel.setStyle("-fx-font-family: 'IBM Plex Sans Thai Medium'; -fx-font-size: 14px; -fx-text-fill: #66bb6a;");
         } else {
             resultLabel.setText("❌  ผิด! เป็ดมีทั้งหมด " + currentDuckCount + " ตัว");
-            resultLabel.setStyle("-fx-font-size: 14px; -fx-text-fill: #ef5350;");
+            resultLabel.setStyle("-fx-font-family: 'IBM Plex Sans Thai Medium'; -fx-font-size: 14px; -fx-text-fill: #ef5350;");
         }
 
         proceedAfterAnswer();
     }
 
     private void proceedAfterAnswer() {
-        if (currentRound >= TOTAL_ROUNDS) {
-            boolean isCorrect = resultLabel.getText().startsWith("✅");
-            if (isCorrect) showRightEndScreen();
-            else showWrongEndScreen();
-        } else {
             boolean isCorrect = resultLabel.getText().startsWith("✅");
             if (isCorrect) showRightScreen();
             else showWrongScreen();
+    }
+
+    private void showEndScreen() {
+        contentArea.getChildren().clear();
+
+        ImageView bg    = loadFullImg("/images/exam/math/end/end_screen.jpg");
+        ImageView btnImg = loadFullImg("/images/exam/math/end/next_btn_end.png");
+
+        Label scoreEndLabel = new Label(totalScore + " / 50");
+        scoreEndLabel.setStyle("""
+            -fx-font-size: 212px;
+            -fx-font-weight: bold;
+            -fx-text-fill: black;
+            """);
+        StackPane.setAlignment(scoreEndLabel, Pos.TOP_LEFT);
+        if (totalScore > 0){
+            scoreEndLabel.setTranslateX(615);
+        } else{
+            scoreEndLabel.setTranslateX(675);
         }
-    }
-
-    private void showRightEndScreen() {
-        contentArea.getChildren().clear();
-
-        ImageView bg    = loadFullImg("/images/exam/math/right/right_right_end.png");
-        ImageView btnImg = loadFullImg("/images/exam/math/right/button_right.png");
-        ImageView bgreal       = loadFullImg("/images/exam/math/right/suan_right.jpg");
-        ImageView bigPed   = loadFullImg("/images/exam/math/right/big_ped_right.png");
-
-        Label scoreEndLabel = new Label("คุณได้คะแนน " + totalScore + " / 50 คะแนน");
-        scoreEndLabel.setStyle("""
-            -fx-font-size: 39px;
-            -fx-font-weight: bold;
-            -fx-text-fill: black;
-            """);
-        StackPane.setAlignment(scoreEndLabel, Pos.TOP_LEFT);
-        scoreEndLabel.setTranslateX(1176);
-        scoreEndLabel.setTranslateY(478);
-
-        Label answerLabel = new Label("ในสวนมีเป็ดทั้งหมด " + currentDuckCount + " ตัว");
-        answerLabel.setStyle("""
-            -fx-font-size: 39px;
-            -fx-font-weight: bold;
-            -fx-text-fill: black;
-            """);
-        StackPane.setAlignment(answerLabel, Pos.TOP_LEFT);
-        answerLabel.setTranslateX(1176);
-        answerLabel.setTranslateY(528);
+        scoreEndLabel.setTranslateY(280);
 
         applyButtonEffect(btnImg, () -> onFinish.run()); // กลับไปหน้าเกมปกติ
 
-        StackPane layered = new StackPane(bgreal,bg,bigPed, btnImg, scoreEndLabel,answerLabel);
-        layered.setStyle("-fx-background-color: #0a0a0a;");
-        contentArea.getChildren().add(layered);
-    }
-
-    private void showWrongEndScreen() {
-        contentArea.getChildren().clear();
-
-        ImageView bg     = loadFullImg("/images/exam/math/wrong/wrong_wrong_end.png");
-        ImageView btnImg = loadFullImg("/images/exam/math/wrong/button_wrong.png");
-        ImageView bgreal        = loadFullImg("/images/exam/math/wrong/suan_wrong.jpg");
-        ImageView explosion = loadFullImg("/images/exam/math/wrong/explosion_wrong.png");
-        ImageView bigPed    = loadFullImg("/images/exam/math/wrong/big_ped_wrong.png");
-
-        Label scoreEndLabel = new Label("คุณได้คะแนน " + totalScore + " / 50 คะแนน");
-        scoreEndLabel.setStyle("""
-            -fx-font-size: 39px;
-            -fx-font-weight: bold;
-            -fx-text-fill: black;
-            """);
-        StackPane.setAlignment(scoreEndLabel, Pos.TOP_LEFT);
-        scoreEndLabel.setTranslateX(1176);
-        scoreEndLabel.setTranslateY(478);
-
-        Label answerLabel = new Label("ในสวนมีเป็ดทั้งหมด " + currentDuckCount + " ตัว");
-        answerLabel.setStyle("""
-            -fx-font-size: 39px;
-            -fx-font-weight: bold;
-            -fx-text-fill: black;
-            """);
-        StackPane.setAlignment(answerLabel, Pos.TOP_LEFT);
-        answerLabel.setTranslateX(1176);
-        answerLabel.setTranslateY(528);
-
-        applyButtonEffect(btnImg, () -> onFinish.run()); // กลับไปหน้าเกมปกติ
-
-        StackPane layered = new StackPane(bgreal,explosion,bg, btnImg,bigPed, scoreEndLabel,answerLabel);
+        StackPane layered = new StackPane(bg, btnImg, scoreEndLabel);
         layered.setStyle("-fx-background-color: #0a0a0a;");
         contentArea.getChildren().add(layered);
     }
@@ -553,25 +499,37 @@ public class CountingMiniGame {
 
         ImageView bg       = loadFullImg("/images/exam/math/right/suan_right.jpg");
         ImageView rightImg = loadFullImg("/images/exam/math/right/right_right.png");
+        ImageView rightendImg = loadFullImg("/images/exam/math/right/right_right_end.png");
         ImageView bigPed   = loadFullImg("/images/exam/math/right/big_ped_right.png");
         ImageView btnImg   = loadFullImg("/images/exam/math/right/button_right.png");
 
-        applyButtonEffect(btnImg, () -> loadRound()); // เอา countdown ออก
+        if (currentRound >= TOTAL_ROUNDS) {
+            applyButtonEffect(btnImg, () -> showEndScreen()); // เอา countdown ออก
+        } else{
+            applyButtonEffect(btnImg, () -> loadRound()); // เอา countdown ออก
+        }
 
         Label answerLabel = new Label("ในสวนมีเป็ดทั้งหมด " + currentDuckCount + " ตัว");
         answerLabel.setStyle("""
-            -fx-font-size: 39px;
-            -fx-font-weight: bold;
-            -fx-text-fill: black;
-            """);
+    -fx-font-family: 'IBM Plex Sans Thai Medium';
+    -fx-font-size: 39px;
+    -fx-font-weight: bold;
+    -fx-text-fill: black;
+    """);
         StackPane.setAlignment(answerLabel, Pos.TOP_LEFT);
         answerLabel.setTranslateX(1176);
-        answerLabel.setTranslateY(488);
+        answerLabel.setTranslateY(481);
 
         // answerLabel อยู่บน btnImg
-        StackPane layered = new StackPane(bg, rightImg, bigPed, btnImg, answerLabel);
-        layered.setStyle("-fx-background-color: #0a0a0a;");
-        contentArea.getChildren().add(layered);
+        if (currentRound >= TOTAL_ROUNDS) {
+            StackPane layered = new StackPane(bg, rightendImg, bigPed, btnImg, answerLabel);
+            layered.setStyle("-fx-background-color: #0a0a0a;");
+            contentArea.getChildren().add(layered);
+        } else{
+            StackPane layered = new StackPane(bg, rightendImg, bigPed, btnImg, answerLabel);
+            layered.setStyle("-fx-background-color: #0a0a0a;");
+            contentArea.getChildren().add(layered);
+        }
     }
 
     private void showWrongScreen() {
@@ -580,25 +538,37 @@ public class CountingMiniGame {
         ImageView bg        = loadFullImg("/images/exam/math/wrong/suan_wrong.jpg");
         ImageView explosion = loadFullImg("/images/exam/math/wrong/explosion_wrong.png");
         ImageView wrongImg  = loadFullImg("/images/exam/math/wrong/wrong_wrong.png");
+        ImageView wrongendImg  = loadFullImg("/images/exam/math/wrong/wrong_wrong_end.png");
         ImageView bigPed    = loadFullImg("/images/exam/math/wrong/big_ped_wrong.png");
         ImageView btnImg    = loadFullImg("/images/exam/math/wrong/button_wrong.png");
 
-        applyButtonEffect(btnImg, () -> loadRound()); // เอา countdown ออก
+        if (currentRound >= TOTAL_ROUNDS) {
+            applyButtonEffect(btnImg, () -> showEndScreen()); // เอา countdown ออก
+        } else{
+            applyButtonEffect(btnImg, () -> loadRound()); // เอา countdown ออก
+        }
 
         Label answerLabel = new Label("ในสวนมีเป็ดทั้งหมด " + currentDuckCount + " ตัว");
         answerLabel.setStyle("""
+            -fx-font-family: 'IBM Plex Sans Thai Medium';
             -fx-font-size: 39px;
             -fx-font-weight: bold;
             -fx-text-fill: black;
             """);
         StackPane.setAlignment(answerLabel, Pos.TOP_LEFT);
         answerLabel.setTranslateX(1176);
-        answerLabel.setTranslateY(488);
+        answerLabel.setTranslateY(481);
 
         // answerLabel อยู่บน btnImg
-        StackPane layered = new StackPane(bg, explosion, wrongImg, bigPed, btnImg, answerLabel);
-        layered.setStyle("-fx-background-color: #0a0a0a;");
-        contentArea.getChildren().add(layered);
+        if (currentRound >= TOTAL_ROUNDS) {
+            StackPane layered = new StackPane(bg, explosion, wrongendImg, bigPed, btnImg, answerLabel);
+            layered.setStyle("-fx-background-color: #0a0a0a;");
+            contentArea.getChildren().add(layered);
+        }else{
+            StackPane layered = new StackPane(bg, explosion, wrongImg, bigPed, btnImg, answerLabel);
+            layered.setStyle("-fx-background-color: #0a0a0a;");
+            contentArea.getChildren().add(layered);
+        }
     }
 
     private void showReadyScreen() {
@@ -611,12 +581,13 @@ public class CountingMiniGame {
 
         Label timeLabel = new Label("โดยคุณมีเวลา " + getSecondsPerRound() + " วินาที");
         timeLabel.setStyle("""
+            -fx-font-family: 'IBM Plex Sans Thai Medium';
             -fx-font-size: 49px;
             -fx-font-weight: bold;
             -fx-text-fill: black;
             """);
         StackPane.setAlignment(timeLabel, Pos.TOP_CENTER);
-        timeLabel.setTranslateY(638);
+        timeLabel.setTranslateY(630);
 
         applyButtonEffect(btnImg, () -> loadRound()); // เอา countdown ออก
 
@@ -628,10 +599,11 @@ public class CountingMiniGame {
 
     // --- Helpers ---
     private void applyButtonEffect(ImageView btnImg, Runnable onClick) {
-        btnImg.setOnMouseEntered(e -> { btnImg.setScaleX(0.97); btnImg.setScaleY(0.97); btnImg.setOpacity(0.85); });
-        btnImg.setOnMouseExited(e  -> { btnImg.setScaleX(1.0);  btnImg.setScaleY(1.0);  btnImg.setOpacity(1.0);  });
-        btnImg.setOnMousePressed(e -> { btnImg.setScaleX(0.94); btnImg.setScaleY(0.94); });
-        btnImg.setOnMouseReleased(e -> { btnImg.setScaleX(1.0); btnImg.setScaleY(1.0); onClick.run(); });
+        btnImg.setCursor(javafx.scene.Cursor.HAND);
+        btnImg.setOnMouseEntered (e -> btnImg.setOpacity(0.80)); // ชี้ปุ่ม -> ดรอปความสว่างนิดนึงให้รู้ว่าชี้
+        btnImg.setOnMouseExited  (e -> btnImg.setOpacity(1.00)); // เอาเมาส์ออก -> กลับมาสว่าง 100%
+        btnImg.setOnMousePressed (e -> btnImg.setOpacity(0.60)); // กดค้าง -> มืดลงไปเลยให้รู้ว่ากดแล้ว
+        btnImg.setOnMouseReleased(e -> { btnImg.setOpacity(0.80); onClick.run(); }); // ปล่อยคลิก -> คืนความสว่าง แล้วทำงาน
     }
 
     private ImageView loadFullImg(String path) {
@@ -646,8 +618,8 @@ public class CountingMiniGame {
         StatTier tier = player.getStatTier(player.getStat(StatType.INTELLIGENCE));
         int duckMin, duckMax, lizardMin, lizardMax;
         switch (tier) {
-            case HIGH   -> { duckMin = 8;  duckMax = 13;  lizardMin = 0; lizardMax = 6; }
-            case MEDIUM -> { duckMin = 12;  duckMax = 17; lizardMin = 4; lizardMax = 8; }
+            case HIGH   -> { duckMin = 10;  duckMax = 15;  lizardMin = 0; lizardMax = 6; }
+            case MEDIUM -> { duckMin = 13;  duckMax = 18; lizardMin = 4; lizardMax = 8; }
             default     -> { duckMin = 15; duckMax = 20; lizardMin = 6; lizardMax = 10; }
         }
         return new int[]{
