@@ -1,9 +1,11 @@
 package com.savemygpa.ui;
 
 import javafx.animation.*;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Pos;
 import javafx.scene.image.*;
 import javafx.scene.layout.*;
+import javafx.scene.transform.Scale;
 import javafx.util.Duration;
 
 public class CoworkingUI {
@@ -15,6 +17,7 @@ public class CoworkingUI {
 
     private static final double BTN_ACTION_W = 360;
     private static final double BTN_CANCEL_W = 200;
+    private static final double CARD_W       = 520;
 
     public interface Callbacks {
         void onRelax();
@@ -23,11 +26,7 @@ public class CoworkingUI {
     }
 
     private final Callbacks cb;
-    // FIX: accept the unscaled scene root so the dim overlay fills the
-    // entire window including black bars.
     private final StackPane sceneRoot;
-
-    // FIX: guard against double-open on fast click
     private boolean showing = false;
 
     public CoworkingUI(StackPane sceneRoot, Callbacks cb) {
@@ -36,32 +35,41 @@ public class CoworkingUI {
     }
 
     public void show() {
-        // FIX: prevent double-open
         if (showing) return;
         showing = true;
 
+        // ── Full-window dim overlay ───────────────────────────────────────────
         StackPane overlay = new StackPane();
-        // FIX: bind to scene root size so dim covers the full window
         overlay.setStyle("-fx-background-color: rgba(0,0,0,0.55);");
         overlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         overlay.prefWidthProperty().bind(sceneRoot.widthProperty());
         overlay.prefHeightProperty().bind(sceneRoot.heightProperty());
 
+        // ── Card at natural size ──────────────────────────────────────────────
         StackPane card = buildCard(overlay);
+
+        // ── Scale card to match current window zoom ───────────────────────────
+        Scale cardScale = new Scale(1, 1);
+        cardScale.pivotXProperty().bind(Bindings.divide(card.widthProperty(), 2));
+        cardScale.pivotYProperty().bind(Bindings.divide(card.heightProperty(), 2));
+        cardScale.xProperty().bind(Bindings.createDoubleBinding(
+                () -> Math.min(sceneRoot.getWidth() / 1920.0, sceneRoot.getHeight() / 1080.0),
+                sceneRoot.widthProperty(), sceneRoot.heightProperty()));
+        cardScale.yProperty().bind(cardScale.xProperty());
+        card.getTransforms().add(cardScale);
+
         overlay.getChildren().add(card);
         sceneRoot.getChildren().add(overlay);
 
-        card.setScaleX(0.88); card.setScaleY(0.88); card.setOpacity(0);
-        ScaleTransition st = new ScaleTransition(Duration.millis(220), card);
-        st.setToX(1); st.setToY(1);
+        card.setOpacity(0);
         FadeTransition ft = new FadeTransition(Duration.millis(220), card);
         ft.setToValue(1);
-        st.play(); ft.play();
+        ft.play();
     }
 
     private StackPane buildCard(StackPane overlay) {
         ImageView bg = loadImg(POPUP_BG);
-        bg.setFitWidth(520);
+        bg.setFitWidth(CARD_W);
         bg.setPreserveRatio(true);
 
         ImageView studyBtn  = makeBtn(BTN_STUDY,  BTN_ACTION_W, () -> dismiss(overlay, cb::onStudy));
@@ -73,7 +81,7 @@ public class CoworkingUI {
         btnStack.setStyle("-fx-padding: 48 40 36 40;");
 
         StackPane card = new StackPane(bg, btnStack);
-        card.setMaxWidth(520);
+        card.setMaxWidth(CARD_W);
         return card;
     }
 
@@ -82,11 +90,10 @@ public class CoworkingUI {
         iv.setFitWidth(width);
         iv.setPreserveRatio(true);
         iv.setCursor(javafx.scene.Cursor.HAND);
-
         iv.setOnMouseEntered(e  -> { iv.setScaleX(1.05); iv.setScaleY(1.05); iv.setOpacity(0.88); });
         iv.setOnMouseExited(e   -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  iv.setOpacity(1.0);  });
         iv.setOnMousePressed(e  -> { iv.setScaleX(0.95); iv.setScaleY(0.95); e.consume(); });
-        iv.setOnMouseReleased(e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  });
+        iv.setOnMouseReleased(e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0); });
         iv.setOnMouseClicked(e  -> { e.consume(); onClick.run(); });
         return iv;
     }
@@ -94,7 +101,6 @@ public class CoworkingUI {
     private void dismiss(StackPane overlay, Runnable callback) {
         overlay.prefWidthProperty().unbind();
         overlay.prefHeightProperty().unbind();
-
         FadeTransition ft = new FadeTransition(Duration.millis(150), overlay);
         ft.setToValue(0);
         ft.setOnFinished(e -> {

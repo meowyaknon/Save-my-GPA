@@ -24,7 +24,9 @@ public class FreeMealEvent extends Event {
         player.addEffect(new SeniorNoteBuff());
     }
 
-    @Override protected String getName() { return "เจอพี่รหัสสายซัพ"; }
-    @Override protected String getDescription() { return "พี่รหัสเลี้ยงข้าวชุดใหญ่พร้อมแนะแนวทางทำ Assignment"; }
+    @Override
+    public String getName() { return "เจอพี่รหัสสายซัพ"; }
+    @Override
+    public String getDescription() { return "พี่รหัสเลี้ยงข้าวชุดใหญ่พร้อมแนะแนวทางทำ Assignment"; }
     @Override public double getChance() { return 0.25; }
 }

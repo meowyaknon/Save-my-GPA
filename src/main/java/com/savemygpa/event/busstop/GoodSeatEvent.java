@@ -22,7 +22,9 @@ public class GoodSeatEvent extends Event {
         player.changeStat(StatType.INTELLIGENCE, 5);
     }
 
-    @Override protected String getName() { return "ได้นั่งมุมโปรด"; }
-    @Override protected String getDescription() { return "แอร์เย็นฉ่ำ ปลั๊กไฟพร้อม ที่นั่งว่างพอดี สมาธิมาเต็มร้อย"; }
+    @Override
+    public String getName() { return "ได้นั่งมุมโปรด"; }
+    @Override
+    public String getDescription() { return "แอร์เย็นฉ่ำ ปลั๊กไฟพร้อม ที่นั่งว่างพอดี สมาธิมาเต็มร้อย"; }
     @Override public double getChance() { return 0.3; }
 }

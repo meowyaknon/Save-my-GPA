@@ -10,19 +10,6 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
 
-/**
- * ActivityCutscene — black-overlay typewriter cutscene for activity actions.
- *
- * FIX (scaling): The overlay is now added to the UNSCALED scene root
- * (the outermost StackPane in GameLauncher) so it fills the entire window
- * at any resolution / windowed size.  The overlay's preferred size is bound
- * to the scene root's size, exactly like BusStopUI and CoworkingUI do.
- *
- * IMPORTANT: callers must pass GameLauncher's `root` field (the outermost
- * StackPane), NOT `overlayLayer` (which is scaled).
- *
- * TYPING SPEED: 110 ms per character (unchanged).
- */
 public class ActivityCutscene {
 
     private static final int TYPING_MS = 110;
@@ -41,9 +28,7 @@ public class ActivityCutscene {
         };
     }
 
-    // ── Full cutscene (black overlay + typewriter + audio) ───────────────────
-    //
-    // `sceneRoot` = GameLauncher's `root` (outermost, unscaled StackPane).
+    // ── Full cutscene ───────────────────
 
     public static void play(StackPane sceneRoot, String text, Runnable onDone) {
         AudioManager.getInstance().playMusic(AudioManager.Music.CUTSCENE);

@@ -29,7 +29,7 @@ public class AcceptanceUI {
 
     public StackPane buildView() {
         StackPane root = new StackPane();
-        root.setOpacity(0);   // start invisible — we fade in below
+        root.setOpacity(0);
 
         // Background
         ImageView bg = loadImg(BG_PATH);
@@ -53,11 +53,9 @@ public class AcceptanceUI {
         FadeTransition screenIn = new FadeTransition(Duration.millis(500), root);
         screenIn.setFromValue(0); screenIn.setToValue(1);
         screenIn.setOnFinished(e -> {
-            // Phase 2: slide + fade each button in with stagger
             slideIn(acceptBtn, 0);
             slideIn(refuseBtn, 140);
 
-            // Phase 3: start wiggle after buttons are visible
             PauseTransition bobDelay = new PauseTransition(Duration.millis(500));
             bobDelay.setOnFinished(ev -> {
                 startWiggle(acceptBtn, 0);
@@ -70,7 +68,6 @@ public class AcceptanceUI {
         return root;
     }
 
-    /** Slide a button up from +20px and fade from 0→1. */
     private void slideIn(ImageView iv, int delayMs) {
         iv.setTranslateY(20);
 

@@ -14,28 +14,16 @@ public class ExamActivity extends Activity {
         if (!timeSystem.isEnoughTime(getTimeCost())) {
             return RequirementReason.NOT_ENOUGH_TIME;
         }
-        else if (!player.hasStat(StatType.MOOD, StatConfig.EXAM_MOOD_REQUIREMENT)) {
-            return RequirementReason.NOT_ENOUGH_MOOD;
-        }
-        else if (!player.hasStat(StatType.ENERGY, StatConfig.EXAM_ENERGY_REQUIREMENT)) {
-            return RequirementReason.NOT_ENOUGH_ENERGY;
-        }
         return null;
     }
 
     @Override
     public String getFailMessage(RequirementReason reason) {
-        return switch (reason) {
-            case NOT_ENOUGH_TIME -> "Not enough time to take the exam";
-            case NOT_ENOUGH_ENERGY -> "Too tired to take the Exam";
-            case NOT_ENOUGH_MOOD -> "Not in the mood for exam";
-        };
+        return "Not enough time to take the exam";
     }
 
     @Override
     protected void applyEffects(Player player, TimeSystem timeSystem) {
-        player.changeStat(StatType.MOOD, -StatConfig.EXAM_MOOD_LOSS);
-        player.changeStat(StatType.ENERGY, -StatConfig.EXAM_ENERGY_LOSS);
     }
 
     @Override

@@ -23,7 +23,9 @@ public class DeanTreatsEvent extends Event {
         player.changeStat(StatType.ENERGY, 10);
     }
 
-    @Override protected String getName() { return "ท่านคณบดีเลี้ยงไอติม"; }
-    @Override protected String getDescription() { return "ท่านคณบดีเหมาไอติมมาแจกเด็กๆ พลังใจเต็มเปี่ยม"; }
+    @Override
+    public String getName() { return "ท่านคณบดีเลี้ยงไอติม"; }
+    @Override
+    public String getDescription() { return "ท่านคณบดีเหมาไอติมมาแจกเด็กๆ พลังใจเต็มเปี่ยม"; }
     @Override public double getChance() { return 0.15; }
 }

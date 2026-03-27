@@ -24,7 +24,9 @@ public class DuckEvent extends Event {
         player.changeStat(StatType.MOOD, 15);
     }
 
-    @Override protected String getName() { return "กองทัพเป็ด"; }
-    @Override protected String getDescription() { return "น้องเป็ดเดินพาเหรดข้ามถนน ต้องหยุดรอ แต่ได้ความน่ารักปลอบใจ"; }
+    @Override
+    public String getName() { return "กองทัพเป็ด"; }
+    @Override
+    public String getDescription() { return "น้องเป็ดเดินพาเหรดข้ามถนน ต้องหยุดรอ แต่ได้ความน่ารักปลอบใจ"; }
     @Override public double getChance() { return 0.35; }
 }

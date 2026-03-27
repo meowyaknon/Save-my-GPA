@@ -46,13 +46,6 @@ public final class StatConfig {
     public static final int REVIEW_ENERGY_REQUIREMENT = 1;
     public static final int REVIEW_MOOD_REQUIREMENT = 5;
 
-    // EXAM
-    public static final int EXAM_MOOD_LOSS = 30;
-    public static final int EXAM_ENERGY_LOSS = 4;
-
-    public static final int EXAM_MOOD_REQUIREMENT = 30;
-    public static final int EXAM_ENERGY_REQUIREMENT = 4;
-
     private StatConfig() {}
 
 }

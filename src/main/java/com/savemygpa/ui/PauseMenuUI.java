@@ -1,30 +1,21 @@
 package com.savemygpa.ui;
 
 import javafx.animation.*;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Pos;
 import javafx.scene.image.*;
 import javafx.scene.layout.*;
+import javafx.scene.transform.Scale;
 import javafx.util.Duration;
 
-/**
- * PauseMenuUI — pause overlay.
- *
- * FIX (scaling): The root overlay now has its preferred size bound to the
- * UNSCALED scene root (passed in via the constructor) so the dim fills the
- * entire physical window at any resolution / windowed size.
- *
- * API CHANGE: constructor now accepts the unscaled scene root StackPane from
- * GameLauncher (`root`, not `overlayLayer`).  GameLauncher must be updated to
- * pass `root` when constructing PauseMenuUI and to add/remove the result from
- * `root` instead of `overlayLayer`.
- */
 public class PauseMenuUI {
 
-    private static final String BG_V       = "/images/popup/big_block_black_V.png";
+    private static final String BG_V         = "/images/popup/big_block_black_V.png";
     private static final String BTN_RESUME   = "/images/menu/menu_continue.png";
     private static final String BTN_SETTINGS = "/images/menu/menu_setting.png";
     private static final String BTN_MENU     = "/images/menu/back_to_menu.png";
 
+    // Natural (1920-px-space) sizes
     private static final double BTN_W  = 340;
     private static final double CARD_W = 420;
 
@@ -34,28 +25,23 @@ public class PauseMenuUI {
         void onMainMenu();
     }
 
-    private final Callbacks  cb;
-    private final StackPane  sceneRoot;   // FIX: unscaled outermost pane
+    private final Callbacks cb;
+    private final StackPane sceneRoot;   // unscaled outermost pane from GameLauncher
 
-    // FIX: sceneRoot is the unscaled GameLauncher `root` pane
     public PauseMenuUI(StackPane sceneRoot, Callbacks cb) {
         this.sceneRoot = sceneRoot;
         this.cb        = cb;
     }
 
-    /**
-     * Builds and SHOWS the pause overlay, adding it directly to sceneRoot.
-     * Returns the overlay StackPane so the caller can remove it later.
-     */
     public StackPane buildView() {
-        // FIX: bind dim overlay to scene root so it covers the full window
-        StackPane root = new StackPane();
-        root.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        root.setStyle("-fx-background-color: rgba(0,0,0,0.58);");
-        root.prefWidthProperty().bind(sceneRoot.widthProperty());
-        root.prefHeightProperty().bind(sceneRoot.heightProperty());
+        // ── Full-window dim ───────────────────────────────────────────────────
+        StackPane overlay = new StackPane();
+        overlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        overlay.setStyle("-fx-background-color: rgba(0,0,0,0.58);");
+        overlay.prefWidthProperty().bind(sceneRoot.widthProperty());
+        overlay.prefHeightProperty().bind(sceneRoot.heightProperty());
 
-        // ── Card ─────────────────────────────────────────────────────────────
+        // ── Card (natural size, then scaled) ──────────────────────────────────
         StackPane card = new StackPane();
         card.setMaxWidth(CARD_W);
 
@@ -77,32 +63,39 @@ public class PauseMenuUI {
         VBox btnCol = new VBox(20);
         btnCol.setAlignment(Pos.CENTER);
         btnCol.setStyle("-fx-padding: 60 30 50 30;");
-
-        ImageView resumeBtn   = makeBtn(BTN_RESUME,   BTN_W, cb::onResume);
-        ImageView settingsBtn = makeBtn(BTN_SETTINGS, BTN_W, cb::onSettings);
-        ImageView menuBtn     = makeBtn(BTN_MENU,     BTN_W, cb::onMainMenu);
-
-        btnCol.getChildren().addAll(resumeBtn, settingsBtn, menuBtn);
+        btnCol.getChildren().addAll(
+                makeBtn(BTN_RESUME,   BTN_W, cb::onResume),
+                makeBtn(BTN_SETTINGS, BTN_W, cb::onSettings),
+                makeBtn(BTN_MENU,     BTN_W, cb::onMainMenu)
+        );
         StackPane.setAlignment(btnCol, Pos.CENTER);
         card.getChildren().add(btnCol);
 
-        root.getChildren().add(card);
+        // ── Scale the card to match the current window zoom ───────────────────
+        Scale cardScale = new Scale(1, 1);
+        cardScale.pivotXProperty().bind(Bindings.divide(card.widthProperty(), 2));
+        cardScale.pivotYProperty().bind(Bindings.divide(card.heightProperty(), 2));
+        cardScale.xProperty().bind(Bindings.createDoubleBinding(
+                () -> Math.min(sceneRoot.getWidth() / 1920.0, sceneRoot.getHeight() / 1080.0),
+                sceneRoot.widthProperty(), sceneRoot.heightProperty()));
+        cardScale.yProperty().bind(cardScale.xProperty());
+        card.getTransforms().add(cardScale);
 
-        root.setFocusTraversable(true);
-        root.setOnKeyPressed(e -> {
+        overlay.getChildren().add(card);
+
+        // ESC → resume
+        overlay.setFocusTraversable(true);
+        overlay.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) cb.onResume();
         });
 
-        // Entrance animation
-        card.setScaleX(0.88); card.setScaleY(0.88); card.setOpacity(0);
-        ScaleTransition st = new ScaleTransition(Duration.millis(200), card);
-        st.setToX(1); st.setToY(1);
+        card.setOpacity(0);
         FadeTransition ft = new FadeTransition(Duration.millis(200), card);
         ft.setToValue(1);
-        st.play(); ft.play();
+        ft.play();
 
-        root.requestFocus();
-        return root;
+        overlay.requestFocus();
+        return overlay;
     }
 
     /** Fade out and remove the pause overlay from sceneRoot. */
@@ -121,16 +114,14 @@ public class PauseMenuUI {
     private ImageView makeBtn(String path, double width, Runnable onClick) {
         var url = getClass().getResource(path);
         if (url == null) {
-            ImageView placeholder = new ImageView();
-            placeholder.setFitWidth(width);
-            placeholder.setFitHeight(60);
-            return placeholder;
+            ImageView ph = new ImageView();
+            ph.setFitWidth(width); ph.setFitHeight(60);
+            return ph;
         }
         ImageView iv = new ImageView(new Image(url.toExternalForm()));
         iv.setFitWidth(width);
         iv.setPreserveRatio(true);
         iv.setCursor(javafx.scene.Cursor.HAND);
-
         iv.setOnMouseEntered(e -> { iv.setScaleX(1.05); iv.setScaleY(1.05); iv.setOpacity(0.88); });
         iv.setOnMouseExited (e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  iv.setOpacity(1.0);  });
         iv.setOnMousePressed (e -> { iv.setScaleX(0.95); iv.setScaleY(0.95); });

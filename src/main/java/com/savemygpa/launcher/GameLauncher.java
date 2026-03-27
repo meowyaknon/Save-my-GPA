@@ -37,10 +37,6 @@ public class GameLauncher extends Application {
     private TimeSystem   timeSystem;
     private EventManager eventManager;
 
-    // root      = outermost unscaled StackPane — ALL full-window overlays go here
-    //             (cutscenes, pause dim, bus/coworking popups)
-    // gameLayer = scaled game content
-    // overlayLayer is REMOVED — overlays that need to fill the window go on root directly
     private final StackPane root      = new StackPane();
     private final StackPane gameLayer = new StackPane();
 
@@ -86,33 +82,20 @@ public class GameLauncher extends Application {
         Scene scene = new Scene(root);
         stage.setScene(scene);
 
-        // gameLayer is the only child — it is scaled; root itself is never scaled
         root.getChildren().add(gameLayer);
         root.setStyle("-fx-background-color: black;");
 
         stage.setWidth(1280);
-        stage.setHeight(720);
+        stage.setHeight(740);
         stage.centerOnScreen();
-        stage.setResizable(true);
-        stage.show();
 
-        // Enforce 16:9
-        stage.widthProperty().addListener((o, ov, nv) -> {
-            if (!stage.isFullScreen()) {
-                double h = nv.doubleValue() / (BASE_W / (double) BASE_H);
-                if (Math.abs(stage.getHeight() - h) > 1) stage.setHeight(h);
-            }
-        });
-        stage.heightProperty().addListener((o, ov, nv) -> {
-            if (!stage.isFullScreen()) {
-                double w = nv.doubleValue() * (BASE_W / (double) BASE_H);
-                if (Math.abs(stage.getWidth() - w) > 1) stage.setWidth(w);
-            }
-        });
+        stage.setResizable(true);
 
         applyScale();
         scene.widthProperty() .addListener((o, ov, nv) -> applyScale());
         scene.heightProperty().addListener((o, ov, nv) -> applyScale());
+
+        stage.show();
 
         loadFromDisk();
         AudioManager.getInstance().playMusic(AudioManager.Music.INTRO);
@@ -126,7 +109,6 @@ public class GameLauncher extends Application {
 
         double scale = Math.min(w / BASE_W, h / BASE_H);
 
-        // Only gameLayer is scaled — root stays at physical window size
         gameLayer.setScaleX(scale);
         gameLayer.setScaleY(scale);
         gameLayer.setTranslateX((w - BASE_W * scale) / 2.0);
@@ -139,6 +121,20 @@ public class GameLauncher extends Application {
     }
 
     // =========================================================================
+    // Event listener wiring
+    // =========================================================================
+
+    private void wireEventListener() {
+        if (eventManager == null) return;
+        eventManager.setEventListener((name, description) -> {
+            if (outsideUI != null) {
+                outsideUI.sayEvent("🎲 " + name);
+            }
+            showDialog("🎲 เหตุการณ์: " + name, description, null);
+        });
+    }
+
+    // =========================================================================
     // New Game
     // =========================================================================
     private void startNewGame() {
@@ -146,6 +142,7 @@ public class GameLauncher extends Application {
         timeSystem = new TimeSystem();
         eventManager = new EventManager();
         EventRegistry.registerAll(eventManager);
+        wireEventListener();                       // ← wire listener
         hasSavedGame = true;
         progExam1Score = mathExam1Score = progExam2Score = mathExam2Score = 0;
         progExamTakenToday = mathExamTakenToday = false;
@@ -190,7 +187,6 @@ public class GameLauncher extends Application {
     private void showGameplayWithFadeIn() {
         if (isGameOver()) { showEnding(); return; }
         AudioManager.getInstance().playMusic(AudioManager.Music.OUTSIDE);
-        if (outsideUI != null) outsideUI.stopAnimations();
         outsideUI = new OutsideUI(player, timeSystem, eventManager, buildOutsideCallbacks());
         javafx.scene.Node gv = outsideUI.buildView();
         gv.setOpacity(0);
@@ -224,7 +220,6 @@ public class GameLauncher extends Application {
     }
 
     // ── Day-8 score panel ─────────────────────────────────────────────────────
-    // FIX: overlay goes on `root` (unscaled) and binds to root size.
 
     private void showDay8ScorePanel() {
         StackPane overlay = new StackPane();
@@ -314,7 +309,7 @@ public class GameLauncher extends Application {
         card.getChildren().add(closeBtn);
 
         overlay.getChildren().add(card);
-        root.getChildren().add(overlay);   // FIX: add to unscaled root
+        root.getChildren().add(overlay);
 
         card.setScaleX(0.88); card.setScaleY(0.88); card.setOpacity(0);
         ScaleTransition st = new ScaleTransition(Duration.millis(220), card);
@@ -327,7 +322,6 @@ public class GameLauncher extends Application {
     private void doGoHome() {
         if (actionLocked) return;
         actionLocked = true;
-        // FIX: pass `root` (unscaled) to ActivityCutscene
         ActivityCutscene.play(root, ActivityCutscene.lineFor("GoHomeActivity"), () -> {
             int bonus = timeSystem.getTimeLeft();
             player.changeStat(StatType.ENERGY, 3 + (player.getStat(StatType.MOOD) / 40) + bonus);
@@ -347,7 +341,6 @@ public class GameLauncher extends Application {
             return;
         }
         actionLocked = true;
-        // FIX: pass `root` (unscaled)
         ActivityCutscene.play(root, ActivityCutscene.lineFor(activity.getClass().getSimpleName()), () -> {
             activity.performActivity(player, timeSystem, eventManager);
             if (location != null) eventManager.triggerAfterActivity(player, timeSystem, location);
@@ -373,11 +366,10 @@ public class GameLauncher extends Application {
     }
 
     private void showDialog(String title, String msg, Runnable onClose) {
-        GameDialog.show(root, title, msg, onClose);   // FIX: pass root
+        GameDialog.show(root, title, msg, onClose);
     }
 
     // ── Pause ─────────────────────────────────────────────────────────────────
-    // FIX: PauseMenuUI now receives `root` (unscaled) and manages its own overlay.
 
     private void showPause(PauseOrigin origin) {
         if (pauseOpen) return;
@@ -414,7 +406,7 @@ public class GameLauncher extends Application {
             }
         });
         pauseOverlay = pauseUI.buildView();
-        root.getChildren().add(pauseOverlay);   // FIX: add to unscaled root
+        root.getChildren().add(pauseOverlay);
     }
 
     // =========================================================================
@@ -476,7 +468,6 @@ public class GameLauncher extends Application {
     }
 
     private void fadeOutThenRun(java.util.function.Consumer<Void> then) {
-        // No overlay layer to fade — just run immediately
         then.accept(null);
     }
 
@@ -498,7 +489,6 @@ public class GameLauncher extends Application {
     }
 
     private void showSettings(Runnable onBack) {
-        // FIX: pass `root` to ActivityCutscene.transition
         ActivityCutscene.transition(root, () -> setContent(new SettingsUI(AudioManager.getInstance(),
                 () -> ActivityCutscene.transition(root, onBack, null)).buildView()), null);
     }
@@ -526,7 +516,6 @@ public class GameLauncher extends Application {
     private void showGameplay() {
         if (isGameOver()) { showEnding(); return; }
         AudioManager.getInstance().playMusic(AudioManager.Music.OUTSIDE);
-        if (outsideUI != null) outsideUI.stopAnimations();
         outsideUI = new OutsideUI(player, timeSystem, eventManager, buildOutsideCallbacks());
         setContent(outsideUI.buildView());
         eventManager.triggerVisit(player, timeSystem, Location.OUTSIDE);
@@ -551,7 +540,6 @@ public class GameLauncher extends Application {
         RequirementReason r = eat.canPerform(player, timeSystem);
         if (r != null) { String m = eat.getFailMessage(r); if (outsideUI != null) { if (m != null) outsideUI.sayFail(m); else outsideUI.sayFail(); } return; }
         actionLocked = true;
-        // FIX: pass `root`
         ActivityCutscene.play(root, ActivityCutscene.lineFor("EatActivity"), () -> {
             eat.performActivity(player, timeSystem, eventManager);
             eventManager.triggerAfterActivity(player, timeSystem, Location.CANTEEN);
@@ -563,7 +551,6 @@ public class GameLauncher extends Application {
     }
 
     private void showBusStop() {
-        // root is already the unscaled scene root — correct for BusStopUI
         new BusStopUI(root, new BusStopUI.Callbacks() {
             @Override public void onKLLC()   { AudioManager.getInstance().playAccept(); performWithCutscene(new KLLCActivity(), Location.BUS_STOP, GameLauncher.this::showGameplay); }
             @Override public void onGoHome() { AudioManager.getInstance().playAccept(); doGoHome(); }
@@ -592,7 +579,6 @@ public class GameLauncher extends Application {
                 if (actionLocked) return;
                 AudioManager.getInstance().playRefuse();
                 actionLocked = true;
-                // FIX: pass `root`
                 ActivityCutscene.transition(root, () -> { actionLocked = false; showGameplay(); }, null);
             }
         });
@@ -603,7 +589,6 @@ public class GameLauncher extends Application {
     }
 
     private void showCoworkingSpace() {
-        // root is already the unscaled scene root — correct for CoworkingUI
         new CoworkingUI(root, new CoworkingUI.Callbacks() {
             @Override public void onRelax() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingRelaxActivity(), Location.COWORKING, GameLauncher.this::showITBuilding); }
             @Override public void onStudy() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingStudyActivity(), Location.COWORKING, GameLauncher.this::showITBuilding); }
@@ -612,11 +597,23 @@ public class GameLauncher extends Application {
     }
 
     // ── Exams ─────────────────────────────────────────────────────────────────
+
     private void doProgExam() {
-        if (progExamTakenToday) return;
+        // ── CHANGE: speak if exam already taken today ─────────────────────────
+        if (progExamTakenToday) {
+            if (outsideUI != null) outsideUI.sayFail("สอบ Programming ไปแล้ววันนี้!");
+            else showDialog("ข้อมูล", "คุณสอบ Programming ไปแล้ววันนี้", null);
+            return;
+        }
         ExamActivity exam = new ExamActivity();
         RequirementReason r = exam.canPerform(player, timeSystem);
-        if (r != null) { if (outsideUI != null) outsideUI.sayFail(exam.getFailMessage(r)); return; }
+        if (r != null) {
+            // ── CHANGE: always show speech on requirement fail ─────────────────
+            String msg = exam.getFailMessage(r);
+            if (outsideUI != null) { if (msg != null) outsideUI.sayFail(msg); else outsideUI.sayFail(); }
+            else showDialog("ไม่สามารถสอบได้", msg != null ? msg : "Stats ไม่เพียงพอ", null);
+            return;
+        }
         progExamTakenToday = true;
         actionLocked = true;
         CaptchaMiniGame[] ref = new CaptchaMiniGame[1];
@@ -632,10 +629,21 @@ public class GameLauncher extends Application {
     }
 
     private void doMathExam() {
-        if (mathExamTakenToday) return;
+        // ── CHANGE: speak if exam already taken today ─────────────────────────
+        if (mathExamTakenToday) {
+            if (outsideUI != null) outsideUI.sayFail("สอบ Math ไปแล้ววันนี้!");
+            else showDialog("ข้อมูล", "คุณสอบ Math ไปแล้ววันนี้", null);
+            return;
+        }
         ExamActivity exam = new ExamActivity();
         RequirementReason r = exam.canPerform(player, timeSystem);
-        if (r != null) { if (outsideUI != null) outsideUI.sayFail(exam.getFailMessage(r)); return; }
+        if (r != null) {
+            // ── CHANGE: always show speech on requirement fail ─────────────────
+            String msg = exam.getFailMessage(r);
+            if (outsideUI != null) { if (msg != null) outsideUI.sayFail(msg); else outsideUI.sayFail(); }
+            else showDialog("ไม่สามารถสอบได้", msg != null ? msg : "Stats ไม่เพียงพอ", null);
+            return;
+        }
         mathExamTakenToday = true;
         performSilent(exam, Location.CLASSROOM);
         actionLocked = true;
@@ -653,11 +661,18 @@ public class GameLauncher extends Application {
     // =========================================================================
     // Endings
     // =========================================================================
+
     private void showEnding() {
+        // ── CHANGE: Secret Ending 2 — mood at zero regardless of grade ────────
+        if (player != null && player.getStat(StatType.MOOD) <= 0) {
+            showSecretEnding2();
+            return;
+        }
+
         AudioManager.getInstance().playMusic(AudioManager.Music.CUTSCENE);
-        int progAvg = (progExam1Score + progExam2Score) / 2;
-        int mathAvg = (mathExam1Score + mathExam2Score) / 2;
-        int overall = (progAvg + mathAvg) / 2;
+        int progAvg = progExam1Score + progExam2Score;
+        int mathAvg = mathExam1Score + mathExam2Score;
+        int overall = (progAvg + mathAvg) / 4;
         String grade = overall >= 80 ? "A" : overall >= 70 ? "B" : overall >= 60 ? "C" : overall >= 50 ? "D" : "F";
         StackPane black = new StackPane();
         black.setStyle("-fx-background-color:#000;"); black.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -747,7 +762,7 @@ public class GameLauncher extends Application {
         VBox content = new VBox(32); content.setAlignment(Pos.CENTER); content.setStyle("-fx-padding:60;");
         Text gt = new Text("✦"); gt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 120)); gt.setFill(Color.web(ac));
         gt.setStyle("-fx-effect:dropshadow(gaussian,"+ac+",50,0.70,0,0);");
-        Text tt = new Text("Secret Ending  —  New Career Path");
+        Text tt = new Text("Secret Ending 1 —  New Career Path");
         tt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30)); tt.setFill(Color.web(ac));
         Label desc = new Label("🎨  เส้นทางที่ไม่มีใครคาดถึง\n\nความกล้าที่จะเลือกเส้นทางของตัวเอง\n\n[ Unlocked: Secret Ending 🌟 ]");
         desc.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:22px;-fx-text-fill:#f8d7e8;-fx-line-spacing:6;");
@@ -759,6 +774,82 @@ public class GameLauncher extends Application {
         HBox btns = new HBox(32, tryAgain, quit); btns.setAlignment(Pos.CENTER);
         content.getChildren().addAll(gt, tt, desc, btns);
         content.setOpacity(0); r.getChildren().add(content); setContent(r);
+        FadeTransition ft = new FadeTransition(Duration.millis(600), content);
+        ft.setToValue(1);
+        ft.play();
+    }
+
+    // ── CHANGE: Secret Ending 2 — mood = 0 at end ─────────────────────────────
+
+    private void showSecretEnding2() {
+        AudioManager.getInstance().playMusic(AudioManager.Music.CUTSCENE);
+        StackPane black = new StackPane();
+        black.setStyle("-fx-background-color:#000;");
+        black.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+        Label lbl = makeCutsceneLabel();
+        lbl.setOpacity(0);
+        black.getChildren().add(lbl);
+        setContent(black);
+        FadeTransition fi = new FadeTransition(Duration.millis(800), black);
+        fi.setFromValue(0); fi.setToValue(1);
+        fi.setOnFinished(e -> {
+            lbl.setOpacity(1);
+            typeSegments(lbl, new String[]{
+                    "ผลสอบออกมาแล้ว...",
+                    "แต่ใจมันว่างเปล่าเกินกว่าจะดีใจ",
+                    "เธอเปิดผลคะแนน — ตัวเลขมันดี",
+                    "แต่มันไม่รู้สึกอะไรเลย...",
+                    "ตลอด 2 สัปดาห์ที่ผ่านมา เธอเอาแต่วิ่งตามเกรด",
+                    "จนลืมไปว่าตัวเองชอบอะไร รู้สึกอะไร",
+                    "เกรดดีแต่ไม่มีความสุข — มันคุ้มค่าจริงหรือ?"
+            }, this::showSecretEnding2Result);
+        });
+        fi.play();
+    }
+
+    private void showSecretEnding2Result() {
+        final String ac = "#78909c"; // muted blue-grey
+        StackPane r = new StackPane(); r.setStyle("-fx-background-color:#000;");
+        VBox content = new VBox(32); content.setAlignment(Pos.CENTER); content.setStyle("-fx-padding:60;");
+
+        Text gt = new Text("💔");
+        gt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 110));
+        gt.setFill(Color.web(ac));
+        gt.setStyle("-fx-effect:dropshadow(gaussian," + ac + ",50,0.60,0,0);");
+
+        Text tt = new Text("Secret Ending 2  —  Hollow Victory");
+        tt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30));
+        tt.setFill(Color.web(ac));
+
+        Label desc = new Label(
+                "📊 ผลการสอบดี — แต่ใจมันพัง\n\n" +
+                        "ไม่ว่าเกรดจะสวยแค่ไหน\n" +
+                        "ถ้าหัวใจไม่มีความสุข\n" +
+                        "ความพยายามทั้งหมดก็ไร้ความหมาย\n\n" +
+                        "เกรดคือเครื่องมือ — ไม่ใช่ชีวิตทั้งหมด\n\n" +
+                        "[ Unlocked: Secret Ending 2 🌑 ]"
+        );
+        desc.setStyle("""
+            -fx-font-family: 'Comic Sans MS';
+            -fx-font-size: 22px;
+            -fx-text-fill: #b0bec5;
+            -fx-line-spacing: 6;
+        """);
+        desc.setTextAlignment(TextAlignment.CENTER);
+
+        Button again = navBtnColored("🔄  เล่นใหม่", ac, "#0a0a0a");
+        Button quit  = navBtn("🚪  ออกจากเกม");
+        again.setOnAction(e -> { AudioManager.getInstance().playAccept(); runOnce(this::startNewGame); });
+        quit .setOnAction(e -> { AudioManager.getInstance().playRefuse(); stage.close(); });
+
+        HBox btns = new HBox(32, again, quit);
+        btns.setAlignment(Pos.CENTER);
+
+        content.getChildren().addAll(gt, tt, desc, btns);
+        content.setOpacity(0);
+        r.getChildren().add(content);
+        setContent(r);
+
         FadeTransition ft = new FadeTransition(Duration.millis(600), content);
         ft.setToValue(1);
         ft.play();
@@ -791,6 +882,7 @@ public class GameLauncher extends Application {
             timeSystem.setCurrentDay(Integer.parseInt(p.getProperty("day","1")));
             timeSystem.setCurrentHour(Integer.parseInt(p.getProperty("hour","8")));
             eventManager = new EventManager(); EventRegistry.registerAll(eventManager);
+            wireEventListener();                   // ← wire listener after load
             eventManager.setEventsToday(Integer.parseInt(p.getProperty("eventsToday","0")));
             progExam1Score = Integer.parseInt(p.getProperty("progExam1Score","0"));
             mathExam1Score = Integer.parseInt(p.getProperty("mathExam1Score","0"));

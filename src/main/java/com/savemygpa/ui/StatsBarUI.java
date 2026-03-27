@@ -15,11 +15,6 @@ import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.util.Duration;
 
-/**
- * StatsBarUI — pure JavaFX stat bars (no image dependency).
- * Matches the hand-drawn reference: white panel, rounded bars,
- * red=INT  yellow=MOOD  green=ENERGY, dark-brown Comic Sans labels.
- */
 public class StatsBarUI {
 
     // ── Rendered panel size (used by OutsideUI for positioning) ──────────────

@@ -22,7 +22,9 @@ public class NoSeatEvent extends Event {
         player.changeStat(StatType.MOOD, -20);
     }
 
-    @Override protected String getName() { return "โรงอาหารแน่นมาก"; }
-    @Override protected String getDescription() { return "ไม่เหลือที่นั่ง รอนานพอคนหาย ข้าวก็หมด ชีวิตช่างน่าเศร้า"; }
+    @Override
+    public String getName() { return "โรงอาหารแน่นมาก"; }
+    @Override
+    public String getDescription() { return "ไม่เหลือที่นั่ง รอนานพอคนหาย ข้าวก็หมด ชีวิตช่างน่าเศร้า"; }
     @Override public double getChance() { return 0.3; }
 }
