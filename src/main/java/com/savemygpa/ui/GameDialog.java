@@ -1,5 +1,6 @@
 package com.savemygpa.ui;
 
+import com.savemygpa.audio.AudioManager;
 import javafx.animation.FadeTransition;
 import javafx.animation.ScaleTransition;
 import javafx.beans.binding.Bindings;
@@ -8,9 +9,6 @@ import javafx.scene.control.Label;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.HBox;
-import javafx.scene.layout.Priority;
-import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
@@ -22,7 +20,6 @@ import javafx.util.Duration;
 public class GameDialog {
 
     // ── Accent colours ────────────────────────────────────────────────────────
-    private static final String ACCENT_INFO    = "#4fc3f7";
     private static final String ACCENT_EVENT   = "#d570e0";
 
     // ── Shared body text colour ───────────────
@@ -58,23 +55,6 @@ public class GameDialog {
             default                             -> null;
         };
     }
-
-    // ── Simple info dialog ────────────────────────────────────────────────────
-    public static void show(StackPane root, String title, String message, Runnable onClose) {
-        StackPane overlay = overlay();
-        HBox box = buildBox(ACCENT_INFO);
-        VBox text = textCol(title, message);
-        javafx.scene.control.Button ok = btn("ตกลง  ✔", ACCENT_INFO);
-        ok.setOnAction(e -> dismiss(root, overlay, onClose));
-        overlay.setOnKeyPressed(e -> {
-            if (e.getCode() == KeyCode.ENTER || e.getCode() == KeyCode.SPACE)
-                dismiss(root, overlay, onClose);
-        });
-        box.getChildren().addAll(text, spacer(), ok);
-        HBox.setHgrow(text, Priority.ALWAYS);
-        finish(root, overlay, box);
-    }
-
 
     // ── Event notification (custom card with popup background image) ──────────
     public static void event(StackPane root, String eventName, String description, Runnable onClose) {
@@ -167,11 +147,11 @@ public class GameDialog {
         body.getChildren().add(descLbl);
 
         // 5. Continue button
-        ImageView continueBtn = makeContinueBtn(() -> dismissCard(root, overlay, onClose));
+        ImageView continueBtn = makeContinueBtn(() -> {dismissCard(root, overlay, onClose); AudioManager.getInstance().playAccept();});
         body.getChildren().add(continueBtn);
 
         StackPane.setAlignment(body, Pos.CENTER);
-        card.getChildren().add(body);   // content — second child (on top of bg)
+        card.getChildren().add(body);
 
         Scale cardScale = new Scale(1, 1);
         cardScale.pivotXProperty().bind(Bindings.divide(card.widthProperty(), 2));
@@ -182,7 +162,6 @@ public class GameDialog {
         cardScale.yProperty().bind(cardScale.xProperty());
         card.getTransforms().add(cardScale);
 
-        // FIX: Card goes into the centering wrapper, not directly onto overlay
         centerWrapper.getChildren().add(card);
         overlay.getChildren().add(centerWrapper);
         root.getChildren().add(overlay);
@@ -203,59 +182,6 @@ public class GameDialog {
         });
     }
 
-    // =========================================================================
-    // Shared builders
-    // =========================================================================
-    static HBox buildBox(String accentColor) {
-        javafx.scene.shape.Rectangle accentBar = new javafx.scene.shape.Rectangle(6, 120);
-        accentBar.setFill(Color.web(accentColor));
-        accentBar.setArcWidth(6); accentBar.setArcHeight(6);
-        HBox box = new HBox(20);
-        box.setAlignment(Pos.CENTER_LEFT);
-        box.setMaxWidth(820); box.setMinHeight(100);
-        box.setStyle("""
-            -fx-background-color: linear-gradient(to right, rgba(12,12,32,0.98), rgba(22,28,52,0.96));
-            -fx-background-radius: 16;
-            -fx-padding: 24 28 24 0;
-            -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.80), 28, 0.65, 0, 6);
-            -fx-border-color: rgba(255,255,255,0.07);
-            -fx-border-radius: 16;
-            -fx-border-width: 1;
-        """);
-        box.getChildren().add(accentBar);
-        return box;
-    }
-
-    static VBox textCol(String title, String message) {
-        VBox v = new VBox(8, titleLabel(title, ACCENT_INFO), bodyLabel(message));
-        v.setAlignment(Pos.CENTER_LEFT);
-        return v;
-    }
-
-    static Label titleLabel(String text, String color) {
-        Label l = new Label(text);
-        l.setWrapText(true); l.setMaxWidth(480);
-        l.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:20px;-fx-font-weight:bold;-fx-text-fill:" + color + ";");
-        return l;
-    }
-
-    static Label bodyLabel(String text) {
-        Label l = new Label(text);
-        l.setWrapText(true); l.setMaxWidth(480);
-        l.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:14px;-fx-text-fill:" + TEXT_COLOR + ";-fx-line-spacing:3;");
-        return l;
-    }
-
-    static javafx.scene.control.Button btn(String text, String accentColor) {
-        javafx.scene.control.Button b = new javafx.scene.control.Button(text);
-        b.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:14px;" +
-                "-fx-background-color:" + accentColor + ";-fx-text-fill:" + TEXT_COLOR + ";" +
-                "-fx-font-weight:bold;-fx-background-radius:10;-fx-padding:8 20 8 20;-fx-cursor:hand;");
-        b.setOnMouseEntered(e -> b.setOpacity(0.80));
-        b.setOnMouseExited(e  -> b.setOpacity(1.00));
-        return b;
-    }
-
     private static ImageView makeContinueBtn(Runnable onClick) {
         var url = GameDialog.class.getResource(BTN_CONTINUE);
         if (url == null) {
@@ -272,44 +198,6 @@ public class GameDialog {
         iv.setOnMouseReleased(e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0); });
         iv.setOnMouseClicked(e  -> { e.consume(); onClick.run(); });
         return iv;
-    }
-
-    private static Region spacer() {
-        Region r = new Region();
-        HBox.setHgrow(r, Priority.SOMETIMES);
-        r.setMinWidth(16);
-        return r;
-    }
-
-    static StackPane overlay() {
-        StackPane p = new StackPane();
-        p.setStyle("-fx-background-color: rgba(0,0,0,0.55);");
-        p.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        return p;
-    }
-
-    static void finish(StackPane root, StackPane overlay, HBox box) {
-        overlay.getChildren().add(box);
-        root.getChildren().add(overlay);
-        overlay.setFocusTraversable(true);
-        overlay.requestFocus();
-        animateIn(box);
-    }
-
-    static void animateIn(javafx.scene.Node box) {
-        box.setScaleX(0.90); box.setScaleY(0.90); box.setOpacity(0);
-        ScaleTransition st = new ScaleTransition(Duration.millis(220), box);
-        st.setToX(1); st.setToY(1);
-        FadeTransition ft = new FadeTransition(Duration.millis(220), box);
-        ft.setToValue(1);
-        st.play(); ft.play();
-    }
-
-    static void dismiss(StackPane root, StackPane overlay, Runnable cb) {
-        FadeTransition ft = new FadeTransition(Duration.millis(150), overlay);
-        ft.setToValue(0);
-        ft.setOnFinished(e -> { root.getChildren().remove(overlay); if (cb != null) cb.run(); });
-        ft.play();
     }
 
     private static void dismissCard(StackPane root, StackPane overlay, Runnable cb) {

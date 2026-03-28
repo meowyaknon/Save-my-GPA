@@ -1,19 +1,22 @@
 package com.savemygpa.ui;
 
 import javafx.animation.FadeTransition;
+import javafx.beans.binding.Bindings;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
+import javafx.scene.layout.Region;
 import javafx.scene.layout.StackPane;
 import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.text.Font;
 import javafx.scene.text.FontWeight;
 import javafx.scene.text.TextAlignment;
+import javafx.scene.transform.Scale;
 import javafx.util.Duration;
 
 public class TooltipOverlay {
 
-    private static final double WIDTH  = 340;
+    private static final double WIDTH  = 300;
     private static final double PAD    = 18;
     private static final double MARGIN = 16;
 
@@ -47,8 +50,8 @@ public class TooltipOverlay {
 
         card = new StackPane(content);
         card.setMaxWidth(WIDTH);
-        card.setMaxHeight(Double.MAX_VALUE);
-        card.setPrefHeight(USE_COMPUTED_SIZE);
+        card.setMaxHeight(400);
+        card.setPrefHeight(Region.USE_COMPUTED_SIZE);
         card.setStyle(
                 "-fx-background-color: rgba(10,10,24,0.85);" +
                         "-fx-background-radius: 16;" +
@@ -59,12 +62,21 @@ public class TooltipOverlay {
         card.setMouseTransparent(true);
         card.setOpacity(0);
 
+        Scale cardScale = new Scale();
+        cardScale.xProperty().bind(Bindings.createDoubleBinding(
+                () -> Math.min(root.getWidth() / 1920.0, root.getHeight() / 1080.0),
+                root.widthProperty(), root.heightProperty()));
+        cardScale.yProperty().bind(cardScale.xProperty());
+
+        cardScale.pivotXProperty().bind(card.widthProperty());
+        cardScale.pivotYProperty().bind(Bindings.createDoubleBinding(() -> 0.0));
+
+        card.getTransforms().add(cardScale);
+
         StackPane.setAlignment(card, Pos.TOP_RIGHT);
         card.setTranslateX(-MARGIN);
         card.setTranslateY(MARGIN);
     }
-
-    private static final double USE_COMPUTED_SIZE = javafx.scene.layout.Region.USE_COMPUTED_SIZE;
 
     public void show(String title, String body) {
         stopFade();

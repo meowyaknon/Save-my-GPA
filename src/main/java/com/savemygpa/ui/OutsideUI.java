@@ -322,7 +322,7 @@ public class OutsideUI {
         wrapper.setOnMouseMoved(e -> {
             if (isOpaque.apply(e.getSceneX(), e.getSceneY())) {
                 if (iv.getEffect() == null) { iv.setEffect(glow); pulse.play(); }
-                if (tooltip != null) tooltip.show(tipTitle, tipBody);
+                if (tooltip != null && tipTitle != null) tooltip.show(tipTitle, tipBody);
             } else {
                 pulse.stop(); iv.setEffect(null);
                 if (tooltip != null) tooltip.hide();

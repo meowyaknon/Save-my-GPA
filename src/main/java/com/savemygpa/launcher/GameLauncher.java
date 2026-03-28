@@ -50,6 +50,7 @@ public class GameLauncher extends Application {
     private int progExam1Score = 0, mathExam1Score = 0, progExam2Score = 0, mathExam2Score = 0;
     private boolean progExamTakenToday = false;
     private boolean mathExamTakenToday = false;
+    private boolean examNoticeShownToday = false;
 
     private static final int    TOTAL_DAYS     = 14;
     private static final String SAVE_VERSION   = "1";
@@ -150,6 +151,7 @@ public class GameLauncher extends Application {
         hasSavedGame = true;
         progExam1Score = mathExam1Score = progExam2Score = mathExam2Score = 0;
         progExamTakenToday = mathExamTakenToday = false;
+        examNoticeShownToday = false;
         persistSave(true);
         showNewGameIntro();
     }
@@ -211,6 +213,7 @@ public class GameLauncher extends Application {
         player.removeEffect(WetFeetDebuff.class);
         player.removeEffect(StackOverflowDownDebuff.class);
         progExamTakenToday = mathExamTakenToday = false;
+        examNoticeShownToday = false;
         eventManager.newDayReset();
         timeSystem.endDay();
         if (timeSystem.getCurrentDay() == 8) {
@@ -368,10 +371,6 @@ public class GameLauncher extends Application {
         return true;
     }
 
-    private void showDialog(String title, String msg, Runnable onClose) {
-        GameDialog.show(root, title, msg, onClose);
-    }
-
     // ── Pause ─────────────────────────────────────────────────────────────────
     private void showPause(PauseOrigin origin) {
         if (pauseOpen) return;
@@ -512,13 +511,16 @@ public class GameLauncher extends Application {
         eventManager.triggerVisit(player, timeSystem, Location.OUTSIDE);
         outsideUI.refresh();
         maybeSaveProgress(false);
-        showExamDayNotice(null);
+        if (!examNoticeShownToday) {
+            examNoticeShownToday = true;
+            showExamDayNotice(null);
+        }
     }
 
     private OutsideUI.Callbacks buildOutsideCallbacks() {
         return new OutsideUI.Callbacks() {
             @Override public void onBusStop()    { runOnce(GameLauncher.this::showBusStop); }
-            @Override public void onCanteen()    { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::doCanteen); }
+            @Override public void onCanteen()    { runOnce(GameLauncher.this::doCanteen); }
             @Override public void onITBuilding() { runOnce(GameLauncher.this::showITBuilding); }
             @Override public void onPause()      { showPause(PauseOrigin.OUTSIDE); }
         };
