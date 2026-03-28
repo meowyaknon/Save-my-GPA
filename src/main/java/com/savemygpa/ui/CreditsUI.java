@@ -12,13 +12,14 @@ import javafx.util.Duration;
 public class CreditsUI {
 
     private static final String BG_PATH  = "/images/menu/menu_no_logo.jpg";
-    private static final String CARD_BG  = "/images/popup/big_block_black.png";
+    private static final String CARD_BG  = "/images/popup/big_block_black_H.png";
     private static final String BTN_BACK = "/images/menu/backward.png";
     private static final double BTN_W    = 300;
-    private static final double CARD_W   = 820;
+    private static final double CARD_W   = 920;
+
+    private static final String TEXT_COLOR = "#3b1a1a";
 
     private final Runnable onBack;
-
     public CreditsUI(Runnable onBack) { this.onBack = onBack; }
 
     public StackPane buildView() {
@@ -28,26 +29,19 @@ public class CreditsUI {
         bg.setFitWidth(1920); bg.setFitHeight(1080);
         bg.setPreserveRatio(false); bg.setMouseTransparent(true);
 
-        // ── Card with image background ────────────────────────────────────────
         StackPane card = new StackPane();
         card.setMaxWidth(CARD_W);
-
         var cardBgUrl = getClass().getResource(CARD_BG);
         if (cardBgUrl != null) {
             ImageView cardBgIv = new ImageView(new Image(cardBgUrl.toExternalForm()));
-            cardBgIv.setFitWidth(CARD_W);
-            cardBgIv.setPreserveRatio(true);
+            cardBgIv.setFitWidth(CARD_W); cardBgIv.setPreserveRatio(true);
             card.getChildren().add(cardBgIv);
         } else {
-            card.setStyle("""
-                -fx-background-color: rgba(0,0,0,0.82);
-                -fx-background-radius: 24;
-                -fx-min-width: 700; -fx-min-height: 420;
-                -fx-effect: dropshadow(gaussian,rgba(0,0,0,0.85),36,0.65,0,6);
-            """);
+            card.setStyle("-fx-background-color:rgba(0,0,0,0.82);-fx-background-radius:24;" +
+                    "-fx-min-width:700;-fx-min-height:420;" +
+                    "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.85),36,0.65,0,6);");
         }
 
-        // ── Inner content ─────────────────────────────────────────────────────
         VBox inner = new VBox(24);
         inner.setAlignment(Pos.CENTER);
         inner.setStyle("-fx-padding: 48 60 44 60;");
@@ -64,14 +58,9 @@ public class CreditsUI {
                 "🎮  Save My GPA\n\n" +
                         "สร้างโดย SaveMyGPA Team\n\n" +
                         "ขอบคุณทุกคนที่เล่น! 🎉\n\n" +
-                        "© 2024 SaveMyGPA Team"
-        );
-        body.setStyle("""
-            -fx-font-family: 'Comic Sans MS';
-            -fx-font-size: 24px;
-            -fx-text-fill: #e8d8f8;
-            -fx-line-spacing: 8;
-        """);
+                        "© 2024 SaveMyGPA Team");
+        body.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:24px;" +
+                "-fx-text-fill:" + TEXT_COLOR + ";-fx-line-spacing:8;");
         body.setTextAlignment(TextAlignment.CENTER); body.setWrapText(true);
 
         ImageView backBtn = makeImgBtn(BTN_BACK, BTN_W, onBack);
@@ -84,7 +73,6 @@ public class CreditsUI {
         root.getChildren().addAll(bg, card);
         FadeTransition ft = new FadeTransition(Duration.millis(400), card);
         ft.setToValue(1); ft.play();
-
         return root;
     }
 

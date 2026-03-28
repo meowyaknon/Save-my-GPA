@@ -1,5 +1,6 @@
 package com.savemygpa.ui;
 
+import com.savemygpa.audio.AudioManager;
 import javafx.animation.*;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Pos;
@@ -64,9 +65,9 @@ public class PauseMenuUI {
         btnCol.setAlignment(Pos.CENTER);
         btnCol.setStyle("-fx-padding: 60 30 50 30;");
         btnCol.getChildren().addAll(
-                makeBtn(BTN_RESUME,   BTN_W, cb::onResume),
-                makeBtn(BTN_SETTINGS, BTN_W, cb::onSettings),
-                makeBtn(BTN_MENU,     BTN_W, cb::onMainMenu)
+                makeBtn(BTN_RESUME,   BTN_W, true,  cb::onResume),
+                makeBtn(BTN_SETTINGS, BTN_W, true,  cb::onSettings),
+                makeBtn(BTN_MENU,     BTN_W, false, cb::onMainMenu)
         );
         StackPane.setAlignment(btnCol, Pos.CENTER);
         card.getChildren().add(btnCol);
@@ -111,7 +112,7 @@ public class PauseMenuUI {
         ft.play();
     }
 
-    private ImageView makeBtn(String path, double width, Runnable onClick) {
+    private ImageView makeBtn(String path, double width, boolean playAcceptSfx, Runnable onClick) {
         var url = getClass().getResource(path);
         if (url == null) {
             ImageView ph = new ImageView();
@@ -122,10 +123,18 @@ public class PauseMenuUI {
         iv.setFitWidth(width);
         iv.setPreserveRatio(true);
         iv.setCursor(javafx.scene.Cursor.HAND);
-        iv.setOnMouseEntered(e -> { iv.setScaleX(1.05); iv.setScaleY(1.05); iv.setOpacity(0.88); });
-        iv.setOnMouseExited (e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  iv.setOpacity(1.0);  });
-        iv.setOnMousePressed (e -> { iv.setScaleX(0.95); iv.setScaleY(0.95); });
-        iv.setOnMouseReleased(e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  onClick.run(); });
+        iv.setOnMouseEntered(e  -> { iv.setScaleX(1.05); iv.setScaleY(1.05); iv.setOpacity(0.88); });
+        iv.setOnMouseExited (e  -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  iv.setOpacity(1.0);  });
+        iv.setOnMousePressed (e -> {
+            // Play SFX immediately on press — no delay
+            if (playAcceptSfx) AudioManager.getInstance().playAccept();
+            else               AudioManager.getInstance().playRefuse();
+            iv.setScaleX(0.95); iv.setScaleY(0.95);
+        });
+        iv.setOnMouseReleased(e -> {
+            iv.setScaleX(1.0); iv.setScaleY(1.0);
+            onClick.run();
+        });
         return iv;
     }
 }

@@ -13,9 +13,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.layout.*;
 import javafx.scene.paint.Color;
-import javafx.scene.shape.Rectangle;
 import javafx.scene.text.*;
-import javafx.stage.Screen;
 import javafx.stage.Stage;
 import javafx.util.Duration;
 import com.savemygpa.player.*;
@@ -53,14 +51,24 @@ public class GameLauncher extends Application {
     private boolean progExamTakenToday = false;
     private boolean mathExamTakenToday = false;
 
-    private static final int    TOTAL_DAYS    = 14;
-    private static final String SAVE_VERSION  = "1";
-    private static final String SAVE_FILE_NAME= "save_my_gpa_save.properties";
+    private static final int    TOTAL_DAYS     = 14;
+    private static final String SAVE_VERSION   = "1";
+    private static final String SAVE_FILE_NAME = "save_my_gpa_save.properties";
     private long lastSaveMillis = 0;
 
     private static final String LOGO_PATH = "/images/menu/logo.png";
+    private static final int    TYPING_MS = 80;
 
-    private static final int TYPING_MS = 80;
+    // ── Shared text colour — matches StatsBarUI COL_LABEL ────────────────────
+    static final String TEXT_COLOR = "#3b1a1a";
+
+    // ── Ending A scene images ─────────────────────────────────────────────────
+    private static final String[] ENDING_A_SCENES = {
+            "/images/endings/endingA_scene1.jpg",
+            "/images/endings/endingA_scene2.jpg",
+            "/images/endings/endingA_scene3.jpg",
+            "/images/endings/endingA_scene4.jpg",
+    };
 
     private void runOnce(Runnable action) {
         if (actionLocked) return;
@@ -71,6 +79,17 @@ public class GameLauncher extends Application {
         pt.play();
     }
 
+    // ── Speak helpers — always read the live field ───────────────────────────
+    private void speakFail(String message) {
+        if (outsideUI != null) {
+            if (message != null) outsideUI.sayFail(message);
+            else                 outsideUI.sayFail();
+        }
+    }
+    private void speakEvent(String name) {
+        if (outsideUI != null) outsideUI.sayEvent(name);
+    }
+
     // =========================================================================
     // start()
     // =========================================================================
@@ -79,25 +98,18 @@ public class GameLauncher extends Application {
         Font.loadFont(getClass().getResourceAsStream("/fonts/IBMPlexSansThai-Medium.ttf"), 14);
         this.stage = stage;
         stage.setTitle("Save My GPA");
-
         Scene scene = new Scene(root);
         stage.setScene(scene);
-
         root.getChildren().add(gameLayer);
         root.setStyle("-fx-background-color: black;");
-
         stage.setWidth(1280);
         stage.setHeight(740);
         stage.centerOnScreen();
-
         stage.setResizable(true);
-
         applyScale();
         scene.widthProperty() .addListener((o, ov, nv) -> applyScale());
         scene.heightProperty().addListener((o, ov, nv) -> applyScale());
-
         stage.show();
-
         loadFromDisk();
         AudioManager.getInstance().playMusic(AudioManager.Music.INTRO);
         if (agreedToTerms) showMainMenuWithFade(); else showIntroSequence();
@@ -107,11 +119,8 @@ public class GameLauncher extends Application {
         double w = stage.getScene().getWidth();
         double h = stage.getScene().getHeight();
         if (w <= 0 || h <= 0) return;
-
         double scale = Math.min(w / BASE_W, h / BASE_H);
-
-        gameLayer.setScaleX(scale);
-        gameLayer.setScaleY(scale);
+        gameLayer.setScaleX(scale); gameLayer.setScaleY(scale);
         gameLayer.setTranslateX((w - BASE_W * scale) / 2.0);
         gameLayer.setTranslateY((h - BASE_H * scale) / 2.0);
     }
@@ -122,16 +131,13 @@ public class GameLauncher extends Application {
     }
 
     // =========================================================================
-    // Event listener wiring
+    // Event listener
     // =========================================================================
-
     private void wireEventListener() {
         if (eventManager == null) return;
         eventManager.setEventListener((name, description) -> {
-            if (outsideUI != null) {
-                outsideUI.sayEvent("🎲 " + name);
-            }
-            showDialog("🎲 เหตุการณ์: " + name, description, null);
+            speakEvent("🎲 " + name);
+            GameDialog.event(root, name, description, null);
         });
     }
 
@@ -143,7 +149,7 @@ public class GameLauncher extends Application {
         timeSystem = new TimeSystem();
         eventManager = new EventManager();
         EventRegistry.registerAll(eventManager);
-        wireEventListener();                       // ← wire listener
+        wireEventListener();
         hasSavedGame = true;
         progExam1Score = mathExam1Score = progExam2Score = mathExam2Score = 0;
         progExamTakenToday = mathExamTakenToday = false;
@@ -172,7 +178,6 @@ public class GameLauncher extends Application {
                     "ตื่นเต้น... กลัว... แต่ก็พร้อมสู้!",
                     "2 สัปดาห์ข้างหน้าจะเป็นยังไง?",
                     "ทุกอย่างขึ้นอยู่กับตัวเอง..."
-
             }, () -> {
                 FadeTransition fo = new FadeTransition(Duration.millis(700), black);
                 fo.setToValue(0);
@@ -221,8 +226,7 @@ public class GameLauncher extends Application {
         showGameplay();
     }
 
-// ── Day-8 score panel ─────────────────────────────────────────────────────
-
+    // ── Day-8 score panel ─────────────────────────────────────────────────────
     private void showDay8ScorePanel() {
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(0,0,0,0.62);");
@@ -232,62 +236,48 @@ public class GameLauncher extends Application {
 
         StackPane card = new StackPane();
         card.setMaxWidth(460);
-
         var bgUrl = getClass().getResource("/images/popup/big_block_black_V.png");
         if (bgUrl != null) {
             ImageView bgIv = new ImageView(new Image(bgUrl.toExternalForm()));
-            bgIv.setFitWidth(460);
-            bgIv.setPreserveRatio(true);
+            bgIv.setFitWidth(460); bgIv.setPreserveRatio(true);
             card.getChildren().add(bgIv);
         } else {
-            card.setStyle("""
-                -fx-background-color: rgba(8,8,24,0.97);
-                -fx-background-radius: 24;
-                -fx-min-width: 460; -fx-min-height: 540;
-                -fx-effect: dropshadow(gaussian,rgba(0,0,0,0.85),28,0.65,0,5);
-            """);
+            card.setStyle("-fx-background-color:rgba(8,8,24,0.97);-fx-background-radius:24;" +
+                    "-fx-min-width:460;-fx-min-height:540;" +
+                    "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.85),28,0.65,0,5);");
         }
 
         VBox body = new VBox(16);
         body.setAlignment(Pos.CENTER);
         body.setStyle("-fx-padding: 56 36 44 36;");
 
-        Text heading = new Text("📚 รอบสอบแรกจบแล้ว!");
+        Text heading = new Text("📚 จบเทอมแรกแล้ว!");
         heading.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 28));
         heading.setFill(Color.web("#ffe082"));
-        heading.setStyle("-fx-effect: dropshadow(gaussian,rgba(255,224,130,0.5),12,0.4,0,0);");
 
         javafx.scene.shape.Line sep = new javafx.scene.shape.Line(0, 0, 340, 0);
-        sep.setStroke(Color.web("#ffe082", 0.35));
-        sep.setStrokeWidth(1.5);
+        sep.setStroke(Color.web("#ffe082", 0.35)); sep.setStrokeWidth(1.5);
 
         Label scores = new Label(
                 "💻 Programming\n" + progExam1Score + " คะแนน\n\n" +
                         "📐 Math\n" + mathExam1Score + " คะแนน\n\n" +
-                        "Intelligence รีเซ็ต\nสู้ต่อไป! 💪"
-        );
-        scores.setStyle("""
-            -fx-font-family: 'Comic Sans MS';
-            -fx-font-size: 22px;
-            -fx-text-fill: #d8eeff;
-            -fx-line-spacing: 4;
-        """);
+                        "Intelligence รีเซ็ต\nสู้ต่อไป! 💪");
+        scores.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:22px;" +
+                "-fx-text-fill:" + TEXT_COLOR + ";-fx-line-spacing:4;");
         scores.setTextAlignment(TextAlignment.CENTER);
         scores.setAlignment(Pos.CENTER);
 
-        // ── Continue image button (replaces red ✕) ────────────────────────────
         var btnUrl = getClass().getResource("/images/menu/menu_continue.png");
         javafx.scene.Node closeNode;
         if (btnUrl != null) {
-            ImageView continueIv = new ImageView(new Image(btnUrl.toExternalForm()));
-            continueIv.setFitWidth(280);
-            continueIv.setPreserveRatio(true);
-            continueIv.setCursor(javafx.scene.Cursor.HAND);
-            continueIv.setOnMouseEntered(e  -> { continueIv.setScaleX(1.06); continueIv.setScaleY(1.06); continueIv.setOpacity(0.88); });
-            continueIv.setOnMouseExited(e   -> { continueIv.setScaleX(1.0);  continueIv.setScaleY(1.0);  continueIv.setOpacity(1.0);  });
-            continueIv.setOnMousePressed(e  -> { continueIv.setScaleX(0.94); continueIv.setScaleY(0.94); e.consume(); });
-            continueIv.setOnMouseReleased(e -> { continueIv.setScaleX(1.0);  continueIv.setScaleY(1.0); });
-            continueIv.setOnMouseClicked(e -> {
+            ImageView iv = new ImageView(new Image(btnUrl.toExternalForm()));
+            iv.setFitWidth(280); iv.setPreserveRatio(true);
+            iv.setCursor(javafx.scene.Cursor.HAND);
+            iv.setOnMouseEntered(e -> { iv.setScaleX(1.06); iv.setScaleY(1.06); iv.setOpacity(0.88); });
+            iv.setOnMouseExited (e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  iv.setOpacity(1.0);  });
+            iv.setOnMousePressed(e -> { iv.setScaleX(0.94); iv.setScaleY(0.94); e.consume(); });
+            iv.setOnMouseReleased(e -> { iv.setScaleX(1.0); iv.setScaleY(1.0); });
+            iv.setOnMouseClicked(e -> {
                 e.consume();
                 FadeTransition fo = new FadeTransition(Duration.millis(150), overlay);
                 fo.setToValue(0);
@@ -299,16 +289,13 @@ public class GameLauncher extends Application {
                 });
                 fo.play();
             });
-            closeNode = continueIv;
+            closeNode = iv;
         } else {
-            // Fallback plain button
-            Button fallback = new Button("ต่อไป ▶");
-            fallback.setStyle("""
-                -fx-font-family:'Comic Sans MS';-fx-font-size:18px;
-                -fx-background-color:#4fc3f7;-fx-text-fill:#0a1628;-fx-font-weight:bold;
-                -fx-background-radius:14;-fx-padding:10 28 10 28;-fx-cursor:hand;
-            """);
-            fallback.setOnAction(e -> {
+            Button fb = new Button("ต่อไป ▶");
+            fb.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:18px;" +
+                    "-fx-background-color:#4fc3f7;-fx-text-fill:" + TEXT_COLOR + ";" +
+                    "-fx-font-weight:bold;-fx-background-radius:14;-fx-padding:10 28 10 28;-fx-cursor:hand;");
+            fb.setOnAction(e -> {
                 FadeTransition fo = new FadeTransition(Duration.millis(150), overlay);
                 fo.setToValue(0);
                 fo.setOnFinished(ev -> {
@@ -319,22 +306,21 @@ public class GameLauncher extends Application {
                 });
                 fo.play();
             });
-            closeNode = fallback;
+            closeNode = fb;
         }
 
         body.getChildren().addAll(heading, sep, scores, closeNode);
         StackPane.setAlignment(body, Pos.CENTER);
         card.getChildren().add(body);
 
-        // Scale card with window zoom
-        javafx.scene.transform.Scale cardScale = new javafx.scene.transform.Scale(1, 1);
-        cardScale.pivotXProperty().bind(javafx.beans.binding.Bindings.divide(card.widthProperty(), 2));
-        cardScale.pivotYProperty().bind(javafx.beans.binding.Bindings.divide(card.heightProperty(), 2));
-        cardScale.xProperty().bind(javafx.beans.binding.Bindings.createDoubleBinding(
+        javafx.scene.transform.Scale cs = new javafx.scene.transform.Scale(1, 1);
+        cs.pivotXProperty().bind(javafx.beans.binding.Bindings.divide(card.widthProperty(), 2));
+        cs.pivotYProperty().bind(javafx.beans.binding.Bindings.divide(card.heightProperty(), 2));
+        cs.xProperty().bind(javafx.beans.binding.Bindings.createDoubleBinding(
                 () -> Math.min(root.getWidth() / 1920.0, root.getHeight() / 1080.0),
                 root.widthProperty(), root.heightProperty()));
-        cardScale.yProperty().bind(cardScale.xProperty());
-        card.getTransforms().add(cardScale);
+        cs.yProperty().bind(cs.xProperty());
+        card.getTransforms().add(cs);
 
         overlay.getChildren().add(card);
         root.getChildren().add(overlay);
@@ -346,6 +332,7 @@ public class GameLauncher extends Application {
         ft.setToValue(1);
         st.play(); ft.play();
     }
+
     private void doGoHome() {
         if (actionLocked) return;
         actionLocked = true;
@@ -362,11 +349,7 @@ public class GameLauncher extends Application {
     private void performWithCutscene(Activity activity, Location location, Runnable onAfter) {
         if (actionLocked) return;
         RequirementReason reason = activity.canPerform(player, timeSystem);
-        if (reason != null) {
-            String msg = activity.getFailMessage(reason);
-            if (outsideUI != null) { if (msg != null) outsideUI.sayFail(msg); else outsideUI.sayFail(); }
-            return;
-        }
+        if (reason != null) { speakFail(activity.getFailMessage(reason)); return; }
         actionLocked = true;
         ActivityCutscene.play(root, ActivityCutscene.lineFor(activity.getClass().getSimpleName()), () -> {
             activity.performActivity(player, timeSystem, eventManager);
@@ -380,11 +363,7 @@ public class GameLauncher extends Application {
 
     private boolean performSilent(Activity activity, Location location) {
         RequirementReason reason = activity.canPerform(player, timeSystem);
-        if (reason != null) {
-            String msg = activity.getFailMessage(reason);
-            if (outsideUI != null) { if (msg != null) outsideUI.sayFail(msg); else outsideUI.sayFail(); }
-            return false;
-        }
+        if (reason != null) { speakFail(activity.getFailMessage(reason)); return false; }
         activity.performActivity(player, timeSystem, eventManager);
         if (location != null) eventManager.triggerAfterActivity(player, timeSystem, location);
         if (outsideUI != null) { outsideUI.refresh(); outsideUI.saySuccess(); }
@@ -397,39 +376,29 @@ public class GameLauncher extends Application {
     }
 
     // ── Pause ─────────────────────────────────────────────────────────────────
-
     private void showPause(PauseOrigin origin) {
         if (pauseOpen) return;
         pauseOpen = true; pauseOrigin = origin;
-
         PauseMenuUI pauseUI = new PauseMenuUI(root, new PauseMenuUI.Callbacks() {
             @Override public void onResume() {
-                if (pauseOverlay != null) {
-                    PauseMenuUI.dismiss(root, pauseOverlay, () -> {
-                        pauseOverlay = null;
-                        pauseOpen = false;
-                    });
-                }
+                if (pauseOverlay != null)
+                    PauseMenuUI.dismiss(root, pauseOverlay, () -> { pauseOverlay = null; pauseOpen = false; });
             }
             @Override public void onSettings() {
-                if (pauseOverlay != null) {
+                if (pauseOverlay != null)
                     PauseMenuUI.dismiss(root, pauseOverlay, () -> {
-                        pauseOverlay = null;
-                        pauseOpen = false;
+                        pauseOverlay = null; pauseOpen = false;
                         showSettings(pauseOrigin == PauseOrigin.OUTSIDE
                                 ? GameLauncher.this::showGameplay
                                 : GameLauncher.this::showITBuilding);
                     });
-                }
             }
             @Override public void onMainMenu() {
-                if (pauseOverlay != null) {
+                if (pauseOverlay != null)
                     PauseMenuUI.dismiss(root, pauseOverlay, () -> {
-                        pauseOverlay = null;
-                        pauseOpen = false;
+                        pauseOverlay = null; pauseOpen = false;
                         showMainMenuWithFade();
                     });
-                }
             }
         });
         pauseOverlay = pauseUI.buildView();
@@ -494,9 +463,7 @@ public class GameLauncher extends Application {
         ft.setFromValue(0); ft.setToValue(1); ft.play();
     }
 
-    private void fadeOutThenRun(java.util.function.Consumer<Void> then) {
-        then.accept(null);
-    }
+    private void fadeOutThenRun(java.util.function.Consumer<Void> then) { then.accept(null); }
 
     private void showMainMenuWithFade() {
         AudioManager.getInstance().playMusic(AudioManager.Music.MAIN_MENU);
@@ -552,9 +519,9 @@ public class GameLauncher extends Application {
 
     private OutsideUI.Callbacks buildOutsideCallbacks() {
         return new OutsideUI.Callbacks() {
-            @Override public void onBusStop()    { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showBusStop); }
+            @Override public void onBusStop()    { runOnce(GameLauncher.this::showBusStop); }
             @Override public void onCanteen()    { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::doCanteen); }
-            @Override public void onITBuilding() { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showITBuilding); }
+            @Override public void onITBuilding() { runOnce(GameLauncher.this::showITBuilding); }
             @Override public void onGoHome()     { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::doGoHome); }
             @Override public void onPause()      { showPause(PauseOrigin.OUTSIDE); }
             @Override public void showMessage(String t, String m) { showDialog(t, m, null); }
@@ -565,7 +532,7 @@ public class GameLauncher extends Application {
     private void doCanteen() {
         EatActivity eat = new EatActivity();
         RequirementReason r = eat.canPerform(player, timeSystem);
-        if (r != null) { String m = eat.getFailMessage(r); if (outsideUI != null) { if (m != null) outsideUI.sayFail(m); else outsideUI.sayFail(); } return; }
+        if (r != null) { speakFail(eat.getFailMessage(r)); return; }
         actionLocked = true;
         ActivityCutscene.play(root, ActivityCutscene.lineFor("EatActivity"), () -> {
             eat.performActivity(player, timeSystem, eventManager);
@@ -588,17 +555,21 @@ public class GameLauncher extends Application {
     private void showITBuilding() {
         AudioManager.getInstance().playMusic(AudioManager.Music.INSIDE);
         eventManager.triggerVisit(player, timeSystem, Location.IT_BUILDING);
-        if (outsideUI != null) outsideUI.refresh();
+        if (outsideUI == null) {
+            outsideUI = new OutsideUI(player, timeSystem, eventManager, buildOutsideCallbacks());
+        }
+        outsideUI.refresh();
         actionLocked = false;
         InsideUI ui = new InsideUI(new InsideUI.Callbacks() {
-            @Override public boolean isProgExamDay()    { return GameLauncher.this.isProgExamDay(); }
-            @Override public boolean isMathExamDay()    { return GameLauncher.this.isMathExamDay(); }
-            @Override public void onPause()             { showPause(PauseOrigin.IT_BUILDING); }
+            @Override public boolean      isProgExamDay()   { return GameLauncher.this.isProgExamDay(); }
+            @Override public boolean      isMathExamDay()   { return GameLauncher.this.isMathExamDay(); }
+            @Override public void         onPause()         { showPause(PauseOrigin.IT_BUILDING); }
             @Override public Player       getPlayer()       { return player; }
             @Override public TimeSystem   getTimeSystem()   { return timeSystem; }
             @Override public EventManager getEventManager() { return eventManager; }
-            @Override public void onClassroom()  { AudioManager.getInstance().playAccept(); performWithCutscene(new ClassroomActivity(), Location.CLASSROOM, GameLauncher.this::showITBuilding); }
-            @Override public void onAuditorium() { AudioManager.getInstance().playAccept(); performWithCutscene(new AuditoriumActivity(), Location.AUDITORIUM, GameLauncher.this::showITBuilding); }
+            @Override public OutsideUI    getOutsideUI()    { return outsideUI; }
+            @Override public void onClassroom()  { AudioManager.getInstance().playAccept(); performWithCutscene(new ClassroomActivity(),       Location.CLASSROOM,  GameLauncher.this::showITBuilding); }
+            @Override public void onAuditorium() { AudioManager.getInstance().playAccept(); performWithCutscene(new AuditoriumActivity(),      Location.AUDITORIUM, GameLauncher.this::showITBuilding); }
             @Override public void onCoworking()  { AudioManager.getInstance().playAccept(); showCoworkingSpace(); }
             @Override public void onProgExam()   { AudioManager.getInstance().playAccept(); doProgExam(); }
             @Override public void onMathExam()   { AudioManager.getInstance().playAccept(); doMathExam(); }
@@ -624,23 +595,11 @@ public class GameLauncher extends Application {
     }
 
     // ── Exams ─────────────────────────────────────────────────────────────────
-
     private void doProgExam() {
-        // ── CHANGE: speak if exam already taken today ─────────────────────────
-        if (progExamTakenToday) {
-            if (outsideUI != null) outsideUI.sayFail("สอบ Programming ไปแล้ววันนี้!");
-            else showDialog("ข้อมูล", "คุณสอบ Programming ไปแล้ววันนี้", null);
-            return;
-        }
+        if (progExamTakenToday) { speakFail("สอบ Programming ไปแล้ววันนี้!"); return; }
         ExamActivity exam = new ExamActivity();
         RequirementReason r = exam.canPerform(player, timeSystem);
-        if (r != null) {
-            // ── CHANGE: always show speech on requirement fail ─────────────────
-            String msg = exam.getFailMessage(r);
-            if (outsideUI != null) { if (msg != null) outsideUI.sayFail(msg); else outsideUI.sayFail(); }
-            else showDialog("ไม่สามารถสอบได้", msg != null ? msg : "Stats ไม่เพียงพอ", null);
-            return;
-        }
+        if (r != null) { speakFail(exam.getFailMessage(r)); return; }
         progExamTakenToday = true;
         actionLocked = true;
         CaptchaMiniGame[] ref = new CaptchaMiniGame[1];
@@ -656,21 +615,10 @@ public class GameLauncher extends Application {
     }
 
     private void doMathExam() {
-        // ── CHANGE: speak if exam already taken today ─────────────────────────
-        if (mathExamTakenToday) {
-            if (outsideUI != null) outsideUI.sayFail("สอบ Math ไปแล้ววันนี้!");
-            else showDialog("ข้อมูล", "คุณสอบ Math ไปแล้ววันนี้", null);
-            return;
-        }
+        if (mathExamTakenToday) { speakFail("สอบ Math ไปแล้ววันนี้!"); return; }
         ExamActivity exam = new ExamActivity();
         RequirementReason r = exam.canPerform(player, timeSystem);
-        if (r != null) {
-            // ── CHANGE: always show speech on requirement fail ─────────────────
-            String msg = exam.getFailMessage(r);
-            if (outsideUI != null) { if (msg != null) outsideUI.sayFail(msg); else outsideUI.sayFail(); }
-            else showDialog("ไม่สามารถสอบได้", msg != null ? msg : "Stats ไม่เพียงพอ", null);
-            return;
-        }
+        if (r != null) { speakFail(exam.getFailMessage(r)); return; }
         mathExamTakenToday = true;
         performSilent(exam, Location.CLASSROOM);
         actionLocked = true;
@@ -688,74 +636,242 @@ public class GameLauncher extends Application {
     // =========================================================================
     // Endings
     // =========================================================================
-
     private void showEnding() {
-        // ── CHANGE: Secret Ending 2 — mood at zero regardless of grade ────────
-        if (player != null && player.getStat(StatType.MOOD) <= 0) {
-            showSecretEnding2();
+        if (player != null && player.getStat(StatType.MOOD) <= 10) { showSecretEnding2(); return; }
+
+        int progAvg = progExam1Score + progExam2Score;
+        int mathAvg = mathExam1Score + mathExam2Score;
+        int overall = (progAvg + mathAvg) / 2;
+        String grade = overall >= 80 ? "A" : overall >= 70 ? "B" : overall >= 60 ? "C" : overall >= 50 ? "D" : "F";
+
+        String endingMusic = switch (grade) {
+            case "A"           -> AudioManager.Music.ENDING_GREAT;
+            case "B", "C", "D" -> AudioManager.Music.ENDING_MID;
+            default            -> AudioManager.Music.ENDING_BAD;
+        };
+        AudioManager.getInstance().playMusic(endingMusic);
+
+        final String fg = grade;
+        final int fO = overall;
+
+        if ("A".equals(grade)) {
+            showEndingACinematic(() -> showEndingResult(fg, fO));
+        } else {
+            StackPane black = new StackPane();
+            black.setStyle("-fx-background-color:#000;");
+            black.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+            Label lbl = makeCutsceneLabel();
+            lbl.setOpacity(0);
+            black.getChildren().add(lbl);
+            setContent(black);
+            FadeTransition fi = new FadeTransition(Duration.millis(900), black);
+            fi.setFromValue(0); fi.setToValue(1);
+            fi.setOnFinished(e -> {
+                lbl.setOpacity(1);
+                typeSegments(lbl, endingStory(fg), () -> showEndingResult(fg, fO));
+            });
+            fi.play();
+        }
+    }
+
+    // ── Ending A cinematic: one image per story line, subtitle at bottom ──────
+    private void showEndingACinematic(Runnable onDone) {
+        String[] lines = endingStory("A");
+
+        // Root pane for this cinematic
+        StackPane cinPane = new StackPane();
+        cinPane.setStyle("-fx-background-color:#000;");
+        cinPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
+
+        // Background image — fills the whole screen
+        ImageView bgImg = new ImageView();
+        bgImg.setFitWidth(BASE_W); bgImg.setFitHeight(BASE_H);
+        bgImg.setPreserveRatio(false);
+        bgImg.setOpacity(0);
+
+        // Subtitle bar at the bottom
+        StackPane subtitleBar = new StackPane();
+        subtitleBar.setStyle("""
+            -fx-background-color: rgba(0,0,0,0.62);
+            -fx-padding: 0;
+        """);
+        subtitleBar.setMaxWidth(Double.MAX_VALUE);
+        subtitleBar.setPrefHeight(130);
+        subtitleBar.setMaxHeight(130);
+        StackPane.setAlignment(subtitleBar, Pos.BOTTOM_CENTER);
+
+        Label subtitle = new Label("");
+        subtitle.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 38));
+        subtitle.setTextFill(Color.WHITE);
+        subtitle.setWrapText(true);
+        subtitle.setMaxWidth(1600);
+        subtitle.setTextAlignment(TextAlignment.CENTER);
+        subtitle.setAlignment(Pos.CENTER);
+        subtitle.setStyle("""
+            -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.95), 12, 0.6, 0, 2);
+            -fx-padding: 18 40 18 40;
+        """);
+        subtitleBar.getChildren().add(subtitle);
+
+        cinPane.getChildren().addAll(bgImg, subtitleBar);
+        setContent(cinPane);
+
+        playEndingAScene(cinPane, bgImg, subtitle, lines, 0, onDone);
+    }
+
+    private void playEndingAScene(StackPane cinPane,
+                                  ImageView bgImg,
+                                  Label subtitle,
+                                  String[] lines,
+                                  int index,
+                                  Runnable onDone) {
+        if (index >= lines.length) {
+            // Fade out the whole cinematic, then proceed
+            FadeTransition fo = new FadeTransition(Duration.millis(800), cinPane);
+            fo.setFromValue(1); fo.setToValue(0);
+            fo.setOnFinished(e -> onDone.run());
+            fo.play();
             return;
         }
 
-        AudioManager.getInstance().playMusic(AudioManager.Music.CUTSCENE);
-        int progAvg = progExam1Score + progExam2Score;
-        int mathAvg = mathExam1Score + mathExam2Score;
-        int overall = (progAvg + mathAvg) / 4;
-        String grade = overall >= 80 ? "A" : overall >= 70 ? "B" : overall >= 60 ? "C" : overall >= 50 ? "D" : "F";
-        StackPane black = new StackPane();
-        black.setStyle("-fx-background-color:#000;"); black.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        Label lbl = makeCutsceneLabel(); lbl.setOpacity(0);
-        black.getChildren().add(lbl); setContent(black);
-        FadeTransition fi = new FadeTransition(Duration.millis(900), black);
-        fi.setFromValue(0); fi.setToValue(1);
-        final String fg = grade; final int fP = progAvg, fM = mathAvg, fO = overall;
-        fi.setOnFinished(e -> { lbl.setOpacity(1); typeSegments(lbl, endingStory(fg), () -> showEndingResult(fg, fO, fP, fM)); });
-        fi.play();
+        // Load scene image (cycle if more lines than images)
+        String imgPath = ENDING_A_SCENES[Math.min(index, ENDING_A_SCENES.length - 1)];
+        var imgUrl = getClass().getResource(imgPath);
+        if (imgUrl != null) {
+            bgImg.setImage(new Image(imgUrl.toExternalForm()));
+        }
+
+        // Fade IN the background image
+        FadeTransition bgIn = new FadeTransition(Duration.millis(700), bgImg);
+        bgIn.setToValue(1);
+        bgIn.setOnFinished(e -> {
+            // Type the subtitle
+            subtitle.setText("");
+            typeTextOnLabel(subtitle, lines[index], () -> {
+                // Hold for a moment, then fade out subtitle and move to next scene
+                PauseTransition hold = new PauseTransition(Duration.millis(1600));
+                hold.setOnFinished(pe -> {
+                    FadeTransition subOut = new FadeTransition(Duration.millis(400), subtitle);
+                    subOut.setToValue(0);
+                    subOut.setOnFinished(se -> {
+                        subtitle.setOpacity(1);
+                        // Fade out bg before showing next scene
+                        FadeTransition bgOut = new FadeTransition(Duration.millis(600), bgImg);
+                        bgOut.setToValue(0);
+                        bgOut.setOnFinished(be ->
+                                playEndingAScene(cinPane, bgImg, subtitle, lines, index + 1, onDone));
+                        bgOut.play();
+                    });
+                    subOut.play();
+                });
+                hold.play();
+            });
+        });
+        bgIn.play();
     }
 
-    private void showEndingResult(String grade, int overall, int progAvg, int mathAvg) {
+    /** Typewriter on an arbitrary Label (used for subtitles). */
+    private void typeTextOnLabel(Label target, String text, Runnable onDone) {
+        target.setText("");
+        AudioManager audio = AudioManager.getInstance();
+        Timeline tl = new Timeline();
+        for (int i = 0; i < text.length(); i++) {
+            final int next = i + 1;
+            final char ch  = text.charAt(i);
+            tl.getKeyFrames().add(new KeyFrame(Duration.millis((long) TYPING_MS * i), e -> {
+                target.setText(text.substring(0, next));
+                if (ch != ' ' && ch != '\n') audio.playTyping();
+            }));
+        }
+        tl.setOnFinished(e -> { if (onDone != null) onDone.run(); });
+        tl.play();
+    }
+
+    // ── Shared ending result screen ───────────────────────────────────────────
+    private void showEndingResult(String grade, int overall) {
         String c = endingColor(grade);
-        StackPane r = new StackPane(); r.setStyle("-fx-background-color:#000;");
-        VBox content = new VBox(28); content.setAlignment(Pos.CENTER); content.setStyle("-fx-padding:60;");
+
+        StackPane r = new StackPane();
+        r.setStyle("-fx-background-color:#000;");
+        r.setPrefSize(BASE_W, BASE_H);
+        r.setAlignment(Pos.CENTER);
+
+        // Inner VBox — fully centered, width capped so text never spans edge-to-edge
+        VBox content = new VBox(28);
+        content.setAlignment(Pos.CENTER);
+        content.setFillWidth(false);
+        content.setMaxWidth(1000);
+        content.setStyle("-fx-padding:60 0 60 0; -fx-background-color:transparent;");
+
         Text gt = new Text(grade);
-        gt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 130)); gt.setFill(Color.web(c));
-        gt.setStyle("-fx-effect: dropshadow(gaussian,"+c+",44,0.65,0,0);");
+        gt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 130));
+        gt.setFill(Color.web(c));
+        gt.setStyle("-fx-effect: dropshadow(gaussian," + c + ",44,0.65,0,0);");
+        gt.setTextAlignment(TextAlignment.CENTER);
+
         Text tt = new Text(endingTitle(grade));
-        tt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30)); tt.setFill(Color.web(c));
-        Label sc = new Label("📊 สรุปผลการสอบ\n\n💻 Programming:  "+progExam1Score+"  |  "+progExam2Score+"  →  เฉลี่ย "+progAvg+"\n📐 Math:              "+mathExam1Score+"  |  "+mathExam2Score+"  →  เฉลี่ย "+mathAvg+"\n\n📈 คะแนนเฉลี่ยรวม:  "+overall);
-        sc.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:20px;-fx-text-fill:#c8d8f0;-fx-line-spacing:6;");
+        tt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30));
+        tt.setFill(Color.web(c));
+        tt.setTextAlignment(TextAlignment.CENTER);
+
+        Label sc = new Label(
+                "📊 สรุปผลการสอบ\n\n💻 Programming:  " + progExam1Score + "  |  " + progExam2Score
+                        + "\n📐 Math:              " + mathExam1Score
+                        + "  |  " + mathExam2Score
+                        + "\n\n📈 คะแนนเฉลี่ยรวม:  " + overall);
+        sc.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:20px;-fx-text-fill:#ffffff;-fx-line-spacing:6;");
         sc.setTextAlignment(TextAlignment.CENTER);
-        Button again = navBtn("🔄  เล่นใหม่");
-        Button quit  = navBtn("🚪  ออกจากเกม");
-        again.setOnAction(e -> { AudioManager.getInstance().playAccept(); runOnce(this::startNewGame); });
-        quit .setOnAction(e -> { AudioManager.getInstance().playRefuse(); stage.close(); });
-        HBox btns = new HBox(28, again, quit); btns.setAlignment(Pos.CENTER);
+        sc.setAlignment(Pos.CENTER);
+        sc.setWrapText(true);
+        sc.setMaxWidth(900);
+
+        ImageView againImg = makeEndingImgBtn("/images/menu/menu_start2.png");
+        ImageView quitImg  = makeEndingImgBtn("/images/menu/back_to_menu.png");
+        againImg.setOnMouseClicked(e -> { AudioManager.getInstance().playAccept(); runOnce(this::startNewGame); });
+        quitImg .setOnMouseClicked(e -> { AudioManager.getInstance().playRefuse(); runOnce(this::showMainMenuWithFade); });
+
+        HBox btns = new HBox(28, againImg, quitImg);
+        btns.setAlignment(Pos.CENTER);
+
         content.getChildren().addAll(gt, tt, sc, btns);
-        content.setOpacity(0); r.getChildren().add(content); setContent(r);
+
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        scroll.setFitToHeight(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scroll.setStyle("-fx-background:transparent;-fx-background-color:transparent;-fx-padding:0;");
+
+        r.getChildren().add(scroll);
+
+        content.setOpacity(0);
+        setContent(r);
         FadeTransition ft = new FadeTransition(Duration.millis(600), content);
-        ft.setToValue(1);
-        ft.play();
+        ft.setToValue(1); ft.play();
     }
 
     private String[] endingStory(String g) {
         return switch (g) {
-            case "A" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด A — ทุกวิชาผ่านด้วยคะแนนสูง","ทุกหยดเหงื่อที่ทุ่มเทลงไป — มันคุ้มค่า","แล้วก็ยิ้ม... 'ปี 2 ฉันจะเอา A อีกครั้ง'"};
+            // FIX: Exactly 4 lines for Ending A — one per cinematic scene image
+            case "A" -> new String[]{
+                    "ผลสอบออกมาแล้ว...",
+                    "เกรด A — ทุกวิชาผ่านด้วยคะแนนสูง",
+                    "ทุกหยดเหงื่อที่ทุ่มเทลงไป — มันคุ้มค่า",
+                    "แล้วก็ยิ้ม... 'ปี 2 ฉันจะเอา A อีกครั้ง'"
+            };
             case "B" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด B — ไม่ใช่สิ่งที่หวัง แต่ก็ภูมิใจ","Nobody is perfect — แต่ทุกคนพัฒนาได้"};
             case "C" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด C — รอดมาได้ แม้จะหนักแค่ไหน","อย่างน้อยก็ผ่าน — สู้ต่อไปนะ!"};
             case "D" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด D — ผ่านแบบ Probation ฉิวเฉียด","ลมหายใจค่อยๆ นิ่ง — ใจยังก้าวต่อไปได้"};
             default  -> new String[]{"ผลสอบออกมาแล้ว...","เกรด F — Retired จากคณะ","Hope dies last — ความหวังไม่มีวันตาย"};
         };
     }
-
     private String endingTitle(String g) {
         return switch (g) {
-            case "A" -> "Ending A  —  All Stars Passed";
-            case "B" -> "Ending B  —  Nobody Is Perfect";
-            case "C" -> "Ending C  —  Struggling Success";
-            case "D" -> "Ending D  —  Probation";
+            case "A" -> "Ending A  —  All Stars Passed";   case "B" -> "Ending B  —  Nobody Is Perfect";
+            case "C" -> "Ending C  —  Struggling Success"; case "D" -> "Ending D  —  Probation";
             default  -> "Ending F  —  Hope Dies Last";
         };
     }
-
     private String endingColor(String g) {
         return switch (g) {
             case "A" -> "#ffe082"; case "B" -> "#80cbc4";
@@ -766,10 +882,14 @@ public class GameLauncher extends Application {
 
     private void showSecretEnding() {
         agreedToTerms = false;
-        AudioManager.getInstance().playMusic(AudioManager.Music.CUTSCENE);
-        StackPane black = new StackPane(); black.setStyle("-fx-background-color:#000;"); black.setMaxSize(Double.MAX_VALUE,Double.MAX_VALUE);
-        Label lbl = makeCutsceneLabel(); lbl.setOpacity(0);
-        black.getChildren().add(lbl); setContent(black);
+        AudioManager.getInstance().playMusic(AudioManager.Music.ENDING_GREAT);  // FIX: music before cutscene
+        StackPane black = new StackPane();
+        black.setStyle("-fx-background-color:#000;");
+        black.setMaxSize(Double.MAX_VALUE,Double.MAX_VALUE);
+        Label lbl = makeCutsceneLabel();
+        lbl.setOpacity(0);
+        black.getChildren().add(lbl);
+        setContent(black);
         FadeTransition fi = new FadeTransition(Duration.millis(800), black);
         fi.setFromValue(0); fi.setToValue(1);
         fi.setOnFinished(e -> { lbl.setOpacity(1); typeSegments(lbl, new String[]{
@@ -782,104 +902,134 @@ public class GameLauncher extends Application {
         }, this::showSecretEndingResult); });
         fi.play();
     }
-
     private void showSecretEndingResult() {
         final String ac = "#f48fb1";
-        StackPane r = new StackPane(); r.setStyle("-fx-background-color:#000;");
-        VBox content = new VBox(32); content.setAlignment(Pos.CENTER); content.setStyle("-fx-padding:60;");
-        Text gt = new Text("✦"); gt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 120)); gt.setFill(Color.web(ac));
-        gt.setStyle("-fx-effect:dropshadow(gaussian,"+ac+",50,0.70,0,0);");
+
+        StackPane r = new StackPane();
+        r.setStyle("-fx-background-color:#000;");
+        r.setPrefSize(BASE_W, BASE_H);
+        r.setAlignment(Pos.CENTER);
+
+        VBox content = new VBox(32);
+        content.setAlignment(Pos.CENTER);
+        content.setFillWidth(false);
+        content.setMaxWidth(1000);
+        content.setStyle("-fx-padding:60 0 60 0;-fx-background-color:transparent;");
+
+        Text gt = new Text("✦");
+        gt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 120));
+        gt.setFill(Color.web(ac));
+        gt.setTextAlignment(TextAlignment.CENTER);
         Text tt = new Text("Secret Ending 1 —  New Career Path");
-        tt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30)); tt.setFill(Color.web(ac));
-        Label desc = new Label("🎨  เส้นทางที่ไม่มีใครคาดถึง\n\nความกล้าที่จะเลือกเส้นทางของตัวเอง\n\n[ Unlocked: Secret Ending 🌟 ]");
-        desc.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:22px;-fx-text-fill:#f8d7e8;-fx-line-spacing:6;");
+        tt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30));
+        tt.setFill(Color.web(ac));
+        tt.setTextAlignment(TextAlignment.CENTER);
+        Label desc = new Label(
+                "🎨  เส้นทางที่ไม่มีใครคาดถึง\n\n" +
+                        "ความกล้าที่จะเลือกเส้นทางของตัวเอง\n\n" +
+                        "[ Unlocked: Secret Ending 🌟 ]");
+        desc.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:22px;-fx-text-fill:#ffffff;-fx-line-spacing:6;");
         desc.setTextAlignment(TextAlignment.CENTER);
-        Button tryAgain = navBtnColored("🔄  ลองอีกครั้ง", ac, "#1a0010");
-        Button quit = navBtn("🚪  ออกจากเกม");
-        tryAgain.setOnAction(e -> { AudioManager.getInstance().playAccept(); runOnce(this::showIntroSequence); });
-        quit    .setOnAction(e -> { AudioManager.getInstance().playRefuse(); stage.close(); });
-        HBox btns = new HBox(32, tryAgain, quit); btns.setAlignment(Pos.CENTER);
+        desc.setAlignment(Pos.CENTER);
+        desc.setWrapText(true);
+        desc.setMaxWidth(900);
+
+        ImageView tryAgainImg = makeEndingImgBtn("/images/menu/menu_start2.png");
+        ImageView quitImg     = makeEndingImgBtn("/images/menu/back_to_menu.png");
+        tryAgainImg.setOnMouseClicked(e -> { AudioManager.getInstance().playAccept(); runOnce(this::showIntroSequence); });
+        quitImg    .setOnMouseClicked(e -> { AudioManager.getInstance().playRefuse(); runOnce(this::showMainMenuWithFade); });
+
+        HBox btns = new HBox(32, tryAgainImg, quitImg); btns.setAlignment(Pos.CENTER);
         content.getChildren().addAll(gt, tt, desc, btns);
-        content.setOpacity(0); r.getChildren().add(content); setContent(r);
-        FadeTransition ft = new FadeTransition(Duration.millis(600), content);
-        ft.setToValue(1);
-        ft.play();
+
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        scroll.setFitToHeight(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scroll.setStyle("-fx-background:transparent;-fx-background-color:transparent;-fx-padding:0;");
+
+        r.getChildren().add(scroll);
+
+        content.setOpacity(0);
+        setContent(r);
+        FadeTransition ft = new FadeTransition(Duration.millis(600), content); ft.setToValue(1); ft.play();
     }
 
-    // ── CHANGE: Secret Ending 2 — mood = 0 at end ─────────────────────────────
-
     private void showSecretEnding2() {
-        AudioManager.getInstance().playMusic(AudioManager.Music.CUTSCENE);
+        AudioManager.getInstance().playMusic(AudioManager.Music.ENDING_BAD);  // FIX: music before cutscene
         StackPane black = new StackPane();
         black.setStyle("-fx-background-color:#000;");
-        black.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        Label lbl = makeCutsceneLabel();
-        lbl.setOpacity(0);
+        black.setMaxSize(Double.MAX_VALUE,Double.MAX_VALUE);
+        Label lbl = makeCutsceneLabel(); lbl.setOpacity(0);
         black.getChildren().add(lbl);
         setContent(black);
         FadeTransition fi = new FadeTransition(Duration.millis(800), black);
         fi.setFromValue(0); fi.setToValue(1);
-        fi.setOnFinished(e -> {
-            lbl.setOpacity(1);
-            typeSegments(lbl, new String[]{
-                    "ผลสอบออกมาแล้ว...",
-                    "แต่ใจมันว่างเปล่าเกินกว่าจะดีใจ",
-                    "เธอเปิดผลคะแนน — ตัวเลขมันดี",
-                    "แต่มันไม่รู้สึกอะไรเลย...",
-                    "ตลอด 2 สัปดาห์ที่ผ่านมา เธอเอาแต่วิ่งตามเกรด",
-                    "จนลืมไปว่าตัวเองชอบอะไร รู้สึกอะไร",
-                    "เกรดดีแต่ไม่มีความสุข — มันคุ้มค่าจริงหรือ?"
-            }, this::showSecretEnding2Result);
-        });
+        fi.setOnFinished(e -> { lbl.setOpacity(1); typeSegments(lbl, new String[]{
+                "ผลสอบออกมาแล้ว...","แต่ใจมันว่างเปล่าเกินกว่าจะดีใจ",
+                "เธอเปิดผลคะแนน — ตัวเลขมันดี","แต่มันไม่รู้สึกอะไรเลย...",
+                "ตลอด 2 สัปดาห์ที่ผ่านมา เธอเอาแต่วิ่งตามเกรด",
+                "จนลืมไปว่าตัวเองชอบอะไร รู้สึกอะไร",
+                "เกรดดีแต่ไม่มีความสุข — มันคุ้มค่าจริงหรือ?"
+        }, this::showSecretEnding2Result); });
         fi.play();
     }
-
     private void showSecretEnding2Result() {
-        final String ac = "#78909c"; // muted blue-grey
-        StackPane r = new StackPane(); r.setStyle("-fx-background-color:#000;");
-        VBox content = new VBox(32); content.setAlignment(Pos.CENTER); content.setStyle("-fx-padding:60;");
+        final String ac = "#78909c";
+
+        StackPane r = new StackPane();
+        r.setStyle("-fx-background-color:#000;");
+        r.setPrefSize(BASE_W, BASE_H);
+        r.setAlignment(Pos.CENTER);
+
+        VBox content = new VBox(32);
+        content.setAlignment(Pos.CENTER);
+        content.setFillWidth(false);
+        content.setMaxWidth(1000);
+        content.setStyle("-fx-padding:60 0 60 0;-fx-background-color:transparent;");
 
         Text gt = new Text("💔");
         gt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 110));
         gt.setFill(Color.web(ac));
-        gt.setStyle("-fx-effect:dropshadow(gaussian," + ac + ",50,0.60,0,0);");
-
+        gt.setTextAlignment(TextAlignment.CENTER);
         Text tt = new Text("Secret Ending 2  —  Hollow Victory");
         tt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30));
         tt.setFill(Color.web(ac));
-
+        tt.setTextAlignment(TextAlignment.CENTER);
         Label desc = new Label(
                 "📊 ผลการสอบดี — แต่ใจมันพัง\n\n" +
                         "ไม่ว่าเกรดจะสวยแค่ไหน\n" +
                         "ถ้าหัวใจไม่มีความสุข\n" +
                         "ความพยายามทั้งหมดก็ไร้ความหมาย\n\n" +
                         "เกรดคือเครื่องมือ — ไม่ใช่ชีวิตทั้งหมด\n\n" +
-                        "[ Unlocked: Secret Ending 2 🌑 ]"
-        );
-        desc.setStyle("""
-            -fx-font-family: 'Comic Sans MS';
-            -fx-font-size: 22px;
-            -fx-text-fill: #b0bec5;
-            -fx-line-spacing: 6;
-        """);
+                        "[ Unlocked: Secret Ending 2 🌑 ]");
+        desc.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:22px;-fx-text-fill:#ffffff;-fx-line-spacing:6;");
         desc.setTextAlignment(TextAlignment.CENTER);
+        desc.setAlignment(Pos.CENTER);
+        desc.setWrapText(true);
+        desc.setMaxWidth(900);
 
-        Button again = navBtnColored("🔄  เล่นใหม่", ac, "#0a0a0a");
-        Button quit  = navBtn("🚪  ออกจากเกม");
-        again.setOnAction(e -> { AudioManager.getInstance().playAccept(); runOnce(this::startNewGame); });
-        quit .setOnAction(e -> { AudioManager.getInstance().playRefuse(); stage.close(); });
+        ImageView againImg = makeEndingImgBtn("/images/menu/menu_start2.png");
+        ImageView quitImg  = makeEndingImgBtn("/images/menu/back_to_menu.png");
+        againImg.setOnMouseClicked(e -> { AudioManager.getInstance().playAccept(); runOnce(this::startNewGame); });
+        quitImg .setOnMouseClicked(e -> { AudioManager.getInstance().playRefuse(); runOnce(this::showMainMenuWithFade); });
 
-        HBox btns = new HBox(32, again, quit);
-        btns.setAlignment(Pos.CENTER);
-
+        HBox btns = new HBox(32, againImg, quitImg); btns.setAlignment(Pos.CENTER);
         content.getChildren().addAll(gt, tt, desc, btns);
-        content.setOpacity(0);
-        r.getChildren().add(content);
-        setContent(r);
 
-        FadeTransition ft = new FadeTransition(Duration.millis(600), content);
-        ft.setToValue(1);
-        ft.play();
+        ScrollPane scroll = new ScrollPane(content);
+        scroll.setFitToWidth(true);
+        scroll.setFitToHeight(true);
+        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
+        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
+        scroll.setStyle("-fx-background:transparent;-fx-background-color:transparent;-fx-padding:0;");
+
+        r.getChildren().add(scroll);
+
+        content.setOpacity(0);
+        setContent(r);
+        FadeTransition ft = new FadeTransition(Duration.millis(600), content); ft.setToValue(1); ft.play();
     }
 
     // =========================================================================
@@ -909,7 +1059,7 @@ public class GameLauncher extends Application {
             timeSystem.setCurrentDay(Integer.parseInt(p.getProperty("day","1")));
             timeSystem.setCurrentHour(Integer.parseInt(p.getProperty("hour","8")));
             eventManager = new EventManager(); EventRegistry.registerAll(eventManager);
-            wireEventListener();                   // ← wire listener after load
+            wireEventListener();
             eventManager.setEventsToday(Integer.parseInt(p.getProperty("eventsToday","0")));
             progExam1Score = Integer.parseInt(p.getProperty("progExam1Score","0"));
             mathExam1Score = Integer.parseInt(p.getProperty("mathExam1Score","0"));
@@ -982,10 +1132,30 @@ public class GameLauncher extends Application {
         iv.setFitWidth(fitWidth); iv.setPreserveRatio(true); return iv;
     }
 
+    private ImageView makeEndingImgBtn(String resourcePath) {
+        var url = getClass().getResource(resourcePath);
+        ImageView iv;
+        if (url != null) {
+            iv = new ImageView(new Image(url.toExternalForm()));
+        } else {
+            iv = new ImageView();
+        }
+        iv.setFitWidth(260);
+        iv.setPreserveRatio(true);
+        iv.setCursor(javafx.scene.Cursor.HAND);
+        iv.setOnMouseEntered(e -> { iv.setScaleX(1.07); iv.setScaleY(1.07); iv.setOpacity(0.88); });
+        iv.setOnMouseExited (e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  iv.setOpacity(1.0);  });
+        iv.setOnMousePressed(e -> { iv.setScaleX(0.93); iv.setScaleY(0.93); e.consume(); });
+        iv.setOnMouseReleased(e -> { iv.setScaleX(1.0); iv.setScaleY(1.0); });
+        return iv;
+    }
+
+    /** Cutscene label — WHITE text on black background. Never changes. */
     private Label makeCutsceneLabel() {
         Label l = new Label("");
         l.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 42));
-        l.setTextFill(Color.WHITE); l.setWrapText(true); l.setMaxWidth(1400);
+        l.setTextFill(Color.WHITE);
+        l.setWrapText(true); l.setMaxWidth(1400);
         l.setTextAlignment(TextAlignment.CENTER); l.setAlignment(Pos.CENTER);
         l.setStyle("-fx-effect:dropshadow(gaussian,rgba(180,220,255,0.40),16,0.45,0,0);");
         StackPane.setAlignment(l, Pos.CENTER); return l;
@@ -995,7 +1165,6 @@ public class GameLauncher extends Application {
         FadeTransition ft = new FadeTransition(Duration.seconds(secs), n);
         ft.setFromValue(from); ft.setToValue(to); return ft;
     }
-
     private PauseTransition pause(double s) { return new PauseTransition(Duration.seconds(s)); }
 
     private void typeSegments(Label target, String[] segs, Runnable onDone) {
@@ -1022,20 +1191,6 @@ public class GameLauncher extends Application {
         }
         if (onDone != null) seq.setOnFinished(e -> onDone.run());
         seq.play();
-    }
-
-    private Button navBtn(String text) { return navBtnColored(text,"rgba(79,195,247,0.85)","#0a1628"); }
-
-    private Button navBtnColored(String text, String bg, String fg) {
-        Button btn = new Button(text);
-        btn.setStyle("""
-            -fx-font-family:'Comic Sans MS';-fx-font-size:18px;
-            -fx-background-color:%s;-fx-text-fill:%s;-fx-font-weight:bold;
-            -fx-background-radius:14;-fx-padding:10 28 10 28;-fx-cursor:hand;
-        """.formatted(bg, fg));
-        btn.setOnMouseEntered(e -> btn.setOpacity(0.82));
-        btn.setOnMouseExited(e  -> btn.setOpacity(1.00));
-        return btn;
     }
 
     public static void main(String[] args) { launch(args); }

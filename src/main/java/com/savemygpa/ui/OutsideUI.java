@@ -61,11 +61,9 @@ public class OutsideUI {
     Label      dayLabel;
     StatsBarUI statsBar;
 
-    private Timeline bobTimeline;
     private Timeline idleTimer;
 
     private StackPane rootPane;
-    public  StackPane getRootPane() { return rootPane; }
 
     public interface Callbacks {
         void onBusStop();
@@ -146,6 +144,8 @@ public class OutsideUI {
     }
 
     // ── IT Building transition ────────────────────────────────────────────────
+    // SFX is played in mapBtn's onMousePressed so it fires instantly.
+    // This method only handles the visual fade — no extra audio call needed here.
     private void doITTransition() {
         FadeTransition fadeOut = new FadeTransition(Duration.millis(300), rootPane);
         fadeOut.setFromValue(1.0);
@@ -285,6 +285,13 @@ public class OutsideUI {
             }
         });
         wrapper.setOnMouseExited(e -> { pulse.stop(); iv.setEffect(null); });
+
+        // ── SFX fires immediately on press so there is zero perceived delay ───
+        wrapper.setOnMousePressed(e -> {
+            if (!isOpaque.apply(e.getSceneX(), e.getSceneY())) return;
+            AudioManager.getInstance().playAccept();
+        });
+
         wrapper.setOnMouseClicked(e -> {
             if (!isOpaque.apply(e.getSceneX(), e.getSceneY())) return;
             javafx.scene.effect.ColorAdjust flash = new javafx.scene.effect.ColorAdjust();
@@ -294,6 +301,7 @@ public class OutsideUI {
                     new KeyFrame(Duration.ZERO,        new KeyValue(flash.brightnessProperty(), 0.8)),
                     new KeyFrame(Duration.millis(120), new KeyValue(flash.brightnessProperty(), 0.0))
             );
+            // onClick fires after the flash — the SFX has already started above
             flashAnim.setOnFinished(ev -> { iv.setEffect(null); onClick.run(); });
             flashAnim.play();
         });

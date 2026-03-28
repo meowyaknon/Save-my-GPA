@@ -6,10 +6,6 @@ import javafx.scene.image.*;
 import javafx.scene.layout.*;
 import javafx.util.Duration;
 
-/**
- * AcceptanceUI — agreement/refusal screen with fade-in entrance animation.
- * The whole screen fades in from black, then the buttons slide up into place.
- */
 public class AcceptanceUI {
 
     private static final String BG_PATH     = "/images/acceptance/acceptance_page.jpg";

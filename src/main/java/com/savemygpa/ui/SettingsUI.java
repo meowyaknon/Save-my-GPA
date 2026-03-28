@@ -12,11 +12,13 @@ import javafx.util.Duration;
 
 public class SettingsUI {
 
-    private static final String BG_PATH    = "/images/menu/menu_no_logo.jpg";
-    private static final String CARD_BG    = "/images/popup/big_block_black.png";
-    private static final String BTN_BACK   = "/images/menu/backward.png";
-    private static final double BTN_W      = 300;
-    private static final double CARD_W     = 820;
+    private static final String BG_PATH  = "/images/menu/menu_no_logo.jpg";
+    private static final String CARD_BG  = "/images/popup/big_block_black_H.png";
+    private static final String BTN_BACK = "/images/menu/backward.png";
+    private static final double BTN_W    = 300;
+    private static final double CARD_W   = 920;
+
+    private static final String TEXT_COLOR = "#3b1a1a";
 
     private final AudioManager audio;
     private final Callbacks    cb;
@@ -30,33 +32,23 @@ public class SettingsUI {
     public StackPane buildView() {
         StackPane root = new StackPane();
 
-        // ── Full-screen background (main menu art) ────────────────────────────
         ImageView bg = loadImg(BG_PATH);
         bg.setFitWidth(1920); bg.setFitHeight(1080);
         bg.setPreserveRatio(false); bg.setMouseTransparent(true);
 
-        // ── Content card ──────────────────────────────────────────────────────
-        // CHANGE: replace dark rgba card with big_block_black.png image card
         StackPane card = new StackPane();
         card.setMaxWidth(CARD_W);
-
         var cardBgUrl = getClass().getResource(CARD_BG);
         if (cardBgUrl != null) {
             ImageView cardBgIv = new ImageView(new Image(cardBgUrl.toExternalForm()));
-            cardBgIv.setFitWidth(CARD_W);
-            cardBgIv.setPreserveRatio(true);
+            cardBgIv.setFitWidth(CARD_W); cardBgIv.setPreserveRatio(true);
             card.getChildren().add(cardBgIv);
         } else {
-            // Fallback plain dark card
-            card.setStyle("""
-                -fx-background-color: rgba(0,0,0,0.82);
-                -fx-background-radius: 24;
-                -fx-min-width: 820; -fx-min-height: 380;
-                -fx-effect: dropshadow(gaussian,rgba(0,0,0,0.85),36,0.65,0,6);
-            """);
+            card.setStyle("-fx-background-color:rgba(0,0,0,0.82);-fx-background-radius:24;" +
+                    "-fx-min-width:820;-fx-min-height:380;" +
+                    "-fx-effect:dropshadow(gaussian,rgba(0,0,0,0.85),36,0.65,0,6);");
         }
 
-        // ── Inner content on top of card image ───────────────────────────────
         VBox inner = new VBox(26);
         inner.setAlignment(Pos.CENTER);
         inner.setStyle("-fx-padding: 48 64 44 64;");
@@ -71,9 +63,8 @@ public class SettingsUI {
 
         VBox sliders = new VBox(22,
                 volRow("🔊  Master Volume", audio.getGameVolume(),  audio::setGameVolume),
-                volRow("🎵  SFX Volume",     audio.getSfxVolume(),   audio::setSfxVolume),
-                volRow("🎶  Music Volume",    audio.getMusicVolume(), audio::setMusicVolume)
-        );
+                volRow("🎵  SFX Volume",    audio.getSfxVolume(),   audio::setSfxVolume),
+                volRow("🎶  Music Volume",  audio.getMusicVolume(), audio::setMusicVolume));
         sliders.setAlignment(Pos.CENTER_LEFT); sliders.setMaxWidth(640);
 
         ImageView backBtn = makeImgBtn(BTN_BACK, BTN_W, () -> {
@@ -88,30 +79,21 @@ public class SettingsUI {
         root.getChildren().addAll(bg, card);
         FadeTransition ft = new FadeTransition(Duration.millis(400), card);
         ft.setToValue(1); ft.play();
-
         return root;
     }
 
     private HBox volRow(String name, double initial, java.util.function.DoubleConsumer onChange) {
         Label lbl = new Label(name);
         lbl.setMinWidth(230);
-        lbl.setStyle("""
-            -fx-font-family: 'Comic Sans MS';
-            -fx-font-size: 20px;
-            -fx-font-weight: bold;
-            -fx-text-fill: #e8f4f0;
-        """);
+        lbl.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:20px;" +
+                "-fx-font-weight:bold;-fx-text-fill:" + TEXT_COLOR + ";");
         Slider s = new Slider(0, 1, initial);
         s.setPrefWidth(280);
-        s.setStyle("-fx-accent: #80cbc4; -fx-control-inner-background: rgba(255,255,255,0.15);");
+        s.setStyle("-fx-accent:#80cbc4;-fx-control-inner-background:rgba(255,255,255,0.15);");
         Label pct = new Label(pctStr(initial));
         pct.setMinWidth(56);
-        pct.setStyle("""
-            -fx-font-family: 'Comic Sans MS';
-            -fx-font-size: 18px;
-            -fx-text-fill: #80cbc4;
-            -fx-font-weight: bold;
-        """);
+        pct.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:18px;" +
+                "-fx-text-fill:" + TEXT_COLOR + ";-fx-font-weight:bold;");
         s.valueProperty().addListener((obs, o, n) -> { onChange.accept(n.doubleValue()); pct.setText(pctStr(n.doubleValue())); });
         HBox row = new HBox(20, lbl, s, pct);
         row.setAlignment(Pos.CENTER_LEFT);

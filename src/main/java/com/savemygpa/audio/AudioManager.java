@@ -18,12 +18,15 @@ import java.util.Map;
  * Requires javafx.media on the classpath / module-info.
  *
  * ── Music keys (use AudioManager.Music.*) ────────────────────────────────────
- *   INTRO        → played when game first opens / intro sequence
- *   CUTSCENE     → quiet ambient music under typing cutscenes
- *   ACCEPTANCE   → acceptance screen background
- *   MAIN_MENU    → main menu background
- *   OUTSIDE      → campus map (OutsideUI)
- *   INSIDE       → IT Building (InsideUI)
+ *   INTRO          → played when game first opens / intro sequence
+ *   CUTSCENE       → quiet ambient music under typing cutscenes
+ *   ACCEPTANCE     → acceptance screen background
+ *   MAIN_MENU      → main menu background
+ *   OUTSIDE        → campus map (OutsideUI)
+ *   INSIDE         → IT Building (InsideUI)
+ *   ENDING_GREAT   → Ending A, Secret Ending 1
+ *   ENDING_MID     → Ending B, C, D
+ *   ENDING_BAD     → Ending F, Secret Ending 2
  *
  * ── SFX keys (use AudioManager.Sfx.*) ────────────────────────────────────────
  *   CLICK        → generic button (accept / confirm)
@@ -35,12 +38,16 @@ public class AudioManager {
 
     // ── Named music constants ─────────────────────────────────────────────────
     public static final class Music {
-        public static final String INTRO      = "intro";
-        public static final String CUTSCENE   = "cutscene";
-        public static final String ACCEPTANCE = "acceptance";
-        public static final String MAIN_MENU  = "mainmenu";
-        public static final String OUTSIDE    = "outside";
-        public static final String INSIDE     = "inside";
+        public static final String INTRO          = "intro";
+        public static final String CUTSCENE       = "cutscene";
+        public static final String ACCEPTANCE     = "acceptance";
+        public static final String MAIN_MENU      = "mainmenu";
+        public static final String OUTSIDE        = "outside";
+        public static final String INSIDE         = "inside";
+        // ── Ending music ──────────────────────────────────────────────────────
+        public static final String ENDING_GREAT = "ending_great";
+        public static final String ENDING_MID   = "ending_mid";
+        public static final String ENDING_BAD   = "ending_bad";
         private Music() {}
     }
 
@@ -55,12 +62,16 @@ public class AudioManager {
     // ── Music resource paths (classpath) ──────────────────────────────────────
     private static final Map<String, String> MUSIC_PATHS = new HashMap<>();
     static {
-        MUSIC_PATHS.put(Music.INTRO,      "/audio/music/intro.wav");
-        MUSIC_PATHS.put(Music.CUTSCENE,   "/audio/music/intro.wav");
-        MUSIC_PATHS.put(Music.ACCEPTANCE, "/audio/music/acceptance.wav");
-        MUSIC_PATHS.put(Music.MAIN_MENU,  "/audio/music/mainmenu.mp3");
-        MUSIC_PATHS.put(Music.OUTSIDE,    "/audio/music/map.mp3");
-        MUSIC_PATHS.put(Music.INSIDE,     "/audio/music/map.mp3");
+        MUSIC_PATHS.put(Music.INTRO,          "/audio/music/intro.wav");
+        MUSIC_PATHS.put(Music.CUTSCENE,       "/audio/music/intro.wav");
+        MUSIC_PATHS.put(Music.ACCEPTANCE,     "/audio/music/acceptance.wav");
+        MUSIC_PATHS.put(Music.MAIN_MENU,      "/audio/music/mainmenu.mp3");
+        MUSIC_PATHS.put(Music.OUTSIDE,        "/audio/music/map.mp3");
+        MUSIC_PATHS.put(Music.INSIDE,         "/audio/music/map.mp3");
+        // ── Ending music ─────────
+        MUSIC_PATHS.put(Music.ENDING_GREAT, "/audio/music/ending_good.mp3");
+        MUSIC_PATHS.put(Music.ENDING_MID,   "/audio/music/ending_mid.mp3");
+        MUSIC_PATHS.put(Music.ENDING_BAD,   "/audio/music/ending_bad.mp3");
     }
 
     // ── Volumes ───────────────────────────────────────────────────────────────
@@ -107,14 +118,6 @@ public class AudioManager {
     private double clamp(double v)     { return Math.max(0.0, Math.min(1.0, v)); }
 
     // ═════════════════════════════════════════════════════════════════════════
-    // Resolution
-    // ═════════════════════════════════════════════════════════════════════════
-
-    public int  getResolutionWidth()  { return resolutionWidth;  }
-    public int  getResolutionHeight() { return resolutionHeight; }
-    public void setResolution(int w, int h) { resolutionWidth = w; resolutionHeight = h; }
-
-    // ═════════════════════════════════════════════════════════════════════════
     // Music
     // ═════════════════════════════════════════════════════════════════════════
 
@@ -131,7 +134,7 @@ public class AudioManager {
         var url = getClass().getResource(path);
         if (url == null) {
             System.err.println("[AudioManager] Music resource not found: " + path);
-            currentMusicKey = key; // mark as "playing" so we don't retry every frame
+            currentMusicKey = key;
             return;
         }
 
@@ -213,11 +216,5 @@ public class AudioManager {
 
     public void playRefuse() { playSfx(Sfx.REFUSE); }
 
-    /**
-     * Typewriter tick — plays the typing SFX once.
-     * Call this once per character revealed in a typewriter animation.
-     * The SFX file should be very short (< 80 ms) so overlapping instances
-     * feel like rapid key-taps rather than a pile-up of sounds.
-     */
     public void playTyping() { playSfx(Sfx.TYPING); }
 }

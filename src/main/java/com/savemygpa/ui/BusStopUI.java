@@ -8,14 +8,6 @@ import javafx.scene.layout.*;
 import javafx.scene.transform.Scale;
 import javafx.util.Duration;
 
-/**
- * BusStopUI — bus-stop destination popup.
- *
- * FIX (scaling): The card is built at its natural pixel size, then a Scale
- * transform bound to sceneRoot.width / 1920 shrinks/grows it with the window.
- * The dim overlay is unscaled and bound to sceneRoot size so it fills the
- * full physical window at any resolution.
- */
 public class BusStopUI {
 
     private static final String POPUP_BG   = "/images/popup/popup_bg_black.png";

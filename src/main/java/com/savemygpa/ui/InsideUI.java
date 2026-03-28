@@ -1,6 +1,5 @@
 package com.savemygpa.ui;
 
-import com.savemygpa.audio.AudioManager;
 import com.savemygpa.core.TimeSystem;
 import com.savemygpa.event.EventManager;
 import com.savemygpa.player.Player;
@@ -26,15 +25,11 @@ public class InsideUI {
     private static final String GLOW_AUDITORIUM = "#ce93d8";
     private static final String GLOW_COMMON     = "#80cbc4";
     private static final String GLOW_EXAM       = "#ef9a9a";
-    private static final String GLOW_BACK       = "#4fc3f7";
 
-    private static final double CLASSROOM_X  = 13,  CLASSROOM_Y     = 0,  CLASSROOM_W   = 545;
-    private static final double AUDITORIUM_X = 1250 ,  AUDITORIUM_Y = 0,  AUDITORIUM_W  = 685;
-    private static final double COMMON_X     = 870 ,  COMMON_Y      = 708, COMMON_W     = 1080;
-
-    private static final double BACK_W        = 330;
-    private static final double BACK_RIGHT    = 20;
-    private static final double BACK_TOP      = 560;
+    private static final double CLASSROOM_X  = 13,   CLASSROOM_Y  = 0,   CLASSROOM_W  = 545;
+    private static final double AUDITORIUM_X = 1250, AUDITORIUM_Y = 0,   AUDITORIUM_W = 685;
+    private static final double COMMON_X     = 870,  COMMON_Y     = 708, COMMON_W     = 1080;
+    private static final double BACK_W       = 330,  BACK_RIGHT   = 20,  BACK_TOP     = 560;
 
     public interface Callbacks {
         void onClassroom();
@@ -44,27 +39,28 @@ public class InsideUI {
         void onMathExam();
         void onBack();
         void onPause();
-        boolean isProgExamDay();
-        boolean isMathExamDay();
+        boolean      isProgExamDay();
+        boolean      isMathExamDay();
         Player       getPlayer();
         TimeSystem   getTimeSystem();
         EventManager getEventManager();
+        // KEY: provide the LIVE outsideUI so its speech-bubble nodes are
+        // reattached to this screen's HUD layer — not a new dead instance.
+        OutsideUI    getOutsideUI();
     }
 
     private final Callbacks cb;
-
     public InsideUI(Callbacks cb) { this.cb = cb; }
 
     // =========================================================================
     // Build
     // =========================================================================
-
     public StackPane buildView() {
         StackPane root = new StackPane();
         root.setPrefSize(1920, 1080);
         root.setMaxSize(1920, 1080);
 
-        // ── Background ────────────────────────────────────────────────────────
+        // Background
         var bgUrl = getClass().getResource(IT_BG);
         if (bgUrl != null) {
             ImageView bg = new ImageView(new Image(bgUrl.toExternalForm()));
@@ -73,17 +69,14 @@ public class InsideUI {
             root.getChildren().add(bg);
         }
 
-        // ── Game layer ────────────────────────────────────────────────────────
         AnchorPane gameLayer = new AnchorPane();
         gameLayer.setMaxSize(1920, 1080); gameLayer.setPrefSize(1920, 1080);
-        gameLayer.setMouseTransparent(false);
 
-        // ── HUD layer ─────────────────────────────────────────────────────────
         AnchorPane hudLayer = new AnchorPane();
         hudLayer.setMaxSize(1920, 1080); hudLayer.setPrefSize(1920, 1080);
         hudLayer.setMouseTransparent(true);
 
-        // ── Room buttons ──────────────────────────────────────────────────────
+        // Room buttons
         if (cb.isProgExamDay()) {
             addRoomButtons(gameLayer,
                     BTN_CLASSROOM,  CLASSROOM_W,  GLOW_EXAM,       CLASSROOM_X,  CLASSROOM_Y,  cb::onProgExam,
@@ -101,55 +94,49 @@ public class InsideUI {
                     BTN_COMMON,     COMMON_W,     GLOW_COMMON,     COMMON_X,     COMMON_Y,     cb::onCoworking);
         }
 
-        // ── Back button (image, middle-right) ─────────────────────────────────
         addBackButton(gameLayer);
 
-        // ── HUD ───────────────────────────────────────────────────────────────
-        OutsideUI hud = new OutsideUI(cb.getPlayer(), cb.getTimeSystem(), cb.getEventManager(), null);
-        hud.buildHudNodes();
-        hud.addHudToCanvas(hudLayer);
-        hud.refresh();
+        OutsideUI hud = cb.getOutsideUI();
+        if (hud != null) {
+            hud.buildHudNodes();
+            hud.addHudToCanvas(hudLayer);
+            hud.refresh();
+        }
 
         root.getChildren().addAll(gameLayer, hudLayer);
-
         root.setFocusTraversable(true);
         root.setOnKeyPressed(e -> { if (e.getCode() == KeyCode.ESCAPE) cb.onPause(); });
         root.requestFocus();
-
         return root;
     }
 
     // =========================================================================
     // Room buttons
     // =========================================================================
-
-    private void addRoomButtons(Pane gameLayer,
-                                String img1, double w1, String glow1, double x1, double y1, Runnable action1,
-                                String img2, double w2, String glow2, double x2, double y2, Runnable action2,
-                                String img3, double w3, String glow3, double x3, double y3, Runnable action3) {
-        StackPane btn1 = mapBtn(img1, w1, glow1, action1);
-        StackPane btn2 = mapBtn(img2, w2, glow2, action2);
-        StackPane btn3 = mapBtn(img3, w3, glow3, action3);
-        AnchorPane.setLeftAnchor(btn1, x1); AnchorPane.setTopAnchor(btn1, y1);
-        AnchorPane.setLeftAnchor(btn2, x2); AnchorPane.setTopAnchor(btn2, y2);
-        AnchorPane.setLeftAnchor(btn3, x3); AnchorPane.setTopAnchor(btn3, y3);
-        gameLayer.getChildren().addAll(btn1, btn2, btn3);
+    private void addRoomButtons(Pane gl,
+                                String i1, double w1, String g1, double x1, double y1, Runnable a1,
+                                String i2, double w2, String g2, double x2, double y2, Runnable a2,
+                                String i3, double w3, String g3, double x3, double y3, Runnable a3) {
+        StackPane b1 = mapBtn(i1, w1, a1);
+        StackPane b2 = mapBtn(i2, w2, a2);
+        StackPane b3 = mapBtn(i3, w3, a3);
+        AnchorPane.setLeftAnchor(b1, x1); AnchorPane.setTopAnchor(b1, y1);
+        AnchorPane.setLeftAnchor(b2, x2); AnchorPane.setTopAnchor(b2, y2);
+        AnchorPane.setLeftAnchor(b3, x3); AnchorPane.setTopAnchor(b3, y3);
+        gl.getChildren().addAll(b1, b2, b3);
     }
 
     // =========================================================================
     // Map button — pixel-perfect hit detection
     // =========================================================================
-
-    private StackPane mapBtn(String imgPath, double fitWidth, String glowColor, Runnable onClick) {
+    private StackPane mapBtn(String imgPath, double fitWidth, Runnable onClick) {
         var url = getClass().getResource(imgPath);
         if (url == null) throw new IllegalStateException("Missing resource: " + imgPath);
         Image image = new Image(url.toExternalForm());
         PixelReader reader = image.getPixelReader();
 
         ImageView iv = new ImageView(image);
-        iv.setFitWidth(fitWidth);
-        iv.setPreserveRatio(true);
-        iv.setMouseTransparent(false);
+        iv.setFitWidth(fitWidth); iv.setPreserveRatio(true);
 
         StackPane wrapper = new StackPane(iv);
         StackPane.setAlignment(iv, Pos.TOP_LEFT);
@@ -163,21 +150,19 @@ public class InsideUI {
                         new KeyValue(glow.spreadProperty(), 0.0)),
                 new KeyFrame(Duration.millis(650),
                         new KeyValue(glow.radiusProperty(), 52),
-                        new KeyValue(glow.spreadProperty(), 0.30))
-        );
+                        new KeyValue(glow.spreadProperty(), 0.30)));
         pulse.setAutoReverse(true);
         pulse.setCycleCount(Animation.INDEFINITE);
 
-        java.util.function.BiFunction<Double, Double, Boolean> isOpaque = (sceneX, sceneY) -> {
-            javafx.geometry.Point2D local = iv.sceneToLocal(sceneX, sceneY);
+        java.util.function.BiFunction<Double, Double, Boolean> isOpaque = (sx, sy) -> {
+            javafx.geometry.Point2D local = iv.sceneToLocal(sx, sy);
             double lx = local.getX(), ly = local.getY();
             double ivW = iv.getBoundsInLocal().getWidth();
             double ivH = iv.getBoundsInLocal().getHeight();
             if (lx < 0 || ly < 0 || lx > ivW || ly > ivH) return false;
-            double sx = image.getWidth()  / ivW;
-            double sy = image.getHeight() / ivH;
-            int px = (int)(lx * sx), py = (int)(ly * sy);
-            if (px < 0 || py < 0 || px >= (int) image.getWidth() || py >= (int) image.getHeight()) return false;
+            int px = (int)(lx * image.getWidth()  / ivW);
+            int py = (int)(ly * image.getHeight() / ivH);
+            if (px < 0 || py < 0 || px >= (int)image.getWidth() || py >= (int)image.getHeight()) return false;
             return ((reader.getArgb(px, py) >> 24) & 0xff) > 10;
         };
 
@@ -192,40 +177,30 @@ public class InsideUI {
             ColorAdjust flash = new ColorAdjust();
             flash.setBrightness(0.8);
             iv.setEffect(flash);
-            Timeline flashAnim = new Timeline(
+            Timeline fa = new Timeline(
                     new KeyFrame(Duration.ZERO,        new KeyValue(flash.brightnessProperty(), 0.8)),
-                    new KeyFrame(Duration.millis(120), new KeyValue(flash.brightnessProperty(), 0.0))
-            );
-            flashAnim.setOnFinished(ev -> { iv.setEffect(null); onClick.run(); });
-            flashAnim.play();
+                    new KeyFrame(Duration.millis(120), new KeyValue(flash.brightnessProperty(), 0.0)));
+            fa.setOnFinished(ev -> { iv.setEffect(null); onClick.run(); });
+            fa.play();
         });
-
         return wrapper;
     }
 
     // =========================================================================
-    // Back button — image-based, middle-right
+    // Back button
     // =========================================================================
-
     private void addBackButton(Pane gameLayer) {
         var backUrl = getClass().getResource(BTN_BACK_IMG);
         if (backUrl != null) {
-            StackPane backBtn = mapBtn(BTN_BACK_IMG, BACK_W, GLOW_BACK, cb::onBack);
+            StackPane backBtn = mapBtn(BTN_BACK_IMG, BACK_W, cb::onBack);
             AnchorPane.setRightAnchor(backBtn, BACK_RIGHT);
             AnchorPane.setTopAnchor(backBtn, BACK_TOP);
             gameLayer.getChildren().add(backBtn);
         } else {
             javafx.scene.control.Button back = new javafx.scene.control.Button("← กลับ");
-            back.setStyle("""
-                -fx-font-family: 'Comic Sans MS';
-                -fx-font-size: 18px;
-                -fx-background-color: rgba(79,195,247,0.85);
-                -fx-text-fill: #0a1628;
-                -fx-font-weight: bold;
-                -fx-background-radius: 14;
-                -fx-padding: 10 28 10 28;
-                -fx-cursor: hand;
-            """);
+            back.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:18px;" +
+                    "-fx-background-color:rgba(79,195,247,0.85);-fx-text-fill:#3b1a1a;" +
+                    "-fx-font-weight:bold;-fx-background-radius:14;-fx-padding:10 28 10 28;-fx-cursor:hand;");
             back.setOnMouseEntered(e -> back.setOpacity(0.82));
             back.setOnMouseExited(e  -> back.setOpacity(1.00));
             back.setOnAction(e -> cb.onBack());
