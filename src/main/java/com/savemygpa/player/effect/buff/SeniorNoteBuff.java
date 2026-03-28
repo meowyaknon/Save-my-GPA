@@ -59,8 +59,9 @@ public class SeniorNoteBuff extends StatusEffect {
 
     @Override
     public String getDescription() {
-        return "📖 บันทึกจากรุ่นพี่\n" +
-                "🧠 INT +2 จะมาถึงใน " + getDaysRemaining() + " วัน\n" +
-                "🗑 หมดเองเมื่อ INT ถูกส่งมอบแล้ว";
+        return "-> 📖 บันทึกจากรุ่นพี่\n" +
+                "-> ส่งผล : 🧠 INT +2 เป็นเวลา " + getDaysRemaining() + " วัน\n" +
+                "-> ระยะเวลา Effect : ⏳" + + getDaysRemaining() + " วัน\n" +
+                "-> หยุดทำงานเมื่อ : 🗑 หมดเองเมื่อ INT ถูกส่งมอบแล้ว";
     }
 }

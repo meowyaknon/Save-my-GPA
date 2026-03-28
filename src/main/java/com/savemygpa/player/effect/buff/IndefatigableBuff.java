@@ -26,9 +26,9 @@ public class IndefatigableBuff extends StatusEffect {
 
     @Override
     public String getDescription() {
-        return "💪 ไก่ทอดพลัง!\n" +
-                "🛡 กิจกรรมถัดไปไม่เสีย Energy\n" +
-                "⏳ เหลือ 1 กิจกรรม\n" +
-                "🗑 หมดหลังใช้งาน";
+        return "-> 💪 ไก่ทอดพลัง!\n" +
+                "-> ส่งผล : 🛡 กิจกรรมถัดไปไม่เสีย Energy\n" +
+                "-> ระยะเวลา Effect : ⏳ เหลือ 1 กิจกรรม\n" +
+                "-> หยุดทำงานเมื่อ : 🗑 หมดหลังใช้งาน";
     }
 }

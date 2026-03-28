@@ -33,9 +33,9 @@ public class AuraOfLuckBuff extends StatusEffect {
 
     @Override
     public String getDescription() {
-        return "🍀 โชคลาภเพิ่มขึ้น\n" +
-                "⚡ Random Event chance x1.5\n" +
-                "⏳ เหลือ " + getRemainingDuration() + " transitions\n" +
-                "🗑 หมดเองตามเวลา";
+        return "-> 🍀 โชคลาภเพิ่มขึ้น\n" +
+                "-> ส่งผล : ⚡ มีโอกาศที่จะเจอ Event ดีๆ มากขึ้น\n" +
+                "-> ระยะเวลา Effect : ⏳ เหลือ " + getRemainingDuration() + " transitions\n" +
+                "-> หยุดทำงานเมื่อ : 🗑 หมดเองตามเวลา";
     }
 }

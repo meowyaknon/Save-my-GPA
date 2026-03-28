@@ -32,8 +32,8 @@ public class WetFeetDebuff extends StatusEffect {
 
     @Override
     public String getDescription() {
-        return "💧 รองเท้าเปียก!\n" +
-                "⚡ Energy -1 ทุกครั้งที่เปลี่ยนสถานที่\n" +
-                "🗑 หมดเองเมื่อสิ้นวัน (กลับบ้าน)";
+        return "-> 💧 รองเท้าเปียก!\n" +
+                "-> ส่งผล : ⚡ Energy -1 ทุกครั้งที่เปลี่ยนสถานที่\n" +
+                "-> หยุดทำงานเมื่อ : 🗑 หมดเองเมื่อสิ้นวัน (กลับบ้าน)";
     }
 }

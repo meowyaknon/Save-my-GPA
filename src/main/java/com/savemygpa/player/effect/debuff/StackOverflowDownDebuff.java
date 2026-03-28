@@ -44,9 +44,9 @@ public class StackOverflowDownDebuff extends StatusEffect {
 
     @Override
     public String getDescription() {
-        return "📡 StackOverflow ล่ม!\n" +
-                "🧠 INT gain -5 ต่อกิจกรรม\n" +
+        return "-> 📡 StackOverflow ล่ม!\n" +
+                "-> ส่งผล : 🧠 INT gain -5 ต่อกิจกรรม, " +
                 "😊 Mood cap ≤ 75\n" +
-                "🗑 รอให้เน็ตกลับมา (random event)";
+                "-> หยุดทำงานเมื่อ : 🗑 รอให้เน็ตกลับมา (random event)";
     }
 }

@@ -33,8 +33,8 @@ public class WhyDizzyDebuff extends StatusEffect {
 
     @Override
     public String getDescription() {
-        return "😵 หัวหมุน!\n" +
-                "🧠 INT gain -2 ต่อกิจกรรม\n" +
-                "🗑 เข้าห้องเรียน (random event)";
+        return "-> 😵 หัวหมุน!\n" +
+                "-> ส่งผล : 🧠 INT gain -2 ต่อกิจกรรม\n" +
+                "-> หยุดทำงานเมื่อ : 🗑 เข้าห้องเรียน (random event)";
     }
 }
