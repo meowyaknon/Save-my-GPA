@@ -29,6 +29,7 @@ public class AudioManager {
         public static final String ACCEPT = "/audio/sfx/confirm.wav";
         public static final String REFUSE = "/audio/sfx/cancel.wav";
         public static final String TYPING = "/audio/sfx/typing.mp3";
+        public static final String WRONG = "/audio/sfx/wrong.wav";
         private Sfx() {}
     }
 
@@ -162,4 +163,6 @@ public class AudioManager {
     public void playRefuse() { playSfx(Sfx.REFUSE); }
 
     public void playTyping() { playSfx(Sfx.TYPING); }
+
+    public void playWrong() { playSfx(Sfx.WRONG); }
 }
