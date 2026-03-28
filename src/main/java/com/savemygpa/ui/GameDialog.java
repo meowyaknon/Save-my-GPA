@@ -20,7 +20,7 @@ public class GameDialog {
     private static final String ACCENT_INFO    = "#4fc3f7";
     private static final String ACCENT_EVENT   = "#d570e0";
 
-    // ── Shared body text colour — matches StatsBarUI COL_LABEL ───────────────
+    // ── Shared body text colour ───────────────
     private static final String TEXT_COLOR = "#3b1a1a";
 
     // ── Assets ────────────────────────────────────────────────────────────────
