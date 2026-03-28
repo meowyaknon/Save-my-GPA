@@ -25,8 +25,10 @@ public class FreeMealEvent extends Event {
     }
 
     @Override
-    public String getName() { return "เจอพี่รหัสสายซัพพอร์ต"; }
+    public String getName() { return "เจอ \"พี่รหัส\" สายซัพพอร์ต"; }
     @Override
-    public String getDescription() { return "พี่รหัสเลี้ยงข้าวชุดใหญ่พร้อมแนะแนวทางทำ Assignment"; }
-    @Override public double getChance() { return 0.25; }
+    public String getDescription() { return "บังเอิญเจอพี่รหัส พี่เลยเลี้ยงข้าวชุดใหญ่พร้อมแนะแนวทางทำ Assignment ให้ง่ายขึ้น\n\n" + 
+                                    "ผลกระทบ: Energy +10\n\n" +
+                                    "Buff: Senior's Note (ได้ int เพิ่ม 2 หน่วย เป็นเวลา 2 วันหลังจากได้บัฟ)"; }
+    @Override public double getChance() { return 0.15; }
 }

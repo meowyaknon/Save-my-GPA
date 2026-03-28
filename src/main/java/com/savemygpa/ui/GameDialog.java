@@ -5,12 +5,17 @@ import javafx.animation.ScaleTransition;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
-import javafx.scene.image.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.*;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Priority;
+import javafx.scene.layout.Region;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.shape.Rectangle;
-import javafx.scene.text.*;
+import javafx.scene.text.TextAlignment;
 import javafx.scene.transform.Scale;
 import javafx.util.Duration;
 
@@ -18,9 +23,9 @@ public class GameDialog {
 
     // ── Accent colours ────────────────────────────────────────────────────────
     private static final String ACCENT_INFO    = "#4fc3f7";
-    private static final String ACCENT_EVENT   = "#ffe082";
+    private static final String ACCENT_EVENT   = "#d570e0";
 
-    // ── Shared body text colour — matches StatsBarUI COL_LABEL ───────────────
+    // ── Shared body text colour ───────────────
     private static final String TEXT_COLOR = "#3b1a1a";
 
     // ── Assets ────────────────────────────────────────────────────────────────
@@ -89,7 +94,7 @@ public class GameDialog {
         // Card
         StackPane card = new StackPane();
         card.setMaxWidth(CARD_W);
-        card.setAlignment(Pos.TOP_CENTER);
+        card.setAlignment(Pos.CENTER);
 
         // ── Background image (big_block_black_V.png) ──────────────────────────
         var bgUrl = GameDialog.class.getResource(POPUP_BG_V);
@@ -98,7 +103,7 @@ public class GameDialog {
             bgIv.setFitWidth(CARD_W);
             bgIv.setPreserveRatio(true);
             bgIv.setSmooth(true);
-            card.getChildren().add(bgIv);   // background — first child
+            card.getChildren().add(bgIv);
         } else {
             card.setStyle("-fx-background-color:rgba(8,8,24,0.97);-fx-background-radius:24;" +
                     "-fx-min-width:460;-fx-min-height:640;" +
@@ -144,7 +149,7 @@ public class GameDialog {
         nameLbl.setMaxWidth(CARD_W - 56);
         nameLbl.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:24px;-fx-font-weight:bold;" +
                 "-fx-text-fill:" + ACCENT_EVENT + ";" +
-                "-fx-effect:dropshadow(gaussian,rgba(255,224,130,0.55),14,0.40,0,0);");
+                "-fx-effect:dropshadow(gaussian,rgba(213,112,224,0.55),14,0.40,0,0);");
         nameLbl.setTextAlignment(TextAlignment.CENTER);
         nameLbl.setAlignment(Pos.CENTER);
         VBox.setMargin(nameLbl, new javafx.geometry.Insets(0, 0, 10, 0));
@@ -165,11 +170,9 @@ public class GameDialog {
         ImageView continueBtn = makeContinueBtn(() -> dismissCard(root, overlay, onClose));
         body.getChildren().add(continueBtn);
 
-        StackPane.setAlignment(body, Pos.TOP_CENTER);
+        StackPane.setAlignment(body, Pos.CENTER);
         card.getChildren().add(body);   // content — second child (on top of bg)
 
-        // FIX: Scale card relative to the root pane dimensions so it centers
-        // correctly in both windowed and fullscreen mode.
         Scale cardScale = new Scale(1, 1);
         cardScale.pivotXProperty().bind(Bindings.divide(card.widthProperty(), 2));
         cardScale.pivotYProperty().bind(Bindings.divide(card.heightProperty(), 2));

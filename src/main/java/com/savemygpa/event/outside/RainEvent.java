@@ -27,6 +27,10 @@ public class RainEvent extends Event {
     @Override
     public String getName() { return "ฝนตกหนัก"; }
     @Override
-    public String getDescription() { return "ฝนตกหนัก ถุงเท้าเปียก อารมณ์ไม่ดี"; }
+    public String getDescription() { 
+    return "ฝนตกหนักที่เขตลาดกระบังคือเรื่องปกติ ถุงเท้าเปียกๆ คู่นี้ ทำให้อารมณ์ไม่ดีชะมัด\n\n" +
+           "MOOD -10\n\n" +
+           "Debuff: Wet Feet (เสีย energy เพิ่มขึ้น 1 หน่วย เมื่อเปลี่ยนสถานที่) ทั้งวัน";
+    }
     @Override public double getChance() { return 0.3; }
 }

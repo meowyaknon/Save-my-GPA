@@ -20,7 +20,7 @@ import com.savemygpa.player.*;
 import com.savemygpa.player.effect.StatusEffect;
 import com.savemygpa.player.effect.buff.SeniorNoteBuff;
 import com.savemygpa.player.effect.debuff.WetFeetDebuff;
-import com.savemygpa.player.effect.debuff.NoStackOverflowDebuff;
+import com.savemygpa.player.effect.debuff.StackOverflowDownDebuff;
 import com.savemygpa.core.*;
 import com.savemygpa.activity.*;
 import com.savemygpa.event.*;
@@ -212,7 +212,7 @@ public class GameLauncher extends Application {
     private void onDayEnd() {
         player.getEffect(SeniorNoteBuff.class).ifPresent(b -> b.tickDay(player));
         player.removeEffect(WetFeetDebuff.class);
-        player.removeEffect(NoStackOverflowDebuff.class);
+        player.removeEffect(StackOverflowDownDebuff.class);
         progExamTakenToday = mathExamTakenToday = false;
         eventManager.newDayReset();
         timeSystem.endDay();

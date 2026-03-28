@@ -24,8 +24,9 @@ public class SlowBusEvent extends Event {
     }
 
     @Override
-    public String getName() { return "รถพระจอมไม่มา"; }
+    public String getName() { return "\"รถพระจอม\" ในตำนานไม่มาสักที"; }
     @Override
-    public String getDescription() { return "รอนานจนเกือบซึม รถบัสที่รอคอยไม่โผล่มา"; }
-    @Override public double getChance() { return 0.4; }
+    public String getDescription() { return "รอนานจนเหงื่อซึม รถบัสที่รอคอยไม่โผล่มาเสียที แผนการอ่านหนังสือที่วางไว้หายไป 2 ชั่วโมง\n\n" + 
+                                    "ผลกระทบ: Time -2, Energy -1, Mood -15"; }
+    @Override public double getChance() { return 0.25; }
 }

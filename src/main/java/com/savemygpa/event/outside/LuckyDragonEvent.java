@@ -26,8 +26,10 @@ public class LuckyDragonEvent extends Event {
     }
 
     @Override
-    public String getName() { return "น้องเงินทอง"; }
+    public String getName() { return "พรจาก \"น้องเงินทอง\""; }
     @Override
-    public String getDescription() { return "ดินผ่านน้องที่กำลังนอนอาบแดดอย่างสบายใจ แค่เห็นก็รู้สึกว่าวันนี้ต้องเป็นวันที่ดี!"; }
+    public String getDescription() { return "ดินผ่านน้องที่กำลังนอนอาบแดดอย่างสบายใจ แค่เห็นก็รู้สึกว่าวันนี้ต้องเป็นวันที่ดี!\n\n" + 
+                                    "MOOD + 20\n\n" +
+                                    "Buff: Aura of Luck (เพิ่มโอกาสสุ่มเจออีเวนต์ดีๆ ใน 2 ครั้งถัดไป)"; }
     @Override public double getChance() { return 0.4; }
 }

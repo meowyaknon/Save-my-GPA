@@ -6,7 +6,7 @@ import com.savemygpa.event.EventContext;
 import com.savemygpa.event.Location;
 import com.savemygpa.player.Player;
 import com.savemygpa.player.StatType;
-import com.savemygpa.player.effect.debuff.NoStackOverflowDebuff;
+import com.savemygpa.player.effect.debuff.StackOverflowDownDebuff;
 
 public class InternetDownEvent extends Event {
 
@@ -15,18 +15,20 @@ public class InternetDownEvent extends Event {
     @Override
     public boolean canOccur(Player player, TimeSystem timeSystem, EventContext context) {
         return context.getLocation() == Location.CLASSROOM
-                && !player.hasEffect(NoStackOverflowDebuff.class);
+                && !player.hasEffect(StackOverflowDownDebuff.class);
     }
 
     @Override
     protected void applyEffects(Player player, TimeSystem timeSystem) {
         player.changeStat(StatType.MOOD, -25);
-        player.addEffect(new NoStackOverflowDebuff());
+        player.addEffect(new StackOverflowDownDebuff());
     }
 
     @Override
     public String getName() { return "Internet ล่ม"; }
     @Override
-    public String getDescription() { return "เน็ตล่ม กู้โค้ดไม่ได้ การเรียนรู้วันนี้ติดขัดไปหมด"; }
-    @Override public double getChance() { return 0.3; }
+    public String getDescription() { return "เน็ตล่ม กู้โค้ดไม่ได้ ค้นหาวิธีแก้ Error ไม่ได้ ทำให้การเรียนรู้วันนี้ติดขัดไปหมด\n\n" + 
+                                    "ผลกระทบ: Mood -25\n\n" +
+                                    "Debuff: StackOverflow Down ( int ที่จะได้จากการเรียนลดลง 5 หน่วย และ mood จะตันที่ 75 ในวันนั้นๆ )"; }
+    @Override public double getChance() { return 0.15; }
 }

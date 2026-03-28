@@ -4,12 +4,12 @@ import com.savemygpa.player.Player;
 import com.savemygpa.player.StatType;
 import com.savemygpa.player.effect.StatusEffect;
 
-public class NoStackOverflowDebuff extends StatusEffect {
+public class StackOverflowDownDebuff extends StatusEffect {
 
     private static final int INT_PENALTY = 5;
     private static final int MOOD_CAP    = 75;
 
-    public NoStackOverflowDebuff() {
+    public StackOverflowDownDebuff() {
         super(99);
     }
 
@@ -19,12 +19,12 @@ public class NoStackOverflowDebuff extends StatusEffect {
         if (player.getStat(StatType.MOOD) > MOOD_CAP) {
             player.changeStat(StatType.MOOD, MOOD_CAP - player.getStat(StatType.MOOD));
         }
-        System.out.println("[Debuff] No StackOverflow — internet is down. Brain foggy.");
+        System.out.println("[Debuff] StackOverflow Down — internet is down. Brain foggy.");
     }
 
     @Override
     public void onExpire(Player player) {
-        System.out.println("[Debuff] No StackOverflow cleared — internet is back.");
+        System.out.println("[Debuff] StackOverflow Down cleared — internet is back.");
     }
 
     @Override
@@ -43,5 +43,5 @@ public class NoStackOverflowDebuff extends StatusEffect {
     }
 
     @Override
-    public String getName() { return "No StackOverflow"; }
+    public String getName() { return "StackOverflow Down"; }
 }

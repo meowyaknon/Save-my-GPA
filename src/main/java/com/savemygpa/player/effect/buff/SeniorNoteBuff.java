@@ -7,7 +7,7 @@ import com.savemygpa.player.effect.StatusEffect;
 public class SeniorNoteBuff extends StatusEffect {
 
     private int daysRemaining;
-    private static final int INT_REWARD = 4;
+    private static final int INT_REWARD = 2;
 
     public SeniorNoteBuff() {
         super(0); // expiration is controlled by daysRemaining override
@@ -16,11 +16,10 @@ public class SeniorNoteBuff extends StatusEffect {
 
     @Override
     public void onApply(Player player) {
-        System.out.println("[Buff] Senior's Note received — int +4 will arrive in 2 days!");
+        System.out.println("[Buff] Senior's Note received — int +2 will arrive in 2 days!");
     }
 
     public void tickDay(Player player) {
-        // Prevent double-reward if save/load or day-tick repeats before the effect is removed.
         if (daysRemaining <= 0) return;
 
         daysRemaining--;
