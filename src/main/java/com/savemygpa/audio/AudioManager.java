@@ -1,11 +1,11 @@
 package com.savemygpa.audio;
 
-import javafx.scene.media.Media;
-import javafx.scene.media.AudioClip;
-import javafx.scene.media.MediaPlayer;
-
 import java.util.HashMap;
 import java.util.Map;
+
+import javafx.scene.media.AudioClip;
+import javafx.scene.media.Media;
+import javafx.scene.media.MediaPlayer;
 
 public class AudioManager {
 
@@ -21,6 +21,9 @@ public class AudioManager {
         public static final String ENDING_GREAT = "ending_great";
         public static final String ENDING_MID   = "ending_mid";
         public static final String ENDING_BAD   = "ending_bad";
+        // ── Counting Mini Game music ───────────────────────────────────────────
+        public static final String COUNTING_ACTIVE = "counting_active";
+        public static final String COUNTING_IDLE   = "counting_idle";
         private Music() {}
     }
 
@@ -30,6 +33,8 @@ public class AudioManager {
         public static final String REFUSE = "/audio/sfx/cancel.wav";
         public static final String TYPING = "/audio/sfx/typing.mp3";
         public static final String WRONG = "/audio/sfx/wrong.wav";
+        public static final String CORRECT    = "/audio/sfx/correct.mp3";
+        public static final String EXPLOSION  = "/audio/sfx/explosion_4.wav";
         private Sfx() {}
     }
 
@@ -46,6 +51,9 @@ public class AudioManager {
         MUSIC_PATHS.put(Music.ENDING_GREAT, "/audio/music/ending_good.mp3");
         MUSIC_PATHS.put(Music.ENDING_MID,   "/audio/music/ending_mid.mp3");
         MUSIC_PATHS.put(Music.ENDING_BAD,   "/audio/music/ending_bad.mp3");
+        // ── Counting Mini Game music ──
+        MUSIC_PATHS.put(Music.COUNTING_ACTIVE, "/audio/music/Run! - Toby Fox (128k).wav");
+        MUSIC_PATHS.put(Music.COUNTING_IDLE,   "/audio/music/Snowdin Town - Toby Fox (128k) (1).wav");
     }
 
     // ── Volumes ───────────────────────────────────────────────────────────────
@@ -165,4 +173,8 @@ public class AudioManager {
     public void playTyping() { playSfx(Sfx.TYPING); }
 
     public void playWrong() { playSfx(Sfx.WRONG); }
+
+    public void playCorrect()   { playSfx(Sfx.CORRECT); }
+
+    public void playExplosion() { playSfx(Sfx.EXPLOSION); }
 }

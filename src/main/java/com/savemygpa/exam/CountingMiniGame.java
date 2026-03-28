@@ -127,7 +127,7 @@ public class CountingMiniGame {
             }
             AudioManager.getInstance().playWrong();
             resultLabel.setText("⚠ กรุณากรอกตัวเลขไม่เกิน 4 ตัว");
-           resultLabel.setLayoutX(735);
+            resultLabel.setLayoutX(735);
             resultLabel.setLayoutY(917);
             resultLabel.setStyle("""
                 -fx-font-family: 'IBM Plex Sans Thai';
@@ -244,6 +244,9 @@ public class CountingMiniGame {
         answerField.setDisable(false);
         submitButton.setDisable(false);
         submitButton.setText("");
+
+        // เล่นเพลง Run! ตอนกำลังนับเป็ด
+        AudioManager.getInstance().playMusic(AudioManager.Music.COUNTING_ACTIVE);
 
         int[] counts = generateCounts();
         currentDuckCount = counts[0];
@@ -448,6 +451,8 @@ public class CountingMiniGame {
     private void showEndScreen() {
         contentArea.getChildren().clear();
 
+        AudioManager.getInstance().playMusic(AudioManager.Music.COUNTING_IDLE); // เล่นเพลง Snowdin Town
+
         ImageView bg    = loadFullImg("/images/exam/math/end/end_screen.jpg");
         ImageView btnImg = loadFullImg("/images/exam/math/end/next_btn_end.png");
 
@@ -465,7 +470,10 @@ public class CountingMiniGame {
         }
         scoreEndLabel.setTranslateY(280);
 
-        applyButtonEffect(btnImg, () -> onFinish.run());
+        applyButtonEffect(btnImg, () -> {
+            AudioManager.getInstance().setMusicVolume(0.6); // คืนค่า musicVolume กลับเป็น default
+            onFinish.run();
+        });
 
         StackPane layered = new StackPane(bg, btnImg, scoreEndLabel);
         layered.setStyle("-fx-background-color: #0a0a0a;");
@@ -476,6 +484,9 @@ public class CountingMiniGame {
     // --- Right / Wrong Screens ---
     private void showRightScreen() {
         contentArea.getChildren().clear();
+
+        AudioManager.getInstance().playCorrect(); //SFX
+        AudioManager.getInstance().playMusic(AudioManager.Music.COUNTING_IDLE); // เล่นเพลง Snowdin Town
 
         ImageView bg       = loadFullImg("/images/exam/math/right/suan_right.jpg");
         ImageView rightImg = loadFullImg("/images/exam/math/right/right_right.png");
@@ -516,6 +527,9 @@ public class CountingMiniGame {
     private void showWrongScreen() {
         contentArea.getChildren().clear();
 
+        AudioManager.getInstance().playExplosion(); //SFX
+        AudioManager.getInstance().playMusic(AudioManager.Music.COUNTING_IDLE); // เล่นเพลง Snowdin Town
+
         ImageView bg        = loadFullImg("/images/exam/math/wrong/suan_wrong.jpg");
         ImageView explosion = loadFullImg("/images/exam/math/wrong/explosion_wrong.png");
         ImageView wrongImg  = loadFullImg("/images/exam/math/wrong/wrong_wrong.png");
@@ -555,6 +569,9 @@ public class CountingMiniGame {
 
     private void showReadyScreen() {
         contentArea.getChildren().clear();
+
+        AudioManager.getInstance().setMusicVolume(0.2); // ลดเสียงเพลงเฉพาะช่วง CountingMiniGame
+        AudioManager.getInstance().playMusic(AudioManager.Music.COUNTING_IDLE); // เล่นเพลง Snowdin Town
 
         ImageView bg         = loadFullImg("/images/exam/math/start/bg_start.jpg");
         ImageView blockStart = loadFullImg("/images/exam/math/start/block_start_com.png");
