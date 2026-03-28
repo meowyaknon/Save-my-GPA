@@ -277,7 +277,7 @@ public class CaptchaMiniGame {
         countdown.play()
          */
     }
-
+    /*
     private void resumeTimerBar() {
         isTimerPaused = false;
         answerField.setDisable(false);  // ← ปลดล็อก
@@ -292,6 +292,7 @@ public class CaptchaMiniGame {
         countdownTimer = new Timeline(new KeyFrame(Duration.seconds(remainingSec), e -> handleTimeout()));
         countdownTimer.play();
     }
+     */
 
     private void handleTimeout() {
         if (isProcessing) return;
