@@ -163,7 +163,16 @@ public class CountingMiniGame {
                 resultLabel.setText("");
                 return change;
             }
-            resultLabel.setText("กรุณากรอกตัวเลข");
+            resultLabel.setText("⚠ กรุณากรอกตัวเลข");
+            resultLabel.setLayoutX(770);
+            resultLabel.setLayoutY(910);
+            resultLabel.setStyle("""
+                -fx-font-family: 'IBM Plex Sans Thai';
+                -fx-font-size: 36px;
+                -fx-font-weight: bold;
+                -fx-text-fill: #ffa726;
+                -fx-effect: dropshadow(gaussian, white, 4, 1, 0, 0);
+            """);
             return null;
         };
 
