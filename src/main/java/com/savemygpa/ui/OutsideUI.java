@@ -144,8 +144,6 @@ public class OutsideUI {
     }
 
     // ── IT Building transition ────────────────────────────────────────────────
-    // SFX is played in mapBtn's onMousePressed so it fires instantly.
-    // This method only handles the visual fade — no extra audio call needed here.
     private void doITTransition() {
         FadeTransition fadeOut = new FadeTransition(Duration.millis(300), rootPane);
         fadeOut.setFromValue(1.0);
@@ -319,7 +317,7 @@ public class OutsideUI {
     }
 
     private void updateClock() {
-        int idx = Math.max(0, Math.min(10, 10 - timeSystem.getTimeLeft()));
+        int idx = Math.max(0, Math.min(10, timeSystem.getTimeLeft()));
         clockImage.setImage(loadImgObj(CLOCK_IMGS[idx]));
         dayLabel.setText("Day " + timeSystem.getCurrentDay());
     }
@@ -358,8 +356,8 @@ public class OutsideUI {
 
     public void saySuccess()              { say(SUCCESS_LINES[rng.nextInt(SUCCESS_LINES.length)]); }
     public void sayFail()                 { say(FAIL_LINES[rng.nextInt(FAIL_LINES.length)]); }
-    public void sayFail(String message)   { say("❌ " + message); }
-    public void sayEvent(String desc)     { say("🎲 " + desc); }
+    public void sayFail(String message)   { say(message); }
+    public void sayEvent(String desc)     { say(desc); }
 
     private void scheduleIdleSpeech() {
         cancelIdle();
