@@ -18,7 +18,7 @@ public class GameDialog {
 
     // ── Accent colours ────────────────────────────────────────────────────────
     private static final String ACCENT_INFO    = "#4fc3f7";
-    private static final String ACCENT_EVENT   = "#3151B0FF";
+    private static final String ACCENT_EVENT   = "#d570e0";
 
     // ── Shared body text colour — matches StatsBarUI COL_LABEL ───────────────
     private static final String TEXT_COLOR = "#3b1a1a";
@@ -144,7 +144,7 @@ public class GameDialog {
         nameLbl.setMaxWidth(CARD_W - 56);
         nameLbl.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:24px;-fx-font-weight:bold;" +
                 "-fx-text-fill:" + ACCENT_EVENT + ";" +
-                "-fx-effect:dropshadow(gaussian,rgba(255,224,130,0.55),14,0.40,0,0);");
+                "-fx-effect:dropshadow(gaussian,rgba(213,112,224,0.55),14,0.40,0,0);");
         nameLbl.setTextAlignment(TextAlignment.CENTER);
         nameLbl.setAlignment(Pos.CENTER);
         VBox.setMargin(nameLbl, new javafx.geometry.Insets(0, 0, 10, 0));
