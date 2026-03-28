@@ -298,13 +298,25 @@ public class CaptchaMiniGame {
         if (isProcessing) return;
         isProcessing = true;
         stopTimers();
+
+        // ดึง input ที่พิมพ์ค้างไว้มาตรวจก่อน
+        String input = answerField.getText().trim();
+
         answerField.setDisable(true);
         submitButton.setDisable(true);
         isWaitingForNext = true;
 
-        resultLabel.setText("⏰ หมดเวลา! เฉลย: " + currentCaptcha + "  (Enter เพื่อไปต่อ)");
-        resultLabel.setStyle("-fx-font-size: 22px; -fx-text-fill: #ef5350; -fx-font-weight: bold;");
-        characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/fail.png")));
+        if (!input.isEmpty() && input.equals(currentCaptcha)) {
+            // พิมพ์ถูกแต่กด Enter ไม่ทัน → ให้คะแนน
+            totalScore += POINTS_PER_ROUND;
+            resultLabel.setText("✅ ถูกต้อง! (หมดเวลาพอดี)");
+            resultLabel.setStyle("-fx-font-size: 22px; -fx-text-fill: #66bb6a; -fx-font-weight: bold;");
+            characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/pass.png")));
+        } else {
+            resultLabel.setText("⏰ หมดเวลา! เฉลย: " + currentCaptcha + "  (Enter เพื่อไปต่อ)");
+            resultLabel.setStyle("-fx-font-size: 22px; -fx-text-fill: #ef5350; -fx-font-weight: bold;");
+            characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/fail.png")));
+        }
 
         PauseTransition delay = new PauseTransition(Duration.millis(800));
         delay.setOnFinished(e -> {
@@ -386,17 +398,60 @@ public class CaptchaMiniGame {
         double w = captchaCanvas.getWidth();
         double h = captchaCanvas.getHeight();
         gc.clearRect(0, 0, w, h);
+
+        // ── พื้นหลังสีดำ ──────────────────────────────────────────────────
         gc.setFill(Color.web("#0d1b2a", 0.95));
         gc.fillRoundRect(0, 0, w, h, 20, 20);
-        gc.setFill(Color.WHITE);
+
+        // ── Matrix background — ตัวเลข/อักษรสีเขียวจาง ───────────────────
+        gc.setFont(Font.font("Consolas", FontWeight.BOLD, 13));
+        String matrixChars = "01アイウエオカキ0110";
+        for (int col = 0; col < w; col += 18) {
+            for (int row = 0; row < h; row += 16) {
+                float alpha = 0.08f + random.nextFloat() * 0.18f;
+                gc.setFill(Color.rgb(0, 220, 80, alpha));
+                String c = String.valueOf(matrixChars.charAt(random.nextInt(matrixChars.length())));
+                gc.fillText(c, col, row + 13);
+            }
+        }
+
+        // ── วาดตัวอักษร CAPTCHA แต่ละตัวแยกกัน เอียงต่างกัน ─────────────
         gc.setFont(Font.font("Consolas", FontWeight.BOLD, 50));
+        double charWidth = 30.0;
+        double totalWidth = text.length() * charWidth;
+        double startX = (w - totalWidth) / 2;
+        double centerY = h / 2 + 15;
 
-        // คำนวณความกว้างข้อความจริงๆ แทน hardcode 100
-        // Consolas 50px แต่ละตัวกว้างประมาณ 30px
-        double textWidth = text.length() * 30.0;
-        double x = (w - textWidth) / 2;
+        for (int i = 0; i < text.length(); i++) {
+            double x = startX + i * charWidth + charWidth / 2;
+            double angle = (random.nextDouble() - 0.5) * 40; // -20° ถึง +20°
 
-        gc.fillText(text, x, h / 2 + 15);
+            // สีอักษรหลากสี แต่ยังอ่านง่าย
+            Color[] colors = {
+                    Color.WHITE,
+                    Color.web("#4fc3f7"),
+                    Color.web("#ffe082"),
+                    Color.web("#80cbc4"),
+                    Color.web("#ef9a9a")
+            };
+            gc.setFill(colors[random.nextInt(colors.length)]);
+
+            gc.save();
+            gc.translate(x, centerY);
+            gc.rotate(angle);
+            gc.fillText(String.valueOf(text.charAt(i)), -charWidth / 2, 0);
+            gc.restore();
+        }
+
+        // ── เส้น noise ────────────────────────────────────────────────────
+        gc.setStroke(Color.rgb(255, 255, 255, 0.15));
+        gc.setLineWidth(1.2);
+        for (int i = 0; i < 4; i++) {
+            gc.strokeLine(
+                    random.nextDouble() * w, random.nextDouble() * h,
+                    random.nextDouble() * w, random.nextDouble() * h
+            );
+        }
     }
 
     // =========================================================================
