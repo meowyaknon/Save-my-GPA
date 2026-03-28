@@ -67,6 +67,7 @@ public class OutsideUI {
     Label      effectsLabel;
     ImageView  clockImage;
     Label      dayLabel;
+    Label      hoursLeftLabel;   // ← new
     StatsBarUI statsBar;
 
     private Timeline  idleTimer;
@@ -107,15 +108,15 @@ public class OutsideUI {
                         "-> 📝 ห้องสอบ (เฉพาะวันสอบ)";
 
         String canteenTip =
-                "⏱ ใช้เวลา :\n" + 
-                        "-> " +GameConfig.CANTEEN_TIME_COST + " ชั่วโมง\n\n" +
-                "✅ ได้รับ :\n" +
+                "⏱ ใช้เวลา :\n" +
+                        "-> " + GameConfig.CANTEEN_TIME_COST + " ชั่วโมง\n\n" +
+                        "✅ ได้รับ :\n" +
                         "-> ⚡ Energy +" + StatConfig.CANTEEN_ENERGY_GAIN + "\n" +
-                        "-> 😊 Mood +"  + StatConfig.CANTEEN_MOOD_GAIN;
+                        "-> 😊 Mood +" + StatConfig.CANTEEN_MOOD_GAIN;
 
-        StackPane busBtn     = mapBtn(BUS_IMG,     295,  cb::onBusStop,       "🚌 Bus Stop",    busTip);
-        StackPane itBtn      = mapBtn(IT_IMG,      1450, this::doITTransition, "🏫 IT Building", itTip);
-        StackPane canteenBtn = mapBtn(CANTEEN_IMG, 765,  cb::onCanteen,       "🍽️ Canteen",     canteenTip);
+        StackPane busBtn     = mapBtn(BUS_IMG,     295,  cb::onBusStop,        "🚌 Bus Stop",    busTip);
+        StackPane itBtn      = mapBtn(IT_IMG,      1450, this::doITTransition,  "🏫 IT Building", itTip);
+        StackPane canteenBtn = mapBtn(CANTEEN_IMG, 765,  cb::onCanteen,        "🍽️ Canteen",     canteenTip);
 
         AnchorPane.setLeftAnchor(busBtn, 172.0);
         AnchorPane.setTopAnchor(busBtn, 431.0);
@@ -169,6 +170,17 @@ public class OutsideUI {
         clockImage = new ImageView();
         clockImage.setFitWidth(150); clockImage.setFitHeight(150); clockImage.setPreserveRatio(true);
 
+        // Hours remaining label — sits centred over the clock face
+        hoursLeftLabel = new Label("10 hrs left");
+        hoursLeftLabel.setStyle("""
+            -fx-font-family: 'Comic Sans MS';
+            -fx-font-size: 20px;
+            -fx-font-weight: bold;
+            -fx-text-fill: white;
+            -fx-effect: dropshadow(gaussian, black, 6, 0.9, 0, 0);
+        """);
+        hoursLeftLabel.setMouseTransparent(true);
+
         dayLabel = new Label();
         dayLabel.setStyle("""
             -fx-font-family: 'Comic Sans MS';
@@ -217,7 +229,13 @@ public class OutsideUI {
     }
 
     void addHudToCanvas(Pane canvas) {
-        VBox clockPanel = new VBox(4, clockImage, dayLabel);
+        StackPane clockStack = new StackPane(clockImage, hoursLeftLabel);
+        clockStack.setAlignment(Pos.CENTER);
+        clockStack.setMouseTransparent(true);
+        clockStack.setMinSize(150, 150);
+        clockStack.setMaxSize(150, 150);
+
+        VBox clockPanel = new VBox(4, clockStack, dayLabel);
         clockPanel.setAlignment(Pos.TOP_LEFT);
         AnchorPane.setTopAnchor(clockPanel, 18.0);
         AnchorPane.setLeftAnchor(clockPanel, 18.0);
@@ -347,9 +365,31 @@ public class OutsideUI {
     }
 
     private void updateClock() {
-        int idx = Math.max(0, Math.min(10, cb.getTimeSystem().getTimeLeft()));
+        int timeLeft = cb.getTimeSystem().getTimeLeft();
+        int idx = Math.max(0, Math.min(10, timeLeft));
         clockImage.setImage(loadImgObj(CLOCK_IMGS[idx]));
         dayLabel.setText("Day " + cb.getTimeSystem().getCurrentDay());
+
+        if (timeLeft <= 0) {
+            hoursLeftLabel.setText("0 hrs left");
+            hoursLeftLabel.setStyle("""
+                -fx-font-family: 'Comic Sans MS';
+                -fx-font-size: 20px;
+                -fx-font-weight: bold;
+                -fx-text-fill: #ef9a9a;
+                -fx-effect: dropshadow(gaussian, black, 6, 0.9, 0, 0);
+            """);
+        } else {
+            hoursLeftLabel.setText(timeLeft + " hrs left");
+            String color = timeLeft <= 2 ? "#ffb74d" : "white";
+            hoursLeftLabel.setStyle(
+                    "-fx-font-family: 'Comic Sans MS';" +
+                            "-fx-font-size: 20px;" +
+                            "-fx-font-weight: bold;" +
+                            "-fx-text-fill: " + color + ";" +
+                            "-fx-effect: dropshadow(gaussian, black, 6, 0.9, 0, 0);"
+            );
+        }
     }
 
     private void updateEffects() {
