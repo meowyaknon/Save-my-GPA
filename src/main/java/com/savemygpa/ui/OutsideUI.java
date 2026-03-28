@@ -1,5 +1,8 @@
 package com.savemygpa.ui;
 
+import java.util.List;
+import java.util.Random;
+
 import com.savemygpa.audio.AudioManager;
 import com.savemygpa.config.GameConfig;
 import com.savemygpa.config.StatConfig;
@@ -12,19 +15,27 @@ import com.savemygpa.player.effect.debuff.StackOverflowDownDebuff;
 import com.savemygpa.player.effect.debuff.WetFeetDebuff;
 import com.savemygpa.player.effect.debuff.WhyDizzyDebuff;
 import com.savemygpa.util.GameCallbacks;
-import javafx.animation.*;
+
+import javafx.animation.Animation;
+import javafx.animation.FadeTransition;
+import javafx.animation.KeyFrame;
+import javafx.animation.KeyValue;
+import javafx.animation.Timeline;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
 import javafx.scene.effect.DropShadow;
-import javafx.scene.image.*;
+import javafx.scene.image.Image;
+import javafx.scene.image.ImageView;
+import javafx.scene.image.PixelReader;
 import javafx.scene.input.KeyCode;
-import javafx.scene.layout.*;
+import javafx.scene.layout.AnchorPane;
+import javafx.scene.layout.HBox;
+import javafx.scene.layout.Pane;
+import javafx.scene.layout.StackPane;
+import javafx.scene.layout.VBox;
 import javafx.scene.paint.Color;
 import javafx.scene.transform.Scale;
 import javafx.util.Duration;
-
-import java.util.List;
-import java.util.Random;
 
 public class OutsideUI {
 
@@ -90,30 +101,24 @@ public class OutsideUI {
         canvas.getChildren().add(bg);
 
         String busTip =
-                "⏱ เดินทางไป KLLC Library หรือกลับบ้าน\n\n" +
-                        "📍 ไป KLLC  (" + GameConfig.KLLC_TIME_COST + " ชม.)\n" +
-                        "   ⚡ Energy -" + StatConfig.KLLC_ENERGY_LOSS +
-                        "  😊 Mood -" + StatConfig.KLLC_MOOD_LOSS +
-                        "  🧠 INT +" + StatConfig.KLLC_LOW_INTELLIGENCE_GAIN + "~" + StatConfig.KLLC_HIGH_INTELLIGENCE_GAIN + "\n" +
-                        "   🔒 Energy ≥ " + StatConfig.KLLC_ENERGY_REQUIREMENT +
-                        "  Mood ≥ " + StatConfig.KLLC_MOOD_REQUIREMENT + "\n\n" +
-                        "📍 กลับบ้าน\n" +
-                        "   ⚡ +3+(Mood/40)+เวลาที่เหลือ\n" +
-                        "   😊 +10+เวลาที่เหลือ  —  จบวันทันที";
+                "สามารถเดินทางไปที่ดังต่อไปนี้ :\n\n" +
+                        "-> 🏛 เดินทางไป KLLC\n" +
+                        "-> 🏠 กลับบ้าน ( จบวัน )";
 
         String itTip =
-                "เข้าสู่อาคาร IT\n\n" +
-                        "📚 ห้องเรียน (Classroom)\n" +
-                        "🎭 หอประชุม (Auditorium)\n" +
-                        "☕ Coworking Space\n" +
-                        "📝 ห้องสอบ (เฉพาะวันสอบ)";
+                "เมื่อทำการคลิกจะเข้าสู่อาคารคณะ IT\n\n" +
+                        "ภายในอาคารมี :\n" +
+                        "-> 📚 ห้องเรียน (Classroom)\n" +
+                        "-> 🎭 หอประชุม (Auditorium)\n" +
+                        "-> ☕ Coworking Space\n" +
+                        "-> 📝 ห้องสอบ (เฉพาะวันสอบ)";
 
         String canteenTip =
-                "⏱ ใช้เวลา " + GameConfig.CANTEEN_TIME_COST + " ชั่วโมง\n\n" +
-                        "✅ ได้รับ:\n" +
-                        "   ⚡ Energy +" + StatConfig.CANTEEN_ENERGY_GAIN + "\n" +
-                        "   😊 Mood +"  + StatConfig.CANTEEN_MOOD_GAIN + "\n\n" +
-                        "❌ ไม่มีเงื่อนไข — กินได้เสมอ";
+                "⏱ ใช้เวลา :\n" + 
+                        "-> " +GameConfig.CANTEEN_TIME_COST + " ชั่วโมง\n\n" +
+                "✅ ได้รับ :\n" +
+                        "-> ⚡ Energy +" + StatConfig.CANTEEN_ENERGY_GAIN + "\n" +
+                        "-> 😊 Mood +"  + StatConfig.CANTEEN_MOOD_GAIN;
 
         StackPane busBtn     = mapBtn(BUS_IMG,     295,  cb::onBusStop,       "🚌 Bus Stop",    busTip);
         StackPane itBtn      = mapBtn(IT_IMG,      1450, this::doITTransition, "🏫 IT Building", itTip);

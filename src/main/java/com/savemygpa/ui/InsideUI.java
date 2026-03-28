@@ -65,42 +65,44 @@ public class InsideUI {
         String classroomTip =
                 "⏱ ใช้เวลา " + GameConfig.CLASSROOM_TIME_COST + " ชั่วโมง\n\n" +
                         "✅ ได้รับ:\n" +
-                        "   🧠 INT +" + StatConfig.CLASSROOM_LOW_INTELLIGENCE_GAIN + "~" + StatConfig.CLASSROOM_HIGH_INTELLIGENCE_GAIN + "\n\n" +
+                        "-> 🧠 INT +" + StatConfig.CLASSROOM_LOW_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง 0 - 30" + "\n" +
+                        "-> 🧠 INT +" + StatConfig.CLASSROOM_MEDIUM_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง 31 - 69" + "\n" +
+                        "-> 🧠 INT +" + StatConfig.CLASSROOM_HIGH_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง ≥ 70" +"\n\n" +
                         "❌ เสียไป:\n" +
-                        "   ⚡ Energy -" + StatConfig.CLASSROOM_ENERGY_LOSS + "\n" +
-                        "   😊 Mood -"   + StatConfig.CLASSROOM_MOOD_LOSS + "\n\n" +
+                        "-> ⚡ Energy -" + StatConfig.CLASSROOM_ENERGY_LOSS + "\n" +
+                        "-> 😊 Mood -"   + StatConfig.CLASSROOM_MOOD_LOSS + "\n\n" +
                         "🔒 ต้องการ:\n" +
-                        "   ⚡ Energy ≥ " + StatConfig.CLASSROOM_ENERGY_REQUIREMENT + "\n" +
-                        "   😊 Mood ≥ "   + StatConfig.CLASSROOM_MOOD_REQUIREMENT;
+                        "-> ⚡ Energy ≥ " + StatConfig.CLASSROOM_ENERGY_REQUIREMENT + "\n" +
+                        "->  😊 Mood ≥ "   + StatConfig.CLASSROOM_MOOD_REQUIREMENT;
 
         String auditoriumTip =
                 "⏱ ใช้เวลา " + GameConfig.AUDITORIUM_TIME_COST + " ชั่วโมง\n\n" +
                         "✅ ได้รับ:\n" +
-                        "   😊 Mood +" + StatConfig.AUDITORIUM_MOOD_GAIN + "\n\n" +
+                        "-> 😊 Mood +" + StatConfig.AUDITORIUM_MOOD_GAIN + "\n\n" +
                         "❌ เสียไป:\n" +
-                        "   ⚡ Energy -" + StatConfig.AUDITORIUM_ENERGY_LOSS + "\n\n" +
+                        "-> ⚡ Energy -" + StatConfig.AUDITORIUM_ENERGY_LOSS + "\n\n" +
                         "🔒 ต้องการ:\n" +
-                        "   ⚡ Energy ≥ " + StatConfig.AUDITORIUM_ENERGY_REQUIREMENT;
+                        "-> ⚡ Energy ≥ " + StatConfig.AUDITORIUM_ENERGY_REQUIREMENT;
 
         String coworkingTip =
                 "เลือกกิจกรรมใน Coworking Space\n\n" +
                         "📖 Review (" + GameConfig.REVIEW_TIME_COST + " ชม.)\n" +
-                        "   🧠 INT +" + StatConfig.REVIEW_LOW_INTELLIGENCE_GAIN + "~" + StatConfig.REVIEW_HIGH_INTELLIGENCE_GAIN +
-                        "  ⚡-" + StatConfig.REVIEW_ENERGY_LOSS + "  😊-" + StatConfig.REVIEW_MOOD_LOSS + "\n\n" +
+                        "-> 🧠 INT +" + StatConfig.REVIEW_LOW_INTELLIGENCE_GAIN + "~" + StatConfig.REVIEW_HIGH_INTELLIGENCE_GAIN +
+                        "-> ⚡-" + StatConfig.REVIEW_ENERGY_LOSS + "  😊-" + StatConfig.REVIEW_MOOD_LOSS + "\n\n" +
                         "😌 Relax (" + GameConfig.RELAX_TIME_COST + " ชม.)\n" +
-                        "   ⚡ Energy +" + StatConfig.RELAX_ENERGY_GAIN + "  😊 Mood +" + StatConfig.RELAX_MOOD_GAIN;
+                        "-> ⚡ Energy +" + StatConfig.RELAX_ENERGY_GAIN + "  😊 Mood +" + StatConfig.RELAX_MOOD_GAIN;
 
         String progExamTip =
                 "⏱ ใช้เวลา " + GameConfig.EXAM_TIME_COST + " ชั่วโมง\n\n" +
-                        "🎮 Mini-game: Captcha challenge\n" +
-                        "🧠 INT สูง = โอกาสคะแนนสูง\n\n" +
-                        "⚠️ ทำได้ครั้งเดียวต่อวัน";
+                        "-> 🎮 Mini-game: Captcha challenge\n" +
+                        "-> 🧠 ยิ่ง INT สูง = ข้อสอยยิ่งง่าย\n\n" +
+                        "-> ⚠️ ทำได้ครั้งเดียวต่อวัน";
 
         String mathExamTip =
                 "⏱ ใช้เวลา " + GameConfig.EXAM_TIME_COST + " ชั่วโมง\n\n" +
-                        "🔢 Mini-game: Counting challenge\n" +
-                        "🧠 INT สูง = โอกาสคะแนนสูง\n\n" +
-                        "⚠️ ทำได้ครั้งเดียวต่อวัน";
+                        "-> 🔢 Mini-game: Counting challenge\n" +
+                        "-> 🧠 ยิ่ง INT สูง = ข้อสอยยิ่งง่าย\n\n" +
+                        "-> ⚠️ ทำได้ครั้งเดียวต่อวัน";
 
         if (cb.isProgExamDay()) {
             addRoomButtons(gameLayer,

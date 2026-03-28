@@ -73,21 +73,21 @@ public class CoworkingUI {
         String studyTip =
                 "⏱ ใช้เวลา " + GameConfig.REVIEW_TIME_COST + " ชั่วโมง\n\n" +
                         "✅ ได้รับ:\n" +
-                        "   🧠 INT +" + StatConfig.REVIEW_LOW_INTELLIGENCE_GAIN + "~" + StatConfig.REVIEW_HIGH_INTELLIGENCE_GAIN + "\n\n" +
+                        "-> 🧠 INT +" + StatConfig.REVIEW_LOW_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง 0 - 30" + "\n" +
+                        "-> 🧠 INT +" + StatConfig.REVIEW_MEDIUM_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง 31 - 69" + "\n" +
+                        "-> 🧠 INT +" + StatConfig.REVIEW_HIGH_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง ≥ 70" +"\n\n" +
                         "❌ เสียไป:\n" +
-                        "   ⚡ Energy -" + StatConfig.REVIEW_ENERGY_LOSS + "\n" +
-                        "   😊 Mood -"   + StatConfig.REVIEW_MOOD_LOSS + "\n\n" +
+                        "-> ⚡ Energy -" + StatConfig.REVIEW_ENERGY_LOSS + "\n" +
+                        "-> 😊 Mood -"   + StatConfig.REVIEW_MOOD_LOSS + "\n\n" +
                         "🔒 ต้องการ:\n" +
-                        "   ⚡ Energy ≥ " + StatConfig.REVIEW_ENERGY_REQUIREMENT + "\n" +
-                        "   😊 Mood ≥ "   + StatConfig.REVIEW_MOOD_REQUIREMENT;
+                        "-> ⚡ Energy ≥ " + StatConfig.REVIEW_ENERGY_REQUIREMENT + "\n" +
+                        "-> 😊 Mood ≥ "   + StatConfig.REVIEW_MOOD_REQUIREMENT;
 
         String relaxTip =
                 "⏱ ใช้เวลา " + GameConfig.RELAX_TIME_COST + " ชั่วโมง\n\n" +
                         "✅ ได้รับ:\n" +
-                        "   ⚡ Energy +" + StatConfig.RELAX_ENERGY_GAIN + "\n" +
-                        "   😊 Mood +"   + StatConfig.RELAX_MOOD_GAIN + "\n\n" +
-                        "❌ เสียไป: ไม่มี\n\n" +
-                        "🔒 ต้องการ: ไม่มีเงื่อนไข";
+                        "-> ⚡ Energy +" + StatConfig.RELAX_ENERGY_GAIN + "\n" +
+                        "-> 😊 Mood +"   + StatConfig.RELAX_MOOD_GAIN;
 
         ImageView studyBtn  = makeBtn(BTN_STUDY,  BTN_ACTION_W, "📖 Review (ทบทวน)", studyTip, () -> dismiss(overlay, cb::onStudy));
         ImageView relaxBtn  = makeBtn(BTN_RELAX,  BTN_ACTION_W, "😌 Relax (พักผ่อน)", relaxTip, () -> dismiss(overlay, cb::onRelax));
