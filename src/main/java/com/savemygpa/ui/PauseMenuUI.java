@@ -1,6 +1,7 @@
 package com.savemygpa.ui;
 
 import com.savemygpa.audio.AudioManager;
+import com.savemygpa.util.GameCallbacks;
 import javafx.animation.*;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Pos;
@@ -19,29 +20,22 @@ public class PauseMenuUI {
     private static final double BTN_W  = 340;
     private static final double CARD_W = 420;
 
-    public interface Callbacks {
-        void onResume();
-        void onSettings();
-        void onMainMenu();
-    }
+    private final GameCallbacks cb;
+    private final StackPane     sceneRoot;
 
-    private final Callbacks cb;
-    private final StackPane sceneRoot;   // unscaled outermost pane from GameLauncher
-
-    public PauseMenuUI(StackPane sceneRoot, Callbacks cb) {
+    // ── Constructor now takes GameCallbacks ───────────────────────────────────
+    public PauseMenuUI(StackPane sceneRoot, GameCallbacks cb) {
         this.sceneRoot = sceneRoot;
         this.cb        = cb;
     }
 
     public StackPane buildView() {
-        // ── Full-window dim ───────────────────────────────────────────────────
         StackPane overlay = new StackPane();
         overlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         overlay.setStyle("-fx-background-color: rgba(0,0,0,0.58);");
         overlay.prefWidthProperty().bind(sceneRoot.widthProperty());
         overlay.prefHeightProperty().bind(sceneRoot.heightProperty());
 
-        // ── Card (natural size, then scaled) ──────────────────────────────────
         StackPane card = new StackPane();
         card.setMaxWidth(CARD_W);
 
@@ -71,7 +65,6 @@ public class PauseMenuUI {
         StackPane.setAlignment(btnCol, Pos.CENTER);
         card.getChildren().add(btnCol);
 
-        // ── Scale the card to match the current window zoom ───────────────────
         Scale cardScale = new Scale(1, 1);
         cardScale.pivotXProperty().bind(Bindings.divide(card.widthProperty(), 2));
         cardScale.pivotYProperty().bind(Bindings.divide(card.heightProperty(), 2));
@@ -97,7 +90,6 @@ public class PauseMenuUI {
         return overlay;
     }
 
-    /** Fade out and remove the pause overlay from sceneRoot. */
     public static void dismiss(StackPane sceneRoot, StackPane overlay, Runnable onDone) {
         FadeTransition ft = new FadeTransition(Duration.millis(180), overlay);
         ft.setToValue(0);
@@ -124,7 +116,6 @@ public class PauseMenuUI {
         iv.setOnMouseEntered(e  -> { iv.setScaleX(1.05); iv.setScaleY(1.05); iv.setOpacity(0.88); });
         iv.setOnMouseExited (e  -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  iv.setOpacity(1.0);  });
         iv.setOnMousePressed (e -> {
-            // Play SFX immediately on press — no delay
             if (playAcceptSfx) AudioManager.getInstance().playAccept();
             else               AudioManager.getInstance().playRefuse();
             iv.setScaleX(0.95); iv.setScaleY(0.95);

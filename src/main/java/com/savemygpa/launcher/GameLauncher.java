@@ -4,6 +4,7 @@ import com.savemygpa.audio.AudioManager;
 import com.savemygpa.exam.CaptchaMiniGame;
 import com.savemygpa.exam.CountingMiniGame;
 import com.savemygpa.ui.*;
+import com.savemygpa.util.GameCallbacks;
 import javafx.application.Application;
 import javafx.animation.*;
 import javafx.geometry.Pos;
@@ -40,16 +41,20 @@ public class GameLauncher extends Application {
 
     private static final int BASE_W = 1920, BASE_H = 1080;
 
-    private OutsideUI outsideUI;
+    private OutsideUI    outsideUI;
+    private GameCallbacks gameCallbacks;   // ← single shared instance
     private StackPane pauseOverlay = null;
     private boolean pauseOpen    = false;
     private boolean actionLocked = false;
+
+    // Pause origin tracked separately since onPause() behaviour differs
     private enum PauseOrigin { OUTSIDE, IT_BUILDING }
     private PauseOrigin pauseOrigin = PauseOrigin.OUTSIDE;
+
     private boolean hasSavedGame = false, agreedToTerms = false;
     private int progExam1Score = 0, mathExam1Score = 0, progExam2Score = 0, mathExam2Score = 0;
-    private boolean progExamTakenToday = false;
-    private boolean mathExamTakenToday = false;
+    private boolean progExamTakenToday  = false;
+    private boolean mathExamTakenToday  = false;
     private boolean examNoticeShownToday = false;
 
     private static final int    TOTAL_DAYS     = 14;
@@ -69,6 +74,76 @@ public class GameLauncher extends Application {
             "/images/endings/endingA_scene4.jpg",
     };
 
+    // =========================================================================
+    // Unified callbacks — built once, reused everywhere
+    // =========================================================================
+    private GameCallbacks buildGameCallbacks() {
+        return new GameCallbacks() {
+
+            // ── OutsideUI ─────────────────────────────────────────────────────
+            @Override public void onBusStop()    { runOnce(GameLauncher.this::showBusStop); }
+            @Override public void onCanteen()    { runOnce(GameLauncher.this::doCanteen); }
+            @Override public void onITBuilding() { runOnce(GameLauncher.this::showITBuilding); }
+
+            // ── InsideUI ──────────────────────────────────────────────────────
+            @Override public boolean      isProgExamDay()   { return GameLauncher.this.isProgExamDay(); }
+            @Override public boolean      isMathExamDay()   { return GameLauncher.this.isMathExamDay(); }
+            @Override public Player       getPlayer()       { return player; }
+            @Override public TimeSystem   getTimeSystem()   { return timeSystem; }
+            @Override public EventManager getEventManager() { return eventManager; }
+            @Override public OutsideUI    getOutsideUI()    { return outsideUI; }
+            @Override public void onClassroom()  { AudioManager.getInstance().playAccept(); performWithCutscene(new ClassroomActivity(),       Location.CLASSROOM,  GameLauncher.this::showITBuilding); }
+            @Override public void onAuditorium() { AudioManager.getInstance().playAccept(); performWithCutscene(new AuditoriumActivity(),      Location.AUDITORIUM, GameLauncher.this::showITBuilding); }
+            @Override public void onCoworking()  { AudioManager.getInstance().playAccept(); showCoworkingSpace(); }
+            @Override public void onProgExam()   { AudioManager.getInstance().playAccept(); doProgExam(); }
+            @Override public void onMathExam()   { AudioManager.getInstance().playAccept(); doMathExam(); }
+
+            // ── BusStopUI ─────────────────────────────────────────────────────
+            @Override public void onKLLC()   { AudioManager.getInstance().playAccept(); performWithCutscene(new KLLCActivity(), Location.BUS_STOP, GameLauncher.this::showGameplay); }
+            @Override public void onGoHome() { AudioManager.getInstance().playAccept(); doGoHome(); }
+
+            // ── CoworkingUI ───────────────────────────────────────────────────
+            @Override public void onRelax() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingRelaxActivity(), Location.COWORKING, GameLauncher.this::showITBuilding); }
+            @Override public void onStudy() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingStudyActivity(), Location.COWORKING, GameLauncher.this::showITBuilding); }
+
+            // ── AcceptanceUI ──────────────────────────────────────────────────
+            @Override public void onAccept() { AudioManager.getInstance().playAccept(); agreedToTerms = true; persistSave(true); fadeOutThenRun(v -> showMainMenuWithFade()); }
+            @Override public void onRefuse() { AudioManager.getInstance().playRefuse(); showSecretEnding(); }
+
+            // ── MainMenuUI ────────────────────────────────────────────────────
+            @Override public void onContinue()  { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showGameplayWithFadeIn); }
+            @Override public void onNewGame()   { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::startNewGame); }
+            @Override public void onHowToPlay() { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showHowToPlay); }
+            @Override public void onSettings()  { AudioManager.getInstance().playAccept(); runOnce(() -> showSettings(GameLauncher.this::showMainMenuWithFade)); }
+            @Override public void onCredits()   { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showCredits); }
+            @Override public void onQuit()      { AudioManager.getInstance().playRefuse(); stage.close(); }
+
+            // ── PauseMenuUI ───────────────────────────────────────────────────
+            @Override public void onResume() {
+                if (pauseOverlay != null)
+                    PauseMenuUI.dismiss(root, pauseOverlay, () -> { pauseOverlay = null; pauseOpen = false; });
+            }
+            @Override public void onMainMenu() {
+                if (pauseOverlay != null)
+                    PauseMenuUI.dismiss(root, pauseOverlay, () -> { pauseOverlay = null; pauseOpen = false; showMainMenuWithFade(); });
+            }
+
+            // ── Shared ────────────────────────────────────────────────────────
+            // onBack() navigates from IT building back to outside
+            @Override public void onBack() {
+                if (actionLocked) return;
+                AudioManager.getInstance().playRefuse();
+                actionLocked = true;
+                ActivityCutscene.transition(root, () -> { actionLocked = false; showGameplay(); }, null);
+            }
+            // onPause() uses current pauseOrigin to restore to the right screen
+            @Override public void onPause() { showPause(pauseOrigin); }
+        };
+    }
+
+    // =========================================================================
+    // Helpers
+    // =========================================================================
     private void runOnce(Runnable action) {
         if (actionLocked) return;
         action.run();
@@ -150,8 +225,8 @@ public class GameLauncher extends Application {
         wireEventListener();
         hasSavedGame = true;
         progExam1Score = mathExam1Score = progExam2Score = mathExam2Score = 0;
-        progExamTakenToday = mathExamTakenToday = false;
-        examNoticeShownToday = false;
+        progExamTakenToday = mathExamTakenToday = examNoticeShownToday = false;
+        gameCallbacks = buildGameCallbacks();   // ← build fresh callbacks
         persistSave(true);
         showNewGameIntro();
     }
@@ -193,7 +268,7 @@ public class GameLauncher extends Application {
     private void showGameplayWithFadeIn() {
         if (isGameOver()) { showEnding(); return; }
         AudioManager.getInstance().playMusic(AudioManager.Music.OUTSIDE);
-        outsideUI = new OutsideUI(player, timeSystem, eventManager, buildOutsideCallbacks());
+        outsideUI = new OutsideUI(gameCallbacks);
         javafx.scene.Node gv = outsideUI.buildView();
         gv.setOpacity(0);
         setContent(gv);
@@ -374,29 +449,60 @@ public class GameLauncher extends Application {
     // ── Pause ─────────────────────────────────────────────────────────────────
     private void showPause(PauseOrigin origin) {
         if (pauseOpen) return;
-        pauseOpen = true; pauseOrigin = origin;
-        PauseMenuUI pauseUI = new PauseMenuUI(root, new PauseMenuUI.Callbacks() {
+        pauseOpen = true;
+        pauseOrigin = origin;
+        // Settings from pause needs to know which screen to return to
+        // so we temporarily override onSettings in a local wrapper
+        GameCallbacks pauseCallbacks = new GameCallbacks() {
+            // Delegate everything to gameCallbacks
+            @Override public void onBusStop()    { gameCallbacks.onBusStop(); }
+            @Override public void onCanteen()    { gameCallbacks.onCanteen(); }
+            @Override public void onITBuilding() { gameCallbacks.onITBuilding(); }
+            @Override public void onClassroom()  { gameCallbacks.onClassroom(); }
+            @Override public void onAuditorium() { gameCallbacks.onAuditorium(); }
+            @Override public void onCoworking()  { gameCallbacks.onCoworking(); }
+            @Override public void onProgExam()   { gameCallbacks.onProgExam(); }
+            @Override public void onMathExam()   { gameCallbacks.onMathExam(); }
+            @Override public boolean      isProgExamDay()   { return gameCallbacks.isProgExamDay(); }
+            @Override public boolean      isMathExamDay()   { return gameCallbacks.isMathExamDay(); }
+            @Override public Player       getPlayer()       { return gameCallbacks.getPlayer(); }
+            @Override public TimeSystem   getTimeSystem()   { return gameCallbacks.getTimeSystem(); }
+            @Override public EventManager getEventManager() { return gameCallbacks.getEventManager(); }
+            @Override public OutsideUI    getOutsideUI()    { return gameCallbacks.getOutsideUI(); }
+            @Override public void onKLLC()    { gameCallbacks.onKLLC(); }
+            @Override public void onGoHome()  { gameCallbacks.onGoHome(); }
+            @Override public void onRelax()   { gameCallbacks.onRelax(); }
+            @Override public void onStudy()   { gameCallbacks.onStudy(); }
+            @Override public void onAccept()  { gameCallbacks.onAccept(); }
+            @Override public void onRefuse()  { gameCallbacks.onRefuse(); }
+            @Override public void onContinue()  { gameCallbacks.onContinue(); }
+            @Override public void onNewGame()   { gameCallbacks.onNewGame(); }
+            @Override public void onHowToPlay() { gameCallbacks.onHowToPlay(); }
+            @Override public void onCredits()   { gameCallbacks.onCredits(); }
+            @Override public void onQuit()      { gameCallbacks.onQuit(); }
+            @Override public void onBack()      { gameCallbacks.onBack(); }
+            @Override public void onPause()     { gameCallbacks.onPause(); }
             @Override public void onResume() {
                 if (pauseOverlay != null)
                     PauseMenuUI.dismiss(root, pauseOverlay, () -> { pauseOverlay = null; pauseOpen = false; });
             }
+            @Override public void onMainMenu() {
+                if (pauseOverlay != null)
+                    PauseMenuUI.dismiss(root, pauseOverlay, () -> { pauseOverlay = null; pauseOpen = false; showMainMenuWithFade(); });
+            }
+            // Settings returns to the correct screen based on pause origin
             @Override public void onSettings() {
+                AudioManager.getInstance().playAccept();
                 if (pauseOverlay != null)
                     PauseMenuUI.dismiss(root, pauseOverlay, () -> {
                         pauseOverlay = null; pauseOpen = false;
-                        showSettings(pauseOrigin == PauseOrigin.OUTSIDE
+                        showSettings(origin == PauseOrigin.OUTSIDE
                                 ? GameLauncher.this::showGameplay
                                 : GameLauncher.this::showITBuilding);
                     });
             }
-            @Override public void onMainMenu() {
-                if (pauseOverlay != null)
-                    PauseMenuUI.dismiss(root, pauseOverlay, () -> {
-                        pauseOverlay = null; pauseOpen = false;
-                        showMainMenuWithFade();
-                    });
-            }
-        });
+        };
+        PauseMenuUI pauseUI = new PauseMenuUI(root, pauseCallbacks);
         pauseOverlay = pauseUI.buildView();
         root.getChildren().add(pauseOverlay);
     }
@@ -441,18 +547,10 @@ public class GameLauncher extends Application {
     }
 
     private void showAgreement() {
+        // Build callbacks for acceptance screen (needs gameCallbacks — build a temp one if null)
+        if (gameCallbacks == null) gameCallbacks = buildGameCallbacks();
         AudioManager.getInstance().playMusic(AudioManager.Music.ACCEPTANCE);
-        AcceptanceUI ui = new AcceptanceUI(new AcceptanceUI.Callbacks() {
-            @Override public void onAccept() {
-                AudioManager.getInstance().playAccept();
-                agreedToTerms = true; persistSave(true);
-                fadeOutThenRun(v -> showMainMenuWithFade());
-            }
-            @Override public void onRefuse() {
-                AudioManager.getInstance().playRefuse();
-                showSecretEnding();
-            }
-        });
+        AcceptanceUI ui = new AcceptanceUI(gameCallbacks);
         javafx.scene.Node av = ui.buildView();
         av.setOpacity(0); setContent(av);
         FadeTransition ft = new FadeTransition(Duration.millis(500), av);
@@ -462,16 +560,10 @@ public class GameLauncher extends Application {
     private void fadeOutThenRun(java.util.function.Consumer<Void> then) { then.accept(null); }
 
     private void showMainMenuWithFade() {
+        if (gameCallbacks == null) gameCallbacks = buildGameCallbacks();
         AudioManager.getInstance().playMusic(AudioManager.Music.MAIN_MENU);
         actionLocked = false; pauseOpen = false;
-        MainMenuUI ui = new MainMenuUI(hasSavedGame, new MainMenuUI.Callbacks() {
-            @Override public void onContinue()  { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showGameplayWithFadeIn); }
-            @Override public void onNewGame()   { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::startNewGame); }
-            @Override public void onHowToPlay() { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showHowToPlay); }
-            @Override public void onSettings()  { AudioManager.getInstance().playAccept(); runOnce(() -> showSettings(GameLauncher.this::showMainMenuWithFade)); }
-            @Override public void onCredits()   { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showCredits); }
-            @Override public void onQuit()      { AudioManager.getInstance().playRefuse(); stage.close(); }
-        });
+        MainMenuUI ui = new MainMenuUI(hasSavedGame, gameCallbacks);
         javafx.scene.Node mv = ui.buildView();
         mv.setOpacity(0); setContent(mv);
         FadeTransition ft = new FadeTransition(Duration.millis(500), mv);
@@ -505,8 +597,9 @@ public class GameLauncher extends Application {
 
     private void showGameplay() {
         if (isGameOver()) { showEnding(); return; }
+        pauseOrigin = PauseOrigin.OUTSIDE;   // ← update origin whenever we enter outside
         AudioManager.getInstance().playMusic(AudioManager.Music.OUTSIDE);
-        outsideUI = new OutsideUI(player, timeSystem, eventManager, buildOutsideCallbacks());
+        outsideUI = new OutsideUI(gameCallbacks);
         setContent(outsideUI.buildView());
         eventManager.triggerVisit(player, timeSystem, Location.OUTSIDE);
         outsideUI.refresh();
@@ -515,15 +608,6 @@ public class GameLauncher extends Application {
             examNoticeShownToday = true;
             showExamDayNotice(null);
         }
-    }
-
-    private OutsideUI.Callbacks buildOutsideCallbacks() {
-        return new OutsideUI.Callbacks() {
-            @Override public void onBusStop()    { runOnce(GameLauncher.this::showBusStop); }
-            @Override public void onCanteen()    { runOnce(GameLauncher.this::doCanteen); }
-            @Override public void onITBuilding() { runOnce(GameLauncher.this::showITBuilding); }
-            @Override public void onPause()      { showPause(PauseOrigin.OUTSIDE); }
-        };
     }
 
     private void doCanteen() {
@@ -542,41 +626,17 @@ public class GameLauncher extends Application {
     }
 
     private void showBusStop() {
-        new BusStopUI(root, new BusStopUI.Callbacks() {
-            @Override public void onKLLC()   { AudioManager.getInstance().playAccept(); performWithCutscene(new KLLCActivity(), Location.BUS_STOP, GameLauncher.this::showGameplay); }
-            @Override public void onGoHome() { AudioManager.getInstance().playAccept(); doGoHome(); }
-            @Override public void onBack()   { AudioManager.getInstance().playRefuse(); }
-        }).show();
+        new BusStopUI(root, gameCallbacks).show();
     }
 
     private void showITBuilding() {
+        pauseOrigin = PauseOrigin.IT_BUILDING;   // ← update origin whenever we enter IT building
         AudioManager.getInstance().playMusic(AudioManager.Music.INSIDE);
         eventManager.triggerVisit(player, timeSystem, Location.IT_BUILDING);
-        if (outsideUI == null) {
-            outsideUI = new OutsideUI(player, timeSystem, eventManager, buildOutsideCallbacks());
-        }
+        if (outsideUI == null) outsideUI = new OutsideUI(gameCallbacks);
         outsideUI.refresh();
         actionLocked = false;
-        InsideUI ui = new InsideUI(new InsideUI.Callbacks() {
-            @Override public boolean      isProgExamDay()   { return GameLauncher.this.isProgExamDay(); }
-            @Override public boolean      isMathExamDay()   { return GameLauncher.this.isMathExamDay(); }
-            @Override public void         onPause()         { showPause(PauseOrigin.IT_BUILDING); }
-            @Override public Player       getPlayer()       { return player; }
-            @Override public TimeSystem   getTimeSystem()   { return timeSystem; }
-            @Override public EventManager getEventManager() { return eventManager; }
-            @Override public OutsideUI    getOutsideUI()    { return outsideUI; }
-            @Override public void onClassroom()  { AudioManager.getInstance().playAccept(); performWithCutscene(new ClassroomActivity(),       Location.CLASSROOM,  GameLauncher.this::showITBuilding); }
-            @Override public void onAuditorium() { AudioManager.getInstance().playAccept(); performWithCutscene(new AuditoriumActivity(),      Location.AUDITORIUM, GameLauncher.this::showITBuilding); }
-            @Override public void onCoworking()  { AudioManager.getInstance().playAccept(); showCoworkingSpace(); }
-            @Override public void onProgExam()   { AudioManager.getInstance().playAccept(); doProgExam(); }
-            @Override public void onMathExam()   { AudioManager.getInstance().playAccept(); doMathExam(); }
-            @Override public void onBack() {
-                if (actionLocked) return;
-                AudioManager.getInstance().playRefuse();
-                actionLocked = true;
-                ActivityCutscene.transition(root, () -> { actionLocked = false; showGameplay(); }, null);
-            }
-        });
+        InsideUI ui = new InsideUI(gameCallbacks);
         javafx.scene.Node iv = ui.buildView();
         iv.setOpacity(0); setContent(iv);
         FadeTransition fi = new FadeTransition(Duration.millis(300), iv);
@@ -584,11 +644,7 @@ public class GameLauncher extends Application {
     }
 
     private void showCoworkingSpace() {
-        new CoworkingUI(root, new CoworkingUI.Callbacks() {
-            @Override public void onRelax() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingRelaxActivity(), Location.COWORKING, GameLauncher.this::showITBuilding); }
-            @Override public void onStudy() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingStudyActivity(), Location.COWORKING, GameLauncher.this::showITBuilding); }
-            @Override public void onBack()  { AudioManager.getInstance().playRefuse(); }
-        }).show();
+        new CoworkingUI(root, gameCallbacks).show();
     }
 
     // ── Exams ─────────────────────────────────────────────────────────────────
@@ -686,7 +742,6 @@ public class GameLauncher extends Application {
         }
     }
 
-    // ── Ending A cinematic ────────────────────────────────────────────────────
     private void showEndingACinematic(Runnable onDone) {
         String[] lines = endingStory("A");
         StackPane cinPane = new StackPane();
@@ -778,8 +833,6 @@ public class GameLauncher extends Application {
     // =========================================================================
     private void showEndingResult(String grade, int overall) {
         String c = endingColor(grade);
-
-        // Outer container — full 1920×1080, black bg, centre-aligns everything
         StackPane r = new StackPane();
         r.setStyle("-fx-background-color:#000;");
         r.setPrefSize(BASE_W, BASE_H);
@@ -787,7 +840,6 @@ public class GameLauncher extends Application {
         r.setMaxSize(BASE_W, BASE_H);
         r.setAlignment(Pos.CENTER);
 
-        // Inner VBox — width-capped, centred inside the StackPane
         VBox content = new VBox(28);
         content.setAlignment(Pos.CENTER);
         content.setFillWidth(false);
@@ -825,8 +877,6 @@ public class GameLauncher extends Application {
         btns.setAlignment(Pos.CENTER);
 
         content.getChildren().addAll(gt, tt, sc, btns);
-
-        // KEY FIX: place content directly — no ScrollPane
         StackPane.setAlignment(content, Pos.CENTER);
         r.getChildren().add(content);
 
@@ -885,55 +935,29 @@ public class GameLauncher extends Application {
 
     private void showSecretEndingResult() {
         final String ac = "#f48fb1";
-
         StackPane r = new StackPane();
         r.setStyle("-fx-background-color:#000;");
-        r.setPrefSize(BASE_W, BASE_H);
-        r.setMinSize(BASE_W, BASE_H);
-        r.setMaxSize(BASE_W, BASE_H);
+        r.setPrefSize(BASE_W, BASE_H); r.setMinSize(BASE_W, BASE_H); r.setMaxSize(BASE_W, BASE_H);
         r.setAlignment(Pos.CENTER);
-
         VBox content = new VBox(32);
-        content.setAlignment(Pos.CENTER);
-        content.setFillWidth(false);
-        content.setMaxWidth(1000);
+        content.setAlignment(Pos.CENTER); content.setFillWidth(false); content.setMaxWidth(1000);
         content.setStyle("-fx-padding:60 0 60 0;-fx-background-color:transparent;");
-
         Text gt = new Text("✦");
-        gt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 120));
-        gt.setFill(Color.web(ac));
-        gt.setTextAlignment(TextAlignment.CENTER);
+        gt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 120)); gt.setFill(Color.web(ac)); gt.setTextAlignment(TextAlignment.CENTER);
         Text tt = new Text("Secret Ending 1 —  New Career Path");
-        tt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30));
-        tt.setFill(Color.web(ac));
-        tt.setTextAlignment(TextAlignment.CENTER);
-        Label desc = new Label(
-                "🎨  เส้นทางที่ไม่มีใครคาดถึง\n\n" +
-                        "ความกล้าที่จะเลือกเส้นทางของตัวเอง\n\n" +
-                        "[ Unlocked: Secret Ending 🌟 ]");
+        tt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30)); tt.setFill(Color.web(ac)); tt.setTextAlignment(TextAlignment.CENTER);
+        Label desc = new Label("🎨  เส้นทางที่ไม่มีใครคาดถึง\n\nความกล้าที่จะเลือกเส้นทางของตัวเอง\n\n[ Unlocked: Secret Ending 🌟 ]");
         desc.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:22px;-fx-text-fill:#ffffff;-fx-line-spacing:6;");
-        desc.setTextAlignment(TextAlignment.CENTER);
-        desc.setAlignment(Pos.CENTER);
-        desc.setWrapText(true);
-        desc.setMaxWidth(900);
-
+        desc.setTextAlignment(TextAlignment.CENTER); desc.setAlignment(Pos.CENTER); desc.setWrapText(true); desc.setMaxWidth(900);
         ImageView tryAgainImg = makeEndingImgBtn("/images/menu/menu_start2.png");
         ImageView quitImg     = makeEndingImgBtn("/images/menu/menu_quit.png");
         tryAgainImg.setOnMouseClicked(e -> { AudioManager.getInstance().playAccept(); runOnce(this::showIntroSequence); });
         quitImg    .setOnMouseClicked(e -> { AudioManager.getInstance().playRefuse(); stage.close(); });
-
-        HBox btns = new HBox(32, tryAgainImg, quitImg);
-        btns.setAlignment(Pos.CENTER);
+        HBox btns = new HBox(32, tryAgainImg, quitImg); btns.setAlignment(Pos.CENTER);
         content.getChildren().addAll(gt, tt, desc, btns);
-
-        // KEY FIX: no ScrollPane
-        StackPane.setAlignment(content, Pos.CENTER);
-        r.getChildren().add(content);
-
-        content.setOpacity(0);
-        setContent(r);
-        FadeTransition ft = new FadeTransition(Duration.millis(600), content);
-        ft.setToValue(1); ft.play();
+        StackPane.setAlignment(content, Pos.CENTER); r.getChildren().add(content);
+        content.setOpacity(0); setContent(r);
+        FadeTransition ft = new FadeTransition(Duration.millis(600), content); ft.setToValue(1); ft.play();
     }
 
     private void showSecretEnding2() {
@@ -958,58 +982,29 @@ public class GameLauncher extends Application {
 
     private void showSecretEnding2Result() {
         final String ac = "#78909c";
-
         StackPane r = new StackPane();
         r.setStyle("-fx-background-color:#000;");
-        r.setPrefSize(BASE_W, BASE_H);
-        r.setMinSize(BASE_W, BASE_H);
-        r.setMaxSize(BASE_W, BASE_H);
+        r.setPrefSize(BASE_W, BASE_H); r.setMinSize(BASE_W, BASE_H); r.setMaxSize(BASE_W, BASE_H);
         r.setAlignment(Pos.CENTER);
-
         VBox content = new VBox(32);
-        content.setAlignment(Pos.CENTER);
-        content.setFillWidth(false);
-        content.setMaxWidth(1000);
+        content.setAlignment(Pos.CENTER); content.setFillWidth(false); content.setMaxWidth(1000);
         content.setStyle("-fx-padding:60 0 60 0;-fx-background-color:transparent;");
-
         Text gt = new Text("💔");
-        gt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 110));
-        gt.setFill(Color.web(ac));
-        gt.setTextAlignment(TextAlignment.CENTER);
+        gt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 110)); gt.setFill(Color.web(ac)); gt.setTextAlignment(TextAlignment.CENTER);
         Text tt = new Text("Secret Ending 2  —  Hollow Victory");
-        tt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30));
-        tt.setFill(Color.web(ac));
-        tt.setTextAlignment(TextAlignment.CENTER);
-        Label desc = new Label(
-                "📊 ผลการสอบดี — แต่ใจมันพัง\n\n" +
-                        "ไม่ว่าเกรดจะสวยแค่ไหน\n" +
-                        "ถ้าหัวใจไม่มีความสุข\n" +
-                        "ความพยายามทั้งหมดก็ไร้ความหมาย\n\n" +
-                        "เกรดคือเครื่องมือ — ไม่ใช่ชีวิตทั้งหมด\n\n" +
-                        "[ Unlocked: Secret Ending 2 🌑 ]");
+        tt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30)); tt.setFill(Color.web(ac)); tt.setTextAlignment(TextAlignment.CENTER);
+        Label desc = new Label("📊 ผลการสอบดี — แต่ใจมันพัง\n\nไม่ว่าเกรดจะสวยแค่ไหน\nถ้าหัวใจไม่มีความสุข\nความพยายามทั้งหมดก็ไร้ความหมาย\n\nเกรดคือเครื่องมือ — ไม่ใช่ชีวิตทั้งหมด\n\n[ Unlocked: Secret Ending 2 🌑 ]");
         desc.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:22px;-fx-text-fill:#ffffff;-fx-line-spacing:6;");
-        desc.setTextAlignment(TextAlignment.CENTER);
-        desc.setAlignment(Pos.CENTER);
-        desc.setWrapText(true);
-        desc.setMaxWidth(900);
-
+        desc.setTextAlignment(TextAlignment.CENTER); desc.setAlignment(Pos.CENTER); desc.setWrapText(true); desc.setMaxWidth(900);
         ImageView againImg = makeEndingImgBtn("/images/menu/menu_start2.png");
         ImageView quitImg  = makeEndingImgBtn("/images/menu/back_to_menu.png");
         againImg.setOnMouseClicked(e -> { AudioManager.getInstance().playAccept(); runOnce(this::startNewGame); });
         quitImg .setOnMouseClicked(e -> { AudioManager.getInstance().playRefuse(); runOnce(this::showMainMenuWithFade); });
-
-        HBox btns = new HBox(32, againImg, quitImg);
-        btns.setAlignment(Pos.CENTER);
+        HBox btns = new HBox(32, againImg, quitImg); btns.setAlignment(Pos.CENTER);
         content.getChildren().addAll(gt, tt, desc, btns);
-
-        // KEY FIX: no ScrollPane
-        StackPane.setAlignment(content, Pos.CENTER);
-        r.getChildren().add(content);
-
-        content.setOpacity(0);
-        setContent(r);
-        FadeTransition ft = new FadeTransition(Duration.millis(600), content);
-        ft.setToValue(1); ft.play();
+        StackPane.setAlignment(content, Pos.CENTER); r.getChildren().add(content);
+        content.setOpacity(0); setContent(r);
+        FadeTransition ft = new FadeTransition(Duration.millis(600), content); ft.setToValue(1); ft.play();
     }
 
     // =========================================================================
@@ -1055,7 +1050,11 @@ public class GameLauncher extends Application {
                 if (eff instanceof SeniorNoteBuff snb) snb.setDaysRemaining(rem); else eff.setRemainingDuration(rem);
                 player.addEffect(eff);
             }
-        } catch (Exception ignored) { agreedToTerms = hasSavedGame = false; player = null; timeSystem = null; eventManager = null; }
+            gameCallbacks = buildGameCallbacks();   // ← build callbacks after load too
+        } catch (Exception ignored) {
+            agreedToTerms = hasSavedGame = false;
+            player = null; timeSystem = null; eventManager = null; gameCallbacks = null;
+        }
     }
 
     private void persistSave(boolean force) {
@@ -1072,16 +1071,16 @@ public class GameLauncher extends Application {
         if (hasSavedGame && player != null && timeSystem != null && eventManager != null) {
             p.setProperty("day",  String.valueOf(timeSystem.getCurrentDay()));
             p.setProperty("hour", String.valueOf(timeSystem.getCurrentHour()));
-            p.setProperty("energy",       String.valueOf(player.getStat(StatType.ENERGY)));
-            p.setProperty("intelligence",  String.valueOf(player.getStat(StatType.INTELLIGENCE)));
-            p.setProperty("mood",          String.valueOf(player.getStat(StatType.MOOD)));
-            p.setProperty("progExam1Score",String.valueOf(progExam1Score));
-            p.setProperty("mathExam1Score",String.valueOf(mathExam1Score));
-            p.setProperty("progExam2Score",String.valueOf(progExam2Score));
-            p.setProperty("mathExam2Score",String.valueOf(mathExam2Score));
-            p.setProperty("eventsToday",        String.valueOf(eventManager.getEventsToday()));
-            p.setProperty("progExamTakenToday", String.valueOf(progExamTakenToday));
-            p.setProperty("mathExamTakenToday", String.valueOf(mathExamTakenToday));
+            p.setProperty("energy",        String.valueOf(player.getStat(StatType.ENERGY)));
+            p.setProperty("intelligence",   String.valueOf(player.getStat(StatType.INTELLIGENCE)));
+            p.setProperty("mood",           String.valueOf(player.getStat(StatType.MOOD)));
+            p.setProperty("progExam1Score", String.valueOf(progExam1Score));
+            p.setProperty("mathExam1Score", String.valueOf(mathExam1Score));
+            p.setProperty("progExam2Score", String.valueOf(progExam2Score));
+            p.setProperty("mathExam2Score", String.valueOf(mathExam2Score));
+            p.setProperty("eventsToday",         String.valueOf(eventManager.getEventsToday()));
+            p.setProperty("progExamTakenToday",  String.valueOf(progExamTakenToday));
+            p.setProperty("mathExamTakenToday",  String.valueOf(mathExamTakenToday));
             List<StatusEffect> effs = player.getActiveEffects();
             p.setProperty("effectsCount", String.valueOf(effs.size()));
             for (int i = 0; i < effs.size(); i++) {

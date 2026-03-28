@@ -2,6 +2,7 @@ package com.savemygpa.ui;
 
 import com.savemygpa.config.GameConfig;
 import com.savemygpa.config.StatConfig;
+import com.savemygpa.util.GameCallbacks;
 import javafx.animation.*;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Pos;
@@ -21,18 +22,13 @@ public class CoworkingUI {
     private static final double BTN_CANCEL_W = 200;
     private static final double CARD_W       = 520;
 
-    public interface Callbacks {
-        void onRelax();
-        void onStudy();
-        void onBack();
-    }
-
-    private final Callbacks cb;
-    private final StackPane sceneRoot;
+    private final GameCallbacks cb;
+    private final StackPane     sceneRoot;
     private boolean showing = false;
     private TooltipOverlay tooltip;
 
-    public CoworkingUI(StackPane sceneRoot, Callbacks cb) {
+    // ── Constructor now takes GameCallbacks ───────────────────────────────────
+    public CoworkingUI(StackPane sceneRoot, GameCallbacks cb) {
         this.sceneRoot = sceneRoot;
         this.cb = cb;
     }
@@ -95,7 +91,7 @@ public class CoworkingUI {
 
         ImageView studyBtn  = makeBtn(BTN_STUDY,  BTN_ACTION_W, "📖 Review (ทบทวน)", studyTip, () -> dismiss(overlay, cb::onStudy));
         ImageView relaxBtn  = makeBtn(BTN_RELAX,  BTN_ACTION_W, "😌 Relax (พักผ่อน)", relaxTip, () -> dismiss(overlay, cb::onRelax));
-        ImageView cancelBtn = makeBtn(BTN_CANCEL, BTN_CANCEL_W, null, null,            () -> dismiss(overlay, cb::onBack));
+        ImageView cancelBtn = makeBtn(BTN_CANCEL, BTN_CANCEL_W, null,                  null,     () -> dismiss(overlay, cb::onBack));
 
         VBox btnStack = new VBox(16, studyBtn, relaxBtn, cancelBtn);
         btnStack.setAlignment(Pos.CENTER);

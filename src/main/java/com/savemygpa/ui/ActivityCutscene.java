@@ -106,7 +106,6 @@ public class ActivityCutscene {
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: #000000;");
         overlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        // Bind to scene root so the dim covers the full window at any size
         overlay.prefWidthProperty().bind(sceneRoot.widthProperty());
         overlay.prefHeightProperty().bind(sceneRoot.heightProperty());
         overlay.setOpacity(0);

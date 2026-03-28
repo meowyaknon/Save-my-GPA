@@ -2,6 +2,7 @@ package com.savemygpa.ui;
 
 import com.savemygpa.config.GameConfig;
 import com.savemygpa.config.StatConfig;
+import com.savemygpa.util.GameCallbacks;
 import javafx.animation.*;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Pos;
@@ -21,18 +22,13 @@ public class BusStopUI {
     private static final double BTN_CANCEL_W = 200;
     private static final double CARD_W       = 520;
 
-    public interface Callbacks {
-        void onKLLC();
-        void onGoHome();
-        void onBack();
-    }
-
-    private final Callbacks cb;
-    private final StackPane sceneRoot;
+    private final GameCallbacks cb;
+    private final StackPane     sceneRoot;
     private boolean showing = false;
     private TooltipOverlay tooltip;
 
-    public BusStopUI(StackPane sceneRoot, Callbacks cb) {
+    // ── Constructor now takes GameCallbacks ───────────────────────────────────
+    public BusStopUI(StackPane sceneRoot, GameCallbacks cb) {
         this.sceneRoot = sceneRoot;
         this.cb = cb;
     }
@@ -92,9 +88,9 @@ public class BusStopUI {
                         "   😊 Mood +10 + เวลาที่เหลือ\n\n" +
                         "⚠️ ไม่สามารถย้อนกลับได้!";
 
-        ImageView kllcBtn   = makeBtn(BTN_KLLC,   BTN_ACTION_W, "🏛 KLLC Library", kllcTip,  () -> dismiss(overlay, cb::onKLLC));
-        ImageView homeBtn   = makeBtn(BTN_HOME,   BTN_ACTION_W, "🏠 กลับบ้าน",     homeTip,  () -> dismiss(overlay, cb::onGoHome));
-        ImageView cancelBtn = makeBtn(BTN_CANCEL, BTN_CANCEL_W, null,               null,     () -> dismiss(overlay, cb::onBack));
+        ImageView kllcBtn   = makeBtn(BTN_KLLC,   BTN_ACTION_W, "🏛 KLLC Library", kllcTip, () -> dismiss(overlay, cb::onKLLC));
+        ImageView homeBtn   = makeBtn(BTN_HOME,   BTN_ACTION_W, "🏠 กลับบ้าน",     homeTip, () -> dismiss(overlay, cb::onGoHome));
+        ImageView cancelBtn = makeBtn(BTN_CANCEL, BTN_CANCEL_W, null,               null,    () -> dismiss(overlay, cb::onBack));
 
         VBox btnStack = new VBox(16, kllcBtn, homeBtn, cancelBtn);
         btnStack.setAlignment(Pos.CENTER);

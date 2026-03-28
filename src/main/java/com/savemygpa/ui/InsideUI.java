@@ -2,9 +2,7 @@ package com.savemygpa.ui;
 
 import com.savemygpa.config.GameConfig;
 import com.savemygpa.config.StatConfig;
-import com.savemygpa.core.TimeSystem;
-import com.savemygpa.event.EventManager;
-import com.savemygpa.player.Player;
+import com.savemygpa.util.GameCallbacks;
 import javafx.animation.*;
 import javafx.geometry.Pos;
 import javafx.scene.effect.ColorAdjust;
@@ -33,26 +31,11 @@ public class InsideUI {
     private static final double COMMON_X     = 870,  COMMON_Y     = 708, COMMON_W     = 1080;
     private static final double BACK_W       = 330,  BACK_RIGHT   = 20,  BACK_TOP     = 560;
 
-    public interface Callbacks {
-        void onClassroom();
-        void onAuditorium();
-        void onCoworking();
-        void onProgExam();
-        void onMathExam();
-        void onBack();
-        void onPause();
-        boolean      isProgExamDay();
-        boolean      isMathExamDay();
-        Player       getPlayer();
-        TimeSystem   getTimeSystem();
-        EventManager getEventManager();
-        OutsideUI    getOutsideUI();
-    }
-
-    private final Callbacks cb;
+    private final GameCallbacks cb;
     private TooltipOverlay tooltip;
 
-    public InsideUI(Callbacks cb) { this.cb = cb; }
+    // ── Constructor now takes GameCallbacks ───────────────────────────────────
+    public InsideUI(GameCallbacks cb) { this.cb = cb; }
 
     // =========================================================================
     // Build
@@ -64,7 +47,7 @@ public class InsideUI {
 
         var bgUrl = getClass().getResource(IT_BG);
         if (bgUrl != null) {
-            ImageView bg = new ImageView(new Image(bgUrl.toExternalForm()));
+            ImageView bg = new ImageView(new javafx.scene.image.Image(bgUrl.toExternalForm()));
             bg.setFitWidth(1920); bg.setFitHeight(1080);
             bg.setPreserveRatio(false); bg.setMouseTransparent(true);
             root.getChildren().add(bg);
@@ -79,7 +62,6 @@ public class InsideUI {
 
         tooltip = new TooltipOverlay(root);
 
-        // ── Tooltip text ─────────────────────────────────────────────────
         String classroomTip =
                 "⏱ ใช้เวลา " + GameConfig.CLASSROOM_TIME_COST + " ชั่วโมง\n\n" +
                         "✅ ได้รับ:\n" +
@@ -120,7 +102,6 @@ public class InsideUI {
                         "🧠 INT สูง = โอกาสคะแนนสูง\n\n" +
                         "⚠️ ทำได้ครั้งเดียวต่อวัน";
 
-        // ── Room buttons ──────────────────────────────────────────────────
         if (cb.isProgExamDay()) {
             addRoomButtons(gameLayer,
                     BTN_CLASSROOM,  CLASSROOM_W,  GLOW_EXAM,       CLASSROOM_X,  CLASSROOM_Y,  cb::onProgExam,   "📝 Programming Exam", progExamTip,
@@ -155,7 +136,7 @@ public class InsideUI {
     }
 
     // =========================================================================
-    // Room buttons (with tooltip params)
+    // Room buttons
     // =========================================================================
     private void addRoomButtons(Pane gl,
                                 String i1, double w1, String g1, double x1, double y1, Runnable a1, String t1, String tb1,
@@ -177,7 +158,7 @@ public class InsideUI {
                              String tipTitle, String tipBody) {
         var url = getClass().getResource(imgPath);
         if (url == null) throw new IllegalStateException("Missing resource: " + imgPath);
-        Image image = new Image(url.toExternalForm());
+        javafx.scene.image.Image image = new javafx.scene.image.Image(url.toExternalForm());
         PixelReader reader = image.getPixelReader();
 
         ImageView iv = new ImageView(image);

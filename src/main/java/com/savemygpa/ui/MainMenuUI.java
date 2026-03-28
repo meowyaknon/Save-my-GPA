@@ -1,5 +1,6 @@
 package com.savemygpa.ui;
 
+import com.savemygpa.util.GameCallbacks;
 import javafx.animation.*;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;
@@ -9,17 +10,8 @@ import javafx.util.Duration;
 
 public class MainMenuUI {
 
-    public interface Callbacks {
-        void onContinue();
-        void onNewGame();
-        void onHowToPlay();
-        void onSettings();
-        void onCredits();
-        void onQuit();
-    }
-
     private final boolean hasSavedGame;
-    private final Callbacks cb;
+    private final GameCallbacks cb;
 
     private static final String BG_PATH      = "/images/menu/menu_no_logo.jpg";
     private static final String LOGO_PATH    = "/images/menu/logo.png";
@@ -34,8 +26,8 @@ public class MainMenuUI {
     private static final double BTN_WIDTH  = 420;
     private static final double LOGO_WIDTH = 1306;
 
-
-    public MainMenuUI(boolean hasSavedGame, Callbacks cb) {
+    // ── Constructor now takes GameCallbacks ───────────────────────────────────
+    public MainMenuUI(boolean hasSavedGame, GameCallbacks cb) {
         this.hasSavedGame = hasSavedGame;
         this.cb = cb;
     }
@@ -44,24 +36,21 @@ public class MainMenuUI {
         StackPane root = new StackPane();
         root.setPrefSize(1920, 1080);
 
-        // ── Background ────────────────────────────────────────────────────────
         ImageView bg = new ImageView(load(BG_PATH));
         bg.setFitWidth(1920);
         bg.setFitHeight(1080);
         bg.setPreserveRatio(false);
         bg.setMouseTransparent(true);
 
-        // ── Logo — sits above the button column ───────────────────────────────
         ImageView logo = buildLogo();
 
-        // ── Button column ─────────────────────────────────────────────────────
         VBox col = new VBox(8);
         col.setAlignment(Pos.CENTER);
 
         java.util.List<ImageView> btns = new java.util.ArrayList<>();
         if (hasSavedGame) btns.add(makeImgBtn(BTN_CONTINUE, cb::onContinue));
-        if (hasSavedGame) btns.add(makeImgBtn(BTN_START2, cb::onNewGame));
-        else btns.add(makeImgBtn(BTN_START, cb::onNewGame));
+        if (hasSavedGame) btns.add(makeImgBtn(BTN_START2,   cb::onNewGame));
+        else              btns.add(makeImgBtn(BTN_START,     cb::onNewGame));
         btns.add(makeImgBtn(BTN_HOW,     cb::onHowToPlay));
         btns.add(makeImgBtn(BTN_SETTING, cb::onSettings));
         btns.add(makeImgBtn(BTN_CREDIT,  cb::onCredits));
@@ -86,7 +75,6 @@ public class MainMenuUI {
             tt.play();
         }
 
-        // ── Vertical layout: logo on top, buttons below ───────────────────────
         VBox layout = new VBox(18, logo, col);
         layout.setAlignment(Pos.CENTER);
         layout.setPadding(new Insets(10));
@@ -95,23 +83,17 @@ public class MainMenuUI {
         return root;
     }
 
-    // ── Logo with wiggle animation (like AcceptanceUI) ────────────────────────
-
     private ImageView buildLogo() {
         ImageView logo = new ImageView(load(LOGO_PATH));
         logo.setFitWidth(LOGO_WIDTH);
         logo.setPreserveRatio(true);
-
-        // Start invisible, fade+slide in before wiggle begins
         logo.setOpacity(0);
         logo.setTranslateY(-50);
 
         FadeTransition fadeIn = new FadeTransition(Duration.millis(500), logo);
         fadeIn.setToValue(1);
-
         TranslateTransition slideIn = new TranslateTransition(Duration.millis(500), logo);
         slideIn.setToY(0);
-
         ParallelTransition entrance = new ParallelTransition(fadeIn, slideIn);
         entrance.setOnFinished(e -> startLogoWiggle(logo));
         entrance.play();
@@ -121,44 +103,31 @@ public class MainMenuUI {
 
     private void startLogoWiggle(ImageView logo) {
         Timeline wiggle = new Timeline(
-                new KeyFrame(Duration.ZERO,
-                        new KeyValue(logo.rotateProperty(), -3, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(480),
-                        new KeyValue(logo.rotateProperty(),  3, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(960),
-                        new KeyValue(logo.rotateProperty(), -3, Interpolator.EASE_BOTH))
+                new KeyFrame(Duration.ZERO,         new KeyValue(logo.rotateProperty(), -3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(480),  new KeyValue(logo.rotateProperty(),  3, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(960),  new KeyValue(logo.rotateProperty(), -3, Interpolator.EASE_BOTH))
         );
         wiggle.setCycleCount(Animation.INDEFINITE);
         wiggle.play();
 
-        // Subtle vertical bob layered on top of the wiggle
         Timeline bob = new Timeline(
-                new KeyFrame(Duration.ZERO,
-                        new KeyValue(logo.translateYProperty(),  0, Interpolator.EASE_BOTH)),
-                new KeyFrame(Duration.millis(700),
-                        new KeyValue(logo.translateYProperty(), -8, Interpolator.EASE_BOTH))
+                new KeyFrame(Duration.ZERO,         new KeyValue(logo.translateYProperty(),  0, Interpolator.EASE_BOTH)),
+                new KeyFrame(Duration.millis(700),  new KeyValue(logo.translateYProperty(), -8, Interpolator.EASE_BOTH))
         );
         bob.setAutoReverse(true);
         bob.setCycleCount(Animation.INDEFINITE);
         bob.play();
     }
 
-    // ── Image button with hover + press effects ────────────────────────────────
-
     private ImageView makeImgBtn(String path, Runnable onClick) {
         ImageView iv = new ImageView(load(path));
         iv.setFitWidth(BTN_WIDTH);
         iv.setPreserveRatio(true);
         iv.setCursor(javafx.scene.Cursor.HAND);
-
         iv.setOnMouseEntered(e -> { iv.setOpacity(0.82); iv.setScaleX(1.04); iv.setScaleY(1.04); });
         iv.setOnMouseExited (e -> { iv.setOpacity(1.00); iv.setScaleX(1.0);  iv.setScaleY(1.0);  });
         iv.setOnMousePressed (e -> { iv.setScaleX(0.95); iv.setScaleY(0.95); });
-        iv.setOnMouseReleased(e -> {
-            iv.setScaleX(1.0); iv.setScaleY(1.0);
-            onClick.run();
-        });
-
+        iv.setOnMouseReleased(e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  onClick.run(); });
         return iv;
     }
 

@@ -1,13 +1,8 @@
 package com.savemygpa.ui;
 
-import com.savemygpa.activity.*;
 import com.savemygpa.audio.AudioManager;
 import com.savemygpa.config.GameConfig;
 import com.savemygpa.config.StatConfig;
-import com.savemygpa.core.TimeSystem;
-import com.savemygpa.event.EventManager;
-import com.savemygpa.event.Location;
-import com.savemygpa.player.Player;
 import com.savemygpa.player.StatType;
 import com.savemygpa.player.effect.StatusEffect;
 import com.savemygpa.player.effect.buff.AuraOfLuckBuff;
@@ -16,6 +11,7 @@ import com.savemygpa.player.effect.buff.SeniorNoteBuff;
 import com.savemygpa.player.effect.debuff.StackOverflowDownDebuff;
 import com.savemygpa.player.effect.debuff.WetFeetDebuff;
 import com.savemygpa.player.effect.debuff.WhyDizzyDebuff;
+import com.savemygpa.util.GameCallbacks;
 import javafx.animation.*;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -57,11 +53,8 @@ public class OutsideUI {
     static final String[] SUCCESS_LINES = { "เยี่ยมมาก! ทำได้แล้ว ✨", "สำเร็จ! เก่งมากเลย!", "ดีมาก สู้ต่อไปนะ!" };
     static final String[] FAIL_LINES    = { "ทำไม่ได้... ต้องเติม stats ก่อน", "ไม่ไหวแล้ว ต้องพักก่อน", "stats ไม่พอ ไปเติมก่อน!" };
 
-    private final Player       player;
-    private final TimeSystem   timeSystem;
-    private final EventManager eventManager;
-    private final Callbacks    cb;
-    private final Random       rng = new Random();
+    private final GameCallbacks cb;
+    private final Random        rng = new Random();
 
     ImageView  playerSprite;
     Label      speechBubbleLabel;
@@ -73,22 +66,11 @@ public class OutsideUI {
 
     private Timeline  idleTimer;
     private StackPane rootPane;
-
     private TooltipOverlay tooltip;
 
-    public interface Callbacks {
-        void onBusStop();
-        void onCanteen();
-        void onITBuilding();
-        void onPause();
-    }
-
-    public OutsideUI(Player player, TimeSystem timeSystem,
-                     EventManager eventManager, Callbacks cb) {
-        this.player       = player;
-        this.timeSystem   = timeSystem;
-        this.eventManager = eventManager;
-        this.cb           = cb;
+    // ── Constructor now takes GameCallbacks ───────────────────────────────────
+    public OutsideUI(GameCallbacks cb) {
+        this.cb = cb;
     }
 
     // =========================================================================
@@ -107,7 +89,6 @@ public class OutsideUI {
         bg.setPreserveRatio(false); bg.setMouseTransparent(true);
         canvas.getChildren().add(bg);
 
-        // ── Map buttons with tooltips ─────────────────────────────────────
         String busTip =
                 "⏱ เดินทางไป KLLC Library หรือกลับบ้าน\n\n" +
                         "📍 ไป KLLC  (" + GameConfig.KLLC_TIME_COST + " ชม.)\n" +
@@ -134,9 +115,9 @@ public class OutsideUI {
                         "   😊 Mood +"  + StatConfig.CANTEEN_MOOD_GAIN + "\n\n" +
                         "❌ ไม่มีเงื่อนไข — กินได้เสมอ";
 
-        StackPane busBtn     = mapBtn(BUS_IMG,     295,  cb::onBusStop,       "🚌 Bus Stop",     busTip);
-        StackPane itBtn      = mapBtn(IT_IMG,      1450, this::doITTransition, "🏫 IT Building",  itTip);
-        StackPane canteenBtn = mapBtn(CANTEEN_IMG, 765,  cb::onCanteen,       "🍽️ Canteen",      canteenTip);
+        StackPane busBtn     = mapBtn(BUS_IMG,     295,  cb::onBusStop,       "🚌 Bus Stop",    busTip);
+        StackPane itBtn      = mapBtn(IT_IMG,      1450, this::doITTransition, "🏫 IT Building", itTip);
+        StackPane canteenBtn = mapBtn(CANTEEN_IMG, 765,  cb::onCanteen,       "🍽️ Canteen",     canteenTip);
 
         AnchorPane.setLeftAnchor(busBtn, 172.0);
         AnchorPane.setTopAnchor(busBtn, 431.0);
@@ -207,9 +188,8 @@ public class OutsideUI {
             -fx-cursor: hand;
         """);
 
-        // ── Effect hover: show detail popup ──────────────────────────────
         effectsLabel.setOnMouseEntered(e -> {
-            List<StatusEffect> effects = player.getActiveEffects();
+            List<StatusEffect> effects = cb.getPlayer().getActiveEffects();
             if (effects.isEmpty()) return;
             StringBuilder sb = new StringBuilder();
             for (StatusEffect eff : effects) {
@@ -261,7 +241,6 @@ public class OutsideUI {
         AnchorPane.setLeftAnchor(statsNode, 10.0);
         statsNode.setMouseTransparent(true);
 
-        // effectsLabel must NOT be mouseTransparent — it handles hover
         AnchorPane.setBottomAnchor(effectsLabel, 330.0);
         AnchorPane.setLeftAnchor(effectsLabel, 16.0);
         effectsLabel.setMouseTransparent(false);
@@ -277,7 +256,7 @@ public class OutsideUI {
     }
 
     // =========================================================================
-    // Map button (now with tooltip params)
+    // Map button
     // =========================================================================
     private StackPane mapBtn(String imgPath, double fitWidth, Runnable onClick,
                              String tipTitle, String tipBody) {
@@ -356,17 +335,17 @@ public class OutsideUI {
     // =========================================================================
     public void refresh() {
         updateClock(); updateEffects(); updateCharacterSprite();
-        if (statsBar != null) statsBar.refresh(player);
+        if (statsBar != null) statsBar.refresh(cb.getPlayer());
     }
 
     private void updateClock() {
-        int idx = Math.max(0, Math.min(10, timeSystem.getTimeLeft()));
+        int idx = Math.max(0, Math.min(10, cb.getTimeSystem().getTimeLeft()));
         clockImage.setImage(loadImgObj(CLOCK_IMGS[idx]));
-        dayLabel.setText("Day " + timeSystem.getCurrentDay());
+        dayLabel.setText("Day " + cb.getTimeSystem().getCurrentDay());
     }
 
     private void updateEffects() {
-        var effects = player.getActiveEffects();
+        var effects = cb.getPlayer().getActiveEffects();
         if (effects.isEmpty()) { effectsLabel.setText("✨ ไม่มี effect"); return; }
         StringBuilder sb = new StringBuilder();
         effects.forEach(ef -> sb.append("• ").append(ef.getName()).append("  "));
@@ -374,7 +353,8 @@ public class OutsideUI {
     }
 
     private void updateCharacterSprite() {
-        int mood = player.getStat(StatType.MOOD), energy = player.getStat(StatType.ENERGY);
+        int mood   = cb.getPlayer().getStat(StatType.MOOD);
+        int energy = cb.getPlayer().getStat(StatType.ENERGY);
         String path;
         if      (energy <= 3)  path = PLAYER_TIRED;
         else if (mood   <= 30) path = PLAYER_BADMOOD;
@@ -431,10 +411,10 @@ public class OutsideUI {
         out.play();
     }
 
-    public void saySuccess()              { say(SUCCESS_LINES[rng.nextInt(SUCCESS_LINES.length)]); }
-    public void sayFail()                 { say(FAIL_LINES[rng.nextInt(FAIL_LINES.length)]); }
-    public void sayFail(String message)   { say(message); }
-    public void sayEvent(String desc)     { say(desc); }
+    public void saySuccess()            { say(SUCCESS_LINES[rng.nextInt(SUCCESS_LINES.length)]); }
+    public void sayFail()               { say(FAIL_LINES[rng.nextInt(FAIL_LINES.length)]); }
+    public void sayFail(String message) { say(message); }
+    public void sayEvent(String desc)   { say(desc); }
 
     private void scheduleIdleSpeech() {
         cancelIdle();
@@ -461,8 +441,9 @@ public class OutsideUI {
     }
 
     private String pickIdleLine() {
-        int mood = player.getStat(StatType.MOOD), energy = player.getStat(StatType.ENERGY);
-        int tLeft = timeSystem.getTimeLeft();
+        int mood   = cb.getPlayer().getStat(StatType.MOOD);
+        int energy = cb.getPlayer().getStat(StatType.ENERGY);
+        int tLeft  = cb.getTimeSystem().getTimeLeft();
         String[] pool;
         if      (tLeft  <= 2)  pool = IDLE_LOW_TIME;
         else if (energy <= 2)  pool = IDLE_TIRED;
