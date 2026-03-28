@@ -4,12 +4,12 @@ import com.savemygpa.player.Player;
 import com.savemygpa.player.StatType;
 import com.savemygpa.player.effect.StatusEffect;
 
-public class NoStackOverflowDebuff extends StatusEffect {
+public class StackOverflowDownDebuff extends StatusEffect {
 
     private static final int INT_PENALTY = 5;
     private static final int MOOD_CAP    = 75;
 
-    public NoStackOverflowDebuff() {
+    public StackOverflowDownDebuff() {
         super(99);
     }
 

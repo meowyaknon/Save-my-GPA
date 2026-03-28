@@ -20,7 +20,6 @@ public class SeniorNoteBuff extends StatusEffect {
     }
 
     public void tickDay(Player player) {
-        // Prevent double-reward if save/load or day-tick repeats before the effect is removed.
         if (daysRemaining <= 0) return;
 
         daysRemaining--;
