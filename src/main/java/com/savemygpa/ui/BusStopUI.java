@@ -1,5 +1,6 @@
 package com.savemygpa.ui;
 
+import com.savemygpa.audio.AudioManager;
 import com.savemygpa.config.GameConfig;
 import com.savemygpa.config.StatConfig;
 import com.savemygpa.util.GameCallbacks;
@@ -90,7 +91,7 @@ public class BusStopUI {
 
         ImageView kllcBtn   = makeBtn(BTN_KLLC,   BTN_ACTION_W, "🏛 KLLC Library", kllcTip, () -> dismiss(overlay, cb::onKLLC));
         ImageView homeBtn   = makeBtn(BTN_HOME,   BTN_ACTION_W, "🏠 กลับบ้าน",     homeTip, () -> dismiss(overlay, cb::onGoHome));
-        ImageView cancelBtn = makeBtn(BTN_CANCEL, BTN_CANCEL_W, null,               null,    () -> dismiss(overlay, cb::onBack));
+        ImageView cancelBtn = makeBtn(BTN_CANCEL, BTN_CANCEL_W, null,               null,    () -> dismissNoCallback(overlay));
 
         VBox btnStack = new VBox(16, kllcBtn, homeBtn, cancelBtn);
         btnStack.setAlignment(Pos.CENTER);
@@ -134,6 +135,15 @@ public class BusStopUI {
             if (callback != null) callback.run();
         });
         ft.play();
+    }
+
+    private void dismissNoCallback(StackPane overlay) {
+        AudioManager.getInstance().playRefuse();
+        if (tooltip != null) { tooltip.dispose(); tooltip = null; }
+        overlay.prefWidthProperty().unbind();
+        overlay.prefHeightProperty().unbind();
+        sceneRoot.getChildren().remove(overlay);
+        showing = false;
     }
 
     private ImageView loadImg(String path) {

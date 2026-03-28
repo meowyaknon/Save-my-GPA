@@ -5,12 +5,6 @@ import com.savemygpa.config.GameConfig;
 import com.savemygpa.config.StatConfig;
 import com.savemygpa.player.StatType;
 import com.savemygpa.player.effect.StatusEffect;
-import com.savemygpa.player.effect.buff.AuraOfLuckBuff;
-import com.savemygpa.player.effect.buff.IndefatigableBuff;
-import com.savemygpa.player.effect.buff.SeniorNoteBuff;
-import com.savemygpa.player.effect.debuff.StackOverflowDownDebuff;
-import com.savemygpa.player.effect.debuff.WetFeetDebuff;
-import com.savemygpa.player.effect.debuff.WhyDizzyDebuff;
 import com.savemygpa.util.GameCallbacks;
 import javafx.animation.*;
 import javafx.geometry.Pos;
@@ -66,9 +60,8 @@ public class OutsideUI {
 
     private Timeline  idleTimer;
     private StackPane rootPane;
-    private TooltipOverlay tooltip;
+    TooltipOverlay tooltip;
 
-    // ── Constructor now takes GameCallbacks ───────────────────────────────────
     public OutsideUI(GameCallbacks cb) {
         this.cb = cb;
     }
@@ -129,9 +122,11 @@ public class OutsideUI {
 
         buildHudNodes();
         addHudToCanvas(canvas);
+        addEffectsLabelToLayer(canvas);
 
         rootPane = new StackPane(canvas);
         tooltip  = new TooltipOverlay(rootPane);
+        rewireEffectsTooltip(rootPane);
 
         rootPane.widthProperty().addListener((obs, oldVal, newVal) -> {
             double scaleX = newVal.doubleValue() / 1920;
@@ -188,19 +183,6 @@ public class OutsideUI {
             -fx-cursor: hand;
         """);
 
-        effectsLabel.setOnMouseEntered(e -> {
-            List<StatusEffect> effects = cb.getPlayer().getActiveEffects();
-            if (effects.isEmpty()) return;
-            StringBuilder sb = new StringBuilder();
-            for (StatusEffect eff : effects) {
-                sb.append("【 ").append(eff.getName()).append(" 】\n");
-                sb.append(effectDescription(eff)).append("\n\n");
-            }
-            if (tooltip != null)
-                tooltip.show("🌟 Active Effects", sb.toString().stripTrailing());
-        });
-        effectsLabel.setOnMouseExited(e -> { if (tooltip != null) tooltip.hide(); });
-
         statsBar = new StatsBarUI();
 
         speechBubbleLabel = new Label("สวัสดี!");
@@ -241,10 +223,6 @@ public class OutsideUI {
         AnchorPane.setLeftAnchor(statsNode, 10.0);
         statsNode.setMouseTransparent(true);
 
-        AnchorPane.setBottomAnchor(effectsLabel, 330.0);
-        AnchorPane.setLeftAnchor(effectsLabel, 16.0);
-        effectsLabel.setMouseTransparent(false);
-
         VBox charStack = new VBox(8, speechBubble, playerSprite);
         charStack.setAlignment(Pos.BOTTOM_CENTER);
         HBox charArea = new HBox(charStack);
@@ -252,7 +230,32 @@ public class OutsideUI {
         AnchorPane.setLeftAnchor(charArea, 610.0);
         charArea.setMouseTransparent(true);
 
-        canvas.getChildren().addAll(clockPanel, effectsLabel, statsNode, charArea);
+        canvas.getChildren().addAll(clockPanel, statsNode, charArea);
+    }
+
+    public void addEffectsLabelToLayer(Pane layer) {
+        AnchorPane.setBottomAnchor(effectsLabel, 330.0);
+        AnchorPane.setLeftAnchor(effectsLabel, 16.0);
+        effectsLabel.setMouseTransparent(false);
+        layer.getChildren().add(effectsLabel);
+    }
+
+    // =========================================================================
+    // Rewire effects tooltip to a new root (called by InsideUI)
+    // =========================================================================
+    public void rewireEffectsTooltip(StackPane newRoot) {
+        tooltip = new TooltipOverlay(newRoot);
+        effectsLabel.setOnMouseEntered(e -> {
+            List<StatusEffect> effects = cb.getPlayer().getActiveEffects();
+            if (effects.isEmpty()) return;
+            StringBuilder sb = new StringBuilder();
+            for (StatusEffect eff : effects) {
+                sb.append("【 ").append(eff.getName()).append(" 】\n");
+                sb.append(eff.getDescription()).append("\n\n");
+            }
+            tooltip.show("🌟 Active Effects", sb.toString().stripTrailing());
+        });
+        effectsLabel.setOnMouseExited(e -> { if (tooltip != null) tooltip.hide(); });
     }
 
     // =========================================================================
@@ -360,41 +363,6 @@ public class OutsideUI {
         else if (mood   <= 30) path = PLAYER_BADMOOD;
         else                   path = PLAYER_NORMAL;
         playerSprite.setImage(loadImgObj(path));
-    }
-
-    // =========================================================================
-    // Effect description for tooltip
-    // =========================================================================
-    private static String effectDescription(StatusEffect eff) {
-        if (eff instanceof SeniorNoteBuff snb)
-            return "📖 บันทึกจากรุ่นพี่\n" +
-                    "🧠 INT +2 จะมาถึงใน " + snb.getDaysRemaining() + " วัน\n" +
-                    "🗑 หมดเองเมื่อ INT ถูกส่งมอบแล้ว";
-        if (eff instanceof AuraOfLuckBuff)
-            return "🍀 โชคลาภเพิ่มขึ้น\n" +
-                    "⚡ Random Event chance x1.5\n" +
-                    "⏳ เหลือ " + eff.getRemainingDuration() + " transitions\n" +
-                    "🗑 หมดเองตามเวลา";
-        if (eff instanceof IndefatigableBuff)
-            return "💪 ไก่ทอดพลัง!\n" +
-                    "🛡 กิจกรรมถัดไปไม่เสีย Energy\n" +
-                    "⏳ เหลือ 1 กิจกรรม\n" +
-                    "🗑 หมดหลังใช้งาน";
-        if (eff instanceof WetFeetDebuff)
-            return "💧 รองเท้าเปียก!\n" +
-                    "⚡ Energy -1 ทุกครั้งที่เปลี่ยนสถานที่\n" +
-                    "🗑 หมดเองเมื่อสิ้นวัน (กลับบ้าน)";
-        if (eff instanceof StackOverflowDownDebuff)
-            return "📡 StackOverflow ล่ม!\n" +
-                    "🧠 INT gain -5 ต่อกิจกรรม\n" +
-                    "😊 Mood cap ≤ 75\n" +
-                    "🗑 รอให้เน็ตกลับมา (random event)";
-        if (eff instanceof WhyDizzyDebuff)
-            return "😵 หัวหมุน!\n" +
-                    "🧠 INT gain -2 ต่อกิจกรรม\n" +
-                    "🗑 เข้าห้องเรียน (random event)";
-        int dur = eff.getRemainingDuration();
-        return "⏳ เหลือ " + (dur >= 99 ? "ยาวนาน" : dur + " turns") + "\n🗑 หมดเองตามเวลา";
     }
 
     // =========================================================================

@@ -34,7 +34,6 @@ public class InsideUI {
     private final GameCallbacks cb;
     private TooltipOverlay tooltip;
 
-    // ── Constructor now takes GameCallbacks ───────────────────────────────────
     public InsideUI(GameCallbacks cb) { this.cb = cb; }
 
     // =========================================================================
@@ -124,8 +123,10 @@ public class InsideUI {
         OutsideUI hud = cb.getOutsideUI();
         if (hud != null) {
             hud.buildHudNodes();
-            hud.addHudToCanvas(hudLayer);
+            hud.addHudToCanvas(hudLayer);   // clock, stats, player sprite, speech bubble go here
+            hud.addEffectsLabelToLayer(gameLayer); // effectsLabel goes into gameLayer (not mouse-transparent)
             hud.refresh();
+            hud.rewireEffectsTooltip(root);
         }
 
         root.getChildren().addAll(gameLayer, hudLayer);

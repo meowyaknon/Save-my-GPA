@@ -23,4 +23,12 @@ public class IndefatigableBuff extends StatusEffect {
     public String getName() {
         return "Indefatigable";
     }
+
+    @Override
+    public String getDescription() {
+        return "💪 ไก่ทอดพลัง!\n" +
+                "🛡 กิจกรรมถัดไปไม่เสีย Energy\n" +
+                "⏳ เหลือ 1 กิจกรรม\n" +
+                "🗑 หมดหลังใช้งาน";
+    }
 }

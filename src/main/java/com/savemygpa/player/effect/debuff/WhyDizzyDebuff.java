@@ -27,5 +27,14 @@ public class WhyDizzyDebuff extends StatusEffect {
     }
 
     @Override
-    public String getName() { return "Why Dizzy?"; }
+    public String getName() {
+        return "Why Dizzy?";
+    }
+
+    @Override
+    public String getDescription() {
+        return "😵 หัวหมุน!\n" +
+                "🧠 INT gain -2 ต่อกิจกรรม\n" +
+                "🗑 เข้าห้องเรียน (random event)";
+    }
 }

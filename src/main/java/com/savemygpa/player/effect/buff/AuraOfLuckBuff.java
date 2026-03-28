@@ -30,4 +30,12 @@ public class AuraOfLuckBuff extends StatusEffect {
     public String getName() {
         return "Aura of Luck";
     }
+
+    @Override
+    public String getDescription() {
+        return "🍀 โชคลาภเพิ่มขึ้น\n" +
+                "⚡ Random Event chance x1.5\n" +
+                "⏳ เหลือ " + getRemainingDuration() + " transitions\n" +
+                "🗑 หมดเองตามเวลา";
+    }
 }

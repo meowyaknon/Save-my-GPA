@@ -28,7 +28,7 @@ public class GameDialog {
     // ── Assets ────────────────────────────────────────────────────────────────
     private static final String POPUP_BG_V     = "/images/popup/big_block_black_V.png";
     private static final String BTN_CONTINUE   = "/images/menu/menu_continue.png";
-    private static final double CARD_W         = 460;
+    private static final double CARD_W         = 520;
     private static final double BTN_CONTINUE_W = 300;
 
     // ── Event image paths (per event name, null = no illustration) ────────────
@@ -49,8 +49,8 @@ public class GameDialog {
             case "ประตูอัตโนมัติไม่เปิด"       -> "/images/event/broken_door.png";
             case "ท่านคณบดีเลี้ยงไอติม"        -> "/images/event/dean_treats.png";
             case "ได้รับ Source Code"           -> "/images/event/source_code.png";
-            case "กองทัพเป็ด"                  -> "/images/event/duck.png";
-            case "น้องเงินทอง"                 -> "/images/event/lucky_dragon.png";
+            case "กองทัพ \"เป็ด\" บุกเลนจักรยาน"                  -> "/images/event/duck.png";
+            case "พรจาก \"น้องเงินทอง\""                 -> "/images/event/lucky_dragon.png";
             case "ฝนตกหนัก"                   -> "/images/event/rain.png";
             default                             -> null;
         };

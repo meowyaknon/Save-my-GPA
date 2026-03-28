@@ -44,4 +44,9 @@ public abstract class StatusEffect {
     }
 
     public abstract String getName();
+
+    public String getDescription() {
+        int dur = getRemainingDuration();
+        return "⏳ เหลือ " + (dur >= 99 ? "ยาวนาน" : dur + " turns") + "\n🗑 หมดเองตามเวลา";
+    }
 }

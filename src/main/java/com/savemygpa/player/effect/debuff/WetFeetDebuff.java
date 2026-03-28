@@ -26,5 +26,14 @@ public class WetFeetDebuff extends StatusEffect {
     }
 
     @Override
-    public String getName() { return "Wet Feet"; }
+    public String getName() {
+        return "Wet Feet";
+    }
+
+    @Override
+    public String getDescription() {
+        return "💧 รองเท้าเปียก!\n" +
+                "⚡ Energy -1 ทุกครั้งที่เปลี่ยนสถานที่\n" +
+                "🗑 หมดเองเมื่อสิ้นวัน (กลับบ้าน)";
+    }
 }

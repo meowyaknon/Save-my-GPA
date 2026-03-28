@@ -1,6 +1,7 @@
 package com.savemygpa.ui;
 
 import com.savemygpa.audio.AudioManager;
+import com.savemygpa.util.GameCallbacks;
 import javafx.animation.FadeTransition;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -21,12 +22,13 @@ public class SettingsUI {
     private static final String TEXT_COLOR = "#3b1a1a";
 
     private final AudioManager audio;
-    private final Callbacks    cb;
+    private final Runnable     onBack;
 
-    public interface Callbacks { void onBack(); }
-
-    public SettingsUI(AudioManager audio, Callbacks cb) {
-        this.audio = audio; this.cb = cb;
+    // GameLauncher passes the exact destination as a Runnable so SettingsUI
+    // never needs to know about screen origins — it just calls onBack.
+    public SettingsUI(AudioManager audio, GameCallbacks ignoredCb, Runnable onBack) {
+        this.audio  = audio;
+        this.onBack = onBack;
     }
 
     public StackPane buildView() {
@@ -68,7 +70,8 @@ public class SettingsUI {
         sliders.setAlignment(Pos.CENTER_LEFT); sliders.setMaxWidth(640);
 
         ImageView backBtn = makeImgBtn(BTN_BACK, BTN_W, () -> {
-            AudioManager.getInstance().playAccept(); cb.onBack();
+            AudioManager.getInstance().playAccept();
+            onBack.run();
         });
 
         inner.getChildren().addAll(title, sep, sliders, backBtn);
@@ -94,7 +97,10 @@ public class SettingsUI {
         pct.setMinWidth(56);
         pct.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:18px;" +
                 "-fx-text-fill:" + TEXT_COLOR + ";-fx-font-weight:bold;");
-        s.valueProperty().addListener((obs, o, n) -> { onChange.accept(n.doubleValue()); pct.setText(pctStr(n.doubleValue())); });
+        s.valueProperty().addListener((obs, o, n) -> {
+            onChange.accept(n.doubleValue());
+            pct.setText(pctStr(n.doubleValue()));
+        });
         HBox row = new HBox(20, lbl, s, pct);
         row.setAlignment(Pos.CENTER_LEFT);
         return row;
@@ -107,8 +113,8 @@ public class SettingsUI {
         if (url == null) return new ImageView();
         ImageView iv = new ImageView(new Image(url.toExternalForm()));
         iv.setFitWidth(width); iv.setPreserveRatio(true); iv.setCursor(javafx.scene.Cursor.HAND);
-        iv.setOnMouseEntered(e -> { iv.setOpacity(0.82); iv.setScaleX(1.04); iv.setScaleY(1.04); });
-        iv.setOnMouseExited (e -> { iv.setOpacity(1.00); iv.setScaleX(1.0);  iv.setScaleY(1.0);  });
+        iv.setOnMouseEntered(e  -> { iv.setOpacity(0.82); iv.setScaleX(1.04); iv.setScaleY(1.04); });
+        iv.setOnMouseExited (e  -> { iv.setOpacity(1.00); iv.setScaleX(1.0);  iv.setScaleY(1.0);  });
         iv.setOnMousePressed (e -> { iv.setScaleX(0.95); iv.setScaleY(0.95); });
         iv.setOnMouseReleased(e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  onClick.run(); });
         return iv;

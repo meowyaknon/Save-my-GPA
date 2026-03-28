@@ -1,5 +1,6 @@
 package com.savemygpa.ui;
 
+import com.savemygpa.audio.AudioManager;
 import com.savemygpa.config.GameConfig;
 import com.savemygpa.config.StatConfig;
 import com.savemygpa.util.GameCallbacks;
@@ -24,13 +25,12 @@ public class CoworkingUI {
 
     private final GameCallbacks cb;
     private final StackPane     sceneRoot;
-    private boolean showing = false;
+    private boolean        showing = false;
     private TooltipOverlay tooltip;
 
-    // ── Constructor now takes GameCallbacks ───────────────────────────────────
     public CoworkingUI(StackPane sceneRoot, GameCallbacks cb) {
         this.sceneRoot = sceneRoot;
-        this.cb = cb;
+        this.cb        = cb;
     }
 
     public void show() {
@@ -89,9 +89,10 @@ public class CoworkingUI {
                         "❌ เสียไป: ไม่มี\n\n" +
                         "🔒 ต้องการ: ไม่มีเงื่อนไข";
 
-        ImageView studyBtn  = makeBtn(BTN_STUDY,  BTN_ACTION_W, "📖 Review (ทบทวน)", studyTip, () -> dismiss(overlay, cb::onStudy));
+        ImageView studyBtn  = makeBtn(BTN_STUDY,  BTN_ACTION_W, "📖 Review (ทบทวน)",  studyTip, () -> dismiss(overlay, cb::onStudy));
         ImageView relaxBtn  = makeBtn(BTN_RELAX,  BTN_ACTION_W, "😌 Relax (พักผ่อน)", relaxTip, () -> dismiss(overlay, cb::onRelax));
-        ImageView cancelBtn = makeBtn(BTN_CANCEL, BTN_CANCEL_W, null,                  null,     () -> dismiss(overlay, cb::onBack));
+        // Cancel → go back to IT building, not to the outside map
+        ImageView cancelBtn = makeBtn(BTN_CANCEL, BTN_CANCEL_W, null, null,             () -> dismissNoCallback(overlay));
 
         VBox btnStack = new VBox(16, studyBtn, relaxBtn, cancelBtn);
         btnStack.setAlignment(Pos.CENTER);
@@ -135,6 +136,15 @@ public class CoworkingUI {
             if (callback != null) callback.run();
         });
         ft.play();
+    }
+
+    private void dismissNoCallback(StackPane overlay) {
+        AudioManager.getInstance().playRefuse();
+        if (tooltip != null) { tooltip.dispose(); tooltip = null; }
+        overlay.prefWidthProperty().unbind();
+        overlay.prefHeightProperty().unbind();
+        sceneRoot.getChildren().remove(overlay);
+        showing = false;
     }
 
     private ImageView loadImg(String path) {

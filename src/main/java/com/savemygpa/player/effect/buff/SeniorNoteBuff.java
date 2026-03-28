@@ -21,11 +21,10 @@ public class SeniorNoteBuff extends StatusEffect {
 
     public void tickDay(Player player) {
         if (daysRemaining <= 0) return;
-
         daysRemaining--;
         if (daysRemaining <= 0) {
             player.changeStat(StatType.INTELLIGENCE, INT_REWARD);
-            System.out.println("[Buff] Senior's Note activated — int +4!");
+            System.out.println("[Buff] Senior's Note activated — int +2!");
             daysRemaining = 0;
         }
     }
@@ -56,5 +55,12 @@ public class SeniorNoteBuff extends StatusEffect {
     @Override
     public int getRemainingDuration() {
         return getDaysRemaining();
+    }
+
+    @Override
+    public String getDescription() {
+        return "📖 บันทึกจากรุ่นพี่\n" +
+                "🧠 INT +2 จะมาถึงใน " + getDaysRemaining() + " วัน\n" +
+                "🗑 หมดเองเมื่อ INT ถูกส่งมอบแล้ว";
     }
 }

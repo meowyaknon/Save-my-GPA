@@ -41,20 +41,20 @@ public class GameLauncher extends Application {
 
     private static final int BASE_W = 1920, BASE_H = 1080;
 
-    private OutsideUI    outsideUI;
-    private GameCallbacks gameCallbacks;   // ← single shared instance
-    private StackPane pauseOverlay = null;
-    private boolean pauseOpen    = false;
-    private boolean actionLocked = false;
+    private OutsideUI     outsideUI;
+    private GameCallbacks gameCallbacks;
+    private StackPane     pauseOverlay = null;
+    private boolean       pauseOpen    = false;
+    private boolean       actionLocked = false;
 
-    // Pause origin tracked separately since onPause() behaviour differs
-    private enum PauseOrigin { OUTSIDE, IT_BUILDING }
-    private PauseOrigin pauseOrigin = PauseOrigin.OUTSIDE;
+    // Tracks which map screen the player is currently on
+    private enum ScreenOrigin { MAIN_MENU, OUTSIDE, IT_BUILDING }
+    private ScreenOrigin screenOrigin = ScreenOrigin.MAIN_MENU;
 
     private boolean hasSavedGame = false, agreedToTerms = false;
     private int progExam1Score = 0, mathExam1Score = 0, progExam2Score = 0, mathExam2Score = 0;
-    private boolean progExamTakenToday  = false;
-    private boolean mathExamTakenToday  = false;
+    private boolean progExamTakenToday   = false;
+    private boolean mathExamTakenToday   = false;
     private boolean examNoticeShownToday = false;
 
     private static final int    TOTAL_DAYS     = 14;
@@ -68,14 +68,50 @@ public class GameLauncher extends Application {
     static final String TEXT_COLOR = "#3b1a1a";
 
     private static final String[] ENDING_A_SCENES = {
-            "/images/endings/endingA_scene1.jpg",
-            "/images/endings/endingA_scene2.jpg",
-            "/images/endings/endingA_scene3.jpg",
-            "/images/endings/endingA_scene4.jpg",
+            "/images/endings/A/1.jpg",
+            "/images/endings/A/2.jpg",
+            "/images/endings/A/3.jpg",
+            "/images/endings/A/4.jpg",
+            "/images/endings/A/5.jpg",
+            "/images/endings/A/6.jpg",
+            "/images/endings/A/7.jpg",
+            "/images/endings/A/8.jpg",
+    };
+    private static final String[] ENDING_B_SCENES = {
+            "/images/endings/B/1.jpg",
+            "/images/endings/B/2.jpg",
+            "/images/endings/B/3.jpg",
+            "/images/endings/B/4.jpg",
+            "/images/endings/B/5.jpg",
+            "/images/endings/B/6.jpg",
+    };
+    private static final String[] ENDING_C_SCENES = {
+            "/images/endings/C/1.JPG",
+            "/images/endings/C/2.JPG",
+            "/images/endings/C/3.JPG",
+            "/images/endings/C/4.JPG",
+            "/images/endings/C/5.JPG",
+            "/images/endings/C/6.JPG",
+    };
+    private static final String[] ENDING_D_SCENES = {
+            "/images/endings/D/1.JPG",
+            "/images/endings/D/2.JPG",
+            "/images/endings/D/3.JPG",
+            "/images/endings/D/4.JPG",
+            "/images/endings/D/5.JPG",
+            "/images/endings/D/6.JPG",
+    };
+    private static final String[] ENDING_F_SCENES = {
+            "/images/endings/F/1.JPG",
+            "/images/endings/F/2.JPG",
+            "/images/endings/F/3.JPG",
+            "/images/endings/F/4.JPG",
+            "/images/endings/F/5.JPG",
+            "/images/endings/F/6.JPG",
     };
 
     // =========================================================================
-    // Unified callbacks — built once, reused everywhere
+    // Unified callbacks — built ONCE in start(), never rebuilt
     // =========================================================================
     private GameCallbacks buildGameCallbacks() {
         return new GameCallbacks() {
@@ -92,8 +128,8 @@ public class GameLauncher extends Application {
             @Override public TimeSystem   getTimeSystem()   { return timeSystem; }
             @Override public EventManager getEventManager() { return eventManager; }
             @Override public OutsideUI    getOutsideUI()    { return outsideUI; }
-            @Override public void onClassroom()  { AudioManager.getInstance().playAccept(); performWithCutscene(new ClassroomActivity(),       Location.CLASSROOM,  GameLauncher.this::showITBuilding); }
-            @Override public void onAuditorium() { AudioManager.getInstance().playAccept(); performWithCutscene(new AuditoriumActivity(),      Location.AUDITORIUM, GameLauncher.this::showITBuilding); }
+            @Override public void onClassroom()  { AudioManager.getInstance().playAccept(); performWithCutscene(new ClassroomActivity(),      Location.CLASSROOM,  GameLauncher.this::showITBuilding); }
+            @Override public void onAuditorium() { AudioManager.getInstance().playAccept(); performWithCutscene(new AuditoriumActivity(),     Location.AUDITORIUM, GameLauncher.this::showITBuilding); }
             @Override public void onCoworking()  { AudioManager.getInstance().playAccept(); showCoworkingSpace(); }
             @Override public void onProgExam()   { AudioManager.getInstance().playAccept(); doProgExam(); }
             @Override public void onMathExam()   { AudioManager.getInstance().playAccept(); doMathExam(); }
@@ -114,7 +150,6 @@ public class GameLauncher extends Application {
             @Override public void onContinue()  { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showGameplayWithFadeIn); }
             @Override public void onNewGame()   { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::startNewGame); }
             @Override public void onHowToPlay() { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showHowToPlay); }
-            @Override public void onSettings()  { AudioManager.getInstance().playAccept(); runOnce(() -> showSettings(GameLauncher.this::showMainMenuWithFade)); }
             @Override public void onCredits()   { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showCredits); }
             @Override public void onQuit()      { AudioManager.getInstance().playRefuse(); stage.close(); }
 
@@ -128,16 +163,29 @@ public class GameLauncher extends Application {
                     PauseMenuUI.dismiss(root, pauseOverlay, () -> { pauseOverlay = null; pauseOpen = false; showMainMenuWithFade(); });
             }
 
-            // ── Shared ────────────────────────────────────────────────────────
-            // onBack() navigates from IT building back to outside
+            // ── Shared — fully context-aware via screenOrigin ─────────────────
+
             @Override public void onBack() {
                 if (actionLocked) return;
                 AudioManager.getInstance().playRefuse();
                 actionLocked = true;
                 ActivityCutscene.transition(root, () -> { actionLocked = false; showGameplay(); }, null);
             }
-            // onPause() uses current pauseOrigin to restore to the right screen
-            @Override public void onPause() { showPause(pauseOrigin); }
+
+            @Override public void onSettings() {
+                AudioManager.getInstance().playAccept();
+                if (pauseOverlay != null) {
+                    PauseMenuUI.dismiss(root, pauseOverlay, () -> {
+                        pauseOverlay = null;
+                        pauseOpen    = false;
+                        showSettings();
+                    });
+                } else {
+                    runOnce(GameLauncher.this::showSettings);
+                }
+            }
+
+            @Override public void onPause() { showPause(); }
         };
     }
 
@@ -159,6 +207,7 @@ public class GameLauncher extends Application {
             else                 outsideUI.sayFail();
         }
     }
+
     private void speakEvent(String name) {
         if (outsideUI != null) outsideUI.sayEvent(name);
     }
@@ -184,6 +233,7 @@ public class GameLauncher extends Application {
         scene.heightProperty().addListener((o, ov, nv) -> applyScale());
         stage.show();
         loadFromDisk();
+        gameCallbacks = buildGameCallbacks(); // built ONCE, never rebuilt
         AudioManager.getInstance().playMusic(AudioManager.Music.INTRO);
         if (agreedToTerms) showMainMenuWithFade(); else showIntroSequence();
     }
@@ -226,7 +276,7 @@ public class GameLauncher extends Application {
         hasSavedGame = true;
         progExam1Score = mathExam1Score = progExam2Score = mathExam2Score = 0;
         progExamTakenToday = mathExamTakenToday = examNoticeShownToday = false;
-        gameCallbacks = buildGameCallbacks();   // ← build fresh callbacks
+        // gameCallbacks already exists — no rebuild needed
         persistSave(true);
         showNewGameIntro();
     }
@@ -446,63 +496,11 @@ public class GameLauncher extends Application {
         return true;
     }
 
-    // ── Pause ─────────────────────────────────────────────────────────────────
-    private void showPause(PauseOrigin origin) {
+    // ── Pause — uses gameCallbacks directly, no anonymous shim ───────────────
+    private void showPause() {
         if (pauseOpen) return;
         pauseOpen = true;
-        pauseOrigin = origin;
-        // Settings from pause needs to know which screen to return to
-        // so we temporarily override onSettings in a local wrapper
-        GameCallbacks pauseCallbacks = new GameCallbacks() {
-            // Delegate everything to gameCallbacks
-            @Override public void onBusStop()    { gameCallbacks.onBusStop(); }
-            @Override public void onCanteen()    { gameCallbacks.onCanteen(); }
-            @Override public void onITBuilding() { gameCallbacks.onITBuilding(); }
-            @Override public void onClassroom()  { gameCallbacks.onClassroom(); }
-            @Override public void onAuditorium() { gameCallbacks.onAuditorium(); }
-            @Override public void onCoworking()  { gameCallbacks.onCoworking(); }
-            @Override public void onProgExam()   { gameCallbacks.onProgExam(); }
-            @Override public void onMathExam()   { gameCallbacks.onMathExam(); }
-            @Override public boolean      isProgExamDay()   { return gameCallbacks.isProgExamDay(); }
-            @Override public boolean      isMathExamDay()   { return gameCallbacks.isMathExamDay(); }
-            @Override public Player       getPlayer()       { return gameCallbacks.getPlayer(); }
-            @Override public TimeSystem   getTimeSystem()   { return gameCallbacks.getTimeSystem(); }
-            @Override public EventManager getEventManager() { return gameCallbacks.getEventManager(); }
-            @Override public OutsideUI    getOutsideUI()    { return gameCallbacks.getOutsideUI(); }
-            @Override public void onKLLC()    { gameCallbacks.onKLLC(); }
-            @Override public void onGoHome()  { gameCallbacks.onGoHome(); }
-            @Override public void onRelax()   { gameCallbacks.onRelax(); }
-            @Override public void onStudy()   { gameCallbacks.onStudy(); }
-            @Override public void onAccept()  { gameCallbacks.onAccept(); }
-            @Override public void onRefuse()  { gameCallbacks.onRefuse(); }
-            @Override public void onContinue()  { gameCallbacks.onContinue(); }
-            @Override public void onNewGame()   { gameCallbacks.onNewGame(); }
-            @Override public void onHowToPlay() { gameCallbacks.onHowToPlay(); }
-            @Override public void onCredits()   { gameCallbacks.onCredits(); }
-            @Override public void onQuit()      { gameCallbacks.onQuit(); }
-            @Override public void onBack()      { gameCallbacks.onBack(); }
-            @Override public void onPause()     { gameCallbacks.onPause(); }
-            @Override public void onResume() {
-                if (pauseOverlay != null)
-                    PauseMenuUI.dismiss(root, pauseOverlay, () -> { pauseOverlay = null; pauseOpen = false; });
-            }
-            @Override public void onMainMenu() {
-                if (pauseOverlay != null)
-                    PauseMenuUI.dismiss(root, pauseOverlay, () -> { pauseOverlay = null; pauseOpen = false; showMainMenuWithFade(); });
-            }
-            // Settings returns to the correct screen based on pause origin
-            @Override public void onSettings() {
-                AudioManager.getInstance().playAccept();
-                if (pauseOverlay != null)
-                    PauseMenuUI.dismiss(root, pauseOverlay, () -> {
-                        pauseOverlay = null; pauseOpen = false;
-                        showSettings(origin == PauseOrigin.OUTSIDE
-                                ? GameLauncher.this::showGameplay
-                                : GameLauncher.this::showITBuilding);
-                    });
-            }
-        };
-        PauseMenuUI pauseUI = new PauseMenuUI(root, pauseCallbacks);
+        PauseMenuUI pauseUI = new PauseMenuUI(root, gameCallbacks);
         pauseOverlay = pauseUI.buildView();
         root.getChildren().add(pauseOverlay);
     }
@@ -547,8 +545,6 @@ public class GameLauncher extends Application {
     }
 
     private void showAgreement() {
-        // Build callbacks for acceptance screen (needs gameCallbacks — build a temp one if null)
-        if (gameCallbacks == null) gameCallbacks = buildGameCallbacks();
         AudioManager.getInstance().playMusic(AudioManager.Music.ACCEPTANCE);
         AcceptanceUI ui = new AcceptanceUI(gameCallbacks);
         javafx.scene.Node av = ui.buildView();
@@ -560,9 +556,10 @@ public class GameLauncher extends Application {
     private void fadeOutThenRun(java.util.function.Consumer<Void> then) { then.accept(null); }
 
     private void showMainMenuWithFade() {
-        if (gameCallbacks == null) gameCallbacks = buildGameCallbacks();
         AudioManager.getInstance().playMusic(AudioManager.Music.MAIN_MENU);
-        actionLocked = false; pauseOpen = false;
+        actionLocked = false;
+        pauseOpen    = false;
+        screenOrigin = ScreenOrigin.MAIN_MENU; // ← track we are on main menu
         MainMenuUI ui = new MainMenuUI(hasSavedGame, gameCallbacks);
         javafx.scene.Node mv = ui.buildView();
         mv.setOpacity(0); setContent(mv);
@@ -570,9 +567,18 @@ public class GameLauncher extends Application {
         ft.setFromValue(0); ft.setToValue(1); ft.play();
     }
 
-    private void showSettings(Runnable onBack) {
-        ActivityCutscene.transition(root, () -> setContent(new SettingsUI(AudioManager.getInstance(),
-                () -> ActivityCutscene.transition(root, onBack, null)).buildView()), null);
+    private void showSettings() {
+        ScreenOrigin returnTo = screenOrigin;
+        screenOrigin = ScreenOrigin.MAIN_MENU;
+
+        SettingsUI ui = new SettingsUI(AudioManager.getInstance(), gameCallbacks, () -> {
+            switch (returnTo) {
+                case MAIN_MENU   -> ActivityCutscene.transition(root, GameLauncher.this::showMainMenuWithFade, null);
+                case OUTSIDE     -> ActivityCutscene.transition(root, GameLauncher.this::showGameplay, null);
+                case IT_BUILDING -> ActivityCutscene.transition(root, GameLauncher.this::showITBuilding, null);
+            }
+        });
+        ActivityCutscene.transition(root, () -> setContent(ui.buildView()), null);
     }
 
     private void showHowToPlay() {
@@ -597,7 +603,7 @@ public class GameLauncher extends Application {
 
     private void showGameplay() {
         if (isGameOver()) { showEnding(); return; }
-        pauseOrigin = PauseOrigin.OUTSIDE;   // ← update origin whenever we enter outside
+        screenOrigin = ScreenOrigin.OUTSIDE;
         AudioManager.getInstance().playMusic(AudioManager.Music.OUTSIDE);
         outsideUI = new OutsideUI(gameCallbacks);
         setContent(outsideUI.buildView());
@@ -630,7 +636,7 @@ public class GameLauncher extends Application {
     }
 
     private void showITBuilding() {
-        pauseOrigin = PauseOrigin.IT_BUILDING;   // ← update origin whenever we enter IT building
+        screenOrigin = ScreenOrigin.IT_BUILDING; // ← track we are in IT building
         AudioManager.getInstance().playMusic(AudioManager.Music.INSIDE);
         eventManager.triggerVisit(player, timeSystem, Location.IT_BUILDING);
         if (outsideUI == null) outsideUI = new OutsideUI(gameCallbacks);
@@ -722,28 +728,18 @@ public class GameLauncher extends Application {
         final String fg = grade;
         final int fO = overall;
 
-        if ("A".equals(grade)) {
-            showEndingACinematic(() -> showEndingResult(fg, fO));
-        } else {
-            StackPane black = new StackPane();
-            black.setStyle("-fx-background-color:#000;");
-            black.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-            Label lbl = makeCutsceneLabel();
-            lbl.setOpacity(0);
-            black.getChildren().add(lbl);
-            setContent(black);
-            FadeTransition fi = new FadeTransition(Duration.millis(900), black);
-            fi.setFromValue(0); fi.setToValue(1);
-            fi.setOnFinished(e -> {
-                lbl.setOpacity(1);
-                typeSegments(lbl, endingStory(fg), () -> showEndingResult(fg, fO));
-            });
-            fi.play();
-        }
+        String[] scenes = switch (grade) {
+            case "A" -> ENDING_A_SCENES;
+            case "B" -> ENDING_B_SCENES;
+            case "C" -> ENDING_C_SCENES;
+            case "D" -> ENDING_D_SCENES;
+            default  -> ENDING_F_SCENES;
+        };
+
+        showEndingCinematic(scenes, endingStory(grade), () -> showEndingResult(fg, fO));
     }
 
-    private void showEndingACinematic(Runnable onDone) {
-        String[] lines = endingStory("A");
+    private void showEndingCinematic(String[] scenes, String[] lines, Runnable onDone) {
         StackPane cinPane = new StackPane();
         cinPane.setStyle("-fx-background-color:#000;");
         cinPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
@@ -772,11 +768,16 @@ public class GameLauncher extends Application {
 
         cinPane.getChildren().addAll(bgImg, subtitleBar);
         setContent(cinPane);
-        playEndingAScene(cinPane, bgImg, subtitle, lines, 0, onDone);
+        playEndingScene(cinPane, bgImg, subtitle, scenes, lines, 0, onDone);
     }
 
-    private void playEndingAScene(StackPane cinPane, ImageView bgImg, Label subtitle,
-                                  String[] lines, int index, Runnable onDone) {
+    // Replace showEndingACinematic with a call to showEndingCinematic:
+    private void showEndingACinematic(Runnable onDone) {
+        showEndingCinematic(ENDING_A_SCENES, endingStory("A"), onDone);
+    }
+
+    private void playEndingScene(StackPane cinPane, ImageView bgImg, Label subtitle,
+                                 String[] scenes, String[] lines, int index, Runnable onDone) {
         if (index >= lines.length) {
             FadeTransition fo = new FadeTransition(Duration.millis(800), cinPane);
             fo.setFromValue(1); fo.setToValue(0);
@@ -784,7 +785,7 @@ public class GameLauncher extends Application {
             fo.play();
             return;
         }
-        String imgPath = ENDING_A_SCENES[Math.min(index, ENDING_A_SCENES.length - 1)];
+        String imgPath = scenes[Math.min(index, scenes.length - 1)];
         var imgUrl = getClass().getResource(imgPath);
         if (imgUrl != null) bgImg.setImage(new Image(imgUrl.toExternalForm()));
         FadeTransition bgIn = new FadeTransition(Duration.millis(700), bgImg);
@@ -801,7 +802,7 @@ public class GameLauncher extends Application {
                         FadeTransition bgOut = new FadeTransition(Duration.millis(600), bgImg);
                         bgOut.setToValue(0);
                         bgOut.setOnFinished(be ->
-                                playEndingAScene(cinPane, bgImg, subtitle, lines, index + 1, onDone));
+                                playEndingScene(cinPane, bgImg, subtitle, scenes, lines, index + 1, onDone));
                         bgOut.play();
                     });
                     subOut.play();
@@ -835,15 +836,11 @@ public class GameLauncher extends Application {
         String c = endingColor(grade);
         StackPane r = new StackPane();
         r.setStyle("-fx-background-color:#000;");
-        r.setPrefSize(BASE_W, BASE_H);
-        r.setMinSize(BASE_W, BASE_H);
-        r.setMaxSize(BASE_W, BASE_H);
+        r.setPrefSize(BASE_W, BASE_H); r.setMinSize(BASE_W, BASE_H); r.setMaxSize(BASE_W, BASE_H);
         r.setAlignment(Pos.CENTER);
 
         VBox content = new VBox(28);
-        content.setAlignment(Pos.CENTER);
-        content.setFillWidth(false);
-        content.setMaxWidth(1000);
+        content.setAlignment(Pos.CENTER); content.setFillWidth(false); content.setMaxWidth(1000);
         content.setStyle("-fx-padding:60 0 60 0; -fx-background-color:transparent;");
 
         Text gt = new Text(grade);
@@ -854,47 +851,75 @@ public class GameLauncher extends Application {
 
         Text tt = new Text(endingTitle(grade));
         tt.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 30));
-        tt.setFill(Color.web(c));
-        tt.setTextAlignment(TextAlignment.CENTER);
+        tt.setFill(Color.web(c)); tt.setTextAlignment(TextAlignment.CENTER);
 
         Label sc = new Label(
                 "📊 สรุปผลการสอบ\n\n💻 Programming:  " + progExam1Score + "  |  " + progExam2Score
-                        + "\n📐 Math:              " + mathExam1Score
-                        + "  |  " + mathExam2Score
+                        + "\n📐 Math:              " + mathExam1Score + "  |  " + mathExam2Score
                         + "\n\n📈 คะแนนเฉลี่ยรวม:  " + overall);
         sc.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:20px;-fx-text-fill:#ffffff;-fx-line-spacing:6;");
-        sc.setTextAlignment(TextAlignment.CENTER);
-        sc.setAlignment(Pos.CENTER);
-        sc.setWrapText(true);
-        sc.setMaxWidth(900);
+        sc.setTextAlignment(TextAlignment.CENTER); sc.setAlignment(Pos.CENTER);
+        sc.setWrapText(true); sc.setMaxWidth(900);
 
         ImageView againImg = makeEndingImgBtn("/images/menu/menu_start2.png");
         ImageView quitImg  = makeEndingImgBtn("/images/menu/back_to_menu.png");
         againImg.setOnMouseClicked(e -> { AudioManager.getInstance().playAccept(); runOnce(this::startNewGame); });
         quitImg .setOnMouseClicked(e -> { AudioManager.getInstance().playRefuse(); runOnce(this::showMainMenuWithFade); });
 
-        HBox btns = new HBox(28, againImg, quitImg);
-        btns.setAlignment(Pos.CENTER);
-
+        HBox btns = new HBox(28, againImg, quitImg); btns.setAlignment(Pos.CENTER);
         content.getChildren().addAll(gt, tt, sc, btns);
-        StackPane.setAlignment(content, Pos.CENTER);
-        r.getChildren().add(content);
-
-        content.setOpacity(0);
-        setContent(r);
-        FadeTransition ft = new FadeTransition(Duration.millis(600), content);
-        ft.setToValue(1); ft.play();
+        StackPane.setAlignment(content, Pos.CENTER); r.getChildren().add(content);
+        content.setOpacity(0); setContent(r);
+        FadeTransition ft = new FadeTransition(Duration.millis(600), content); ft.setToValue(1); ft.play();
     }
 
     private String[] endingStory(String g) {
         return switch (g) {
-            case "A" -> new String[]{"ผลสอบออกมาแล้ว...", "เกรด A — ทุกวิชาผ่านด้วยคะแนนสูง", "ทุกหยดเหงื่อที่ทุ่มเทลงไป — มันคุ้มค่า", "แล้วก็ยิ้ม... 'ปี 2 ฉันจะเอา A อีกครั้ง'"};
-            case "B" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด B — ไม่ใช่สิ่งที่หวัง แต่ก็ภูมิใจ","Nobody is perfect — แต่ทุกคนพัฒนาได้"};
-            case "C" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด C — รอดมาได้ แม้จะหนักแค่ไหน","อย่างน้อยก็ผ่าน — สู้ต่อไปนะ!"};
-            case "D" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด D — ผ่านแบบ Probation ฉิวเฉียด","ลมหายใจค่อยๆ นิ่ง — ใจยังก้าวต่อไปได้"};
-            default  -> new String[]{"ผลสอบออกมาแล้ว...","เกรด F — Retired จากคณะ","Hope dies last — ความหวังไม่มีวันตาย"};
+            case "A" -> new String[]{
+                    "ผลสอบออกมาแล้ว...",
+                    "เกรด A — ทุกวิชาผ่านด้วยคะแนนสูงสุด",
+                    "ภาพความทรงจำผ่านมาในหัว... คืนที่นั่งอ่านหนังสือจนฟ้าสาง",
+                    "ติวกับเพื่อนๆ ทำ Quiz ผิดบ้างถูกบ้าง แต่ไม่เคยหยุดพยายาม",
+                    "โทรหาเพื่อนทันทีที่เห็นผล — เสียงหัวเราะดังไปทั่วสาย",
+                    "นัดกินข้าวเลี้ยงฉลอง แล้วก็ไปเดิน Shopping ด้วยกัน",
+                    "ช่วงปิดเทอมนี้ออกไปเที่ยวให้สุด — พักผ่อนให้เต็มที่",
+                    "'ปี 2... ฉันจะเอา A อีกครั้ง' — แล้วก็หลับตาลงด้วยรอยยิ้ม"
+            };
+            case "B" -> new String[]{
+                    "ผลสอบออกมาแล้ว...",
+                    "เกรด B — ไม่ใช่สิ่งที่หวัง แต่ทุกคะแนนมันมีความหมาย",
+                    "เธอนั่งมองผลอยู่สักครู่ แล้วก็ยิ้มอย่างเข้าใจตัวเอง",
+                    "ครั้งหน้าต้องวางแผนให้ดีกว่านี้ เริ่มจากจัดตารางให้ชัด",
+                    "เปิดโน้ตขึ้นมาจดแผนการอ่านของเทอมหน้า ทีละวิชา",
+                    "Nobody is perfect — แต่ทุกคนสามารถพัฒนาได้ และเธอจะทำ"
+            };
+            case "C" -> new String[]{
+                    "ผลสอบออกมาแล้ว...",
+                    "เกรด C — รอดมาได้ แม้จะหนักแค่ไหน",
+                    "โล่งใจ... แต่ก็รู้ว่ามันไม่ใช่ที่สุดของตัวเอง",
+                    "กลับบ้านมาหยิบหนังสือขึ้นมาทวนของเก่าทันที",
+                    "บรรทัดต่อบรรทัด... ตาค่อยๆ หนักขึ้น",
+                    "แล้วก็หลับไปคาหน้าหนังสือ — พรุ่งนี้ค่อยสู้ต่อ"
+            };
+            case "D" -> new String[]{
+                    "ผลสอบออกมาแล้ว...",
+                    "เกรด D — ผ่านแบบ Probation ฉิวเฉียด",
+                    "มือสั่นเล็กน้อยตอนคลิกดูผล — ใจหนักอยู่ในอก",
+                    "น้ำตาไหลออกมาโดยไม่รู้ตัว เงียบไปสักพัก",
+                    "หยิบยาแก้ปวดหัวขึ้นมากิน แล้วนั่งมองเพดาน",
+                    "'ไม่... ฉันต้องทำให้ได้ดีกว่านี้' — เธอพูดกับตัวเองอย่างเด็ดเดี่ยว"
+            };
+            default  -> new String[]{
+                    "ผลสอบออกมาแล้ว...",
+                    "เกรด F — Retired จากคณะ",
+                    "เธออ่านผลซ้ำแล้วซ้ำเล่า หวังว่ามันจะเปลี่ยน แต่มันไม่เปลี่ยน",
+                    "น้ำตาไหล แต่ก็เช็ดออก — ยังมีทางต่อไปเสมอ",
+                    "'ฉันทำดีที่สุดแล้วในตอนนั้น' — เธอกอดตัวเองไว้",
+                    "เปิดหน้า TCAS ขึ้นมา... เริ่มหาคณะใหม่ ลองใหม่อีกครั้ง"
+            };
         };
     }
+
     private String endingTitle(String g) {
         return switch (g) {
             case "A" -> "Ending A  —  All Stars Passed";   case "B" -> "Ending B  —  Nobody Is Perfect";
@@ -916,10 +941,8 @@ public class GameLauncher extends Application {
         StackPane black = new StackPane();
         black.setStyle("-fx-background-color:#000;");
         black.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
-        Label lbl = makeCutsceneLabel();
-        lbl.setOpacity(0);
-        black.getChildren().add(lbl);
-        setContent(black);
+        Label lbl = makeCutsceneLabel(); lbl.setOpacity(0);
+        black.getChildren().add(lbl); setContent(black);
         FadeTransition fi = new FadeTransition(Duration.millis(800), black);
         fi.setFromValue(0); fi.setToValue(1);
         fi.setOnFinished(e -> { lbl.setOpacity(1); typeSegments(lbl, new String[]{
@@ -966,8 +989,7 @@ public class GameLauncher extends Application {
         black.setStyle("-fx-background-color:#000;");
         black.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         Label lbl = makeCutsceneLabel(); lbl.setOpacity(0);
-        black.getChildren().add(lbl);
-        setContent(black);
+        black.getChildren().add(lbl); setContent(black);
         FadeTransition fi = new FadeTransition(Duration.millis(800), black);
         fi.setFromValue(0); fi.setToValue(1);
         fi.setOnFinished(e -> { lbl.setOpacity(1); typeSegments(lbl, new String[]{
@@ -1050,10 +1072,9 @@ public class GameLauncher extends Application {
                 if (eff instanceof SeniorNoteBuff snb) snb.setDaysRemaining(rem); else eff.setRemainingDuration(rem);
                 player.addEffect(eff);
             }
-            gameCallbacks = buildGameCallbacks();   // ← build callbacks after load too
         } catch (Exception ignored) {
             agreedToTerms = hasSavedGame = false;
-            player = null; timeSystem = null; eventManager = null; gameCallbacks = null;
+            player = null; timeSystem = null; eventManager = null;
         }
     }
 
@@ -1114,9 +1135,7 @@ public class GameLauncher extends Application {
     private ImageView makeEndingImgBtn(String resourcePath) {
         var url = getClass().getResource(resourcePath);
         ImageView iv = url != null ? new ImageView(new Image(url.toExternalForm())) : new ImageView();
-        iv.setFitWidth(260);
-        iv.setPreserveRatio(true);
-        iv.setCursor(javafx.scene.Cursor.HAND);
+        iv.setFitWidth(260); iv.setPreserveRatio(true); iv.setCursor(javafx.scene.Cursor.HAND);
         iv.setOnMouseEntered(e -> { iv.setScaleX(1.07); iv.setScaleY(1.07); iv.setOpacity(0.88); });
         iv.setOnMouseExited (e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  iv.setOpacity(1.0);  });
         iv.setOnMousePressed(e -> { iv.setScaleX(0.93); iv.setScaleY(0.93); e.consume(); });
