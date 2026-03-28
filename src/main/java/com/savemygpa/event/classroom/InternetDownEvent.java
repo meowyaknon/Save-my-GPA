@@ -6,7 +6,7 @@ import com.savemygpa.event.EventContext;
 import com.savemygpa.event.Location;
 import com.savemygpa.player.Player;
 import com.savemygpa.player.StatType;
-import com.savemygpa.player.effect.debuff.NoStackOverflowDebuff;
+import com.savemygpa.player.effect.debuff.StackOverflowDownDebuff;
 
 public class InternetDownEvent extends Event {
 
@@ -15,13 +15,13 @@ public class InternetDownEvent extends Event {
     @Override
     public boolean canOccur(Player player, TimeSystem timeSystem, EventContext context) {
         return context.getLocation() == Location.CLASSROOM
-                && !player.hasEffect(NoStackOverflowDebuff.class);
+                && !player.hasEffect(StackOverflowDownDebuff.class);
     }
 
     @Override
     protected void applyEffects(Player player, TimeSystem timeSystem) {
         player.changeStat(StatType.MOOD, -25);
-        player.addEffect(new NoStackOverflowDebuff());
+        player.addEffect(new StackOverflowDownDebuff());
     }
 
     @Override
