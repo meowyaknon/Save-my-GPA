@@ -24,6 +24,9 @@ public class AudioManager {
         // ── Counting Mini Game music ───────────────────────────────────────────
         public static final String COUNTING_ACTIVE = "counting_active";
         public static final String COUNTING_IDLE   = "counting_idle";
+        // ── Captcha Mini Game music ────────────────────────────────────────────
+        public static final String CAPTCHA_ACTIVE = "captcha_active";
+        public static final String CAPTCHA_IDLE   = "captcha_idle";
         private Music() {}
     }
 
@@ -33,8 +36,13 @@ public class AudioManager {
         public static final String REFUSE = "/audio/sfx/cancel.wav";
         public static final String TYPING = "/audio/sfx/typing.mp3";
         public static final String WRONG = "/audio/sfx/wrong.wav";
-        public static final String CORRECT    = "/audio/sfx/correct.mp3";
+        // ── Counting Mini Game SFX ─────────────────────────────────────────────
+        public static final String CORRECT    = "/audio/sfx/correct.mp3"; // use for both minigame
         public static final String EXPLOSION  = "/audio/sfx/explosion_4.wav";
+        // ── Captcha Mini Game SFX ──────────────────────────────────────────────
+        public static final String KEYBOARD_TYPING = "/audio/sfx/keyboard-typing-sound-effect.mp3";
+        public static final String ERROR           = "/audio/sfx/error_CDOxCYm.mp3";
+        public static final String ANSWER_WRONG    = "/audio/sfx/answer-wrong.mp3";
         private Sfx() {}
     }
 
@@ -54,6 +62,9 @@ public class AudioManager {
         // ── Counting Mini Game music ──
         MUSIC_PATHS.put(Music.COUNTING_ACTIVE, "/audio/music/Run! - Toby Fox (128k).wav");
         MUSIC_PATHS.put(Music.COUNTING_IDLE,   "/audio/music/Snowdin Town - Toby Fox (128k) (1).wav");
+        // ── Captcha Mini Game music ───
+        MUSIC_PATHS.put(Music.CAPTCHA_ACTIVE, "/audio/music/Death Report - Toby Fox (128k).wav");
+        MUSIC_PATHS.put(Music.CAPTCHA_IDLE,   "/audio/music/Hotel - Toby Fox (128k).wav");
     }
 
     // ── Volumes ───────────────────────────────────────────────────────────────
@@ -174,7 +185,28 @@ public class AudioManager {
 
     public void playWrong() { playSfx(Sfx.WRONG); }
 
-    public void playCorrect()   { playSfx(Sfx.CORRECT); }
+    public void playCorrect() { playSfx(Sfx.CORRECT); }
 
     public void playExplosion() { playSfx(Sfx.EXPLOSION); }
+
+    public void playKeyboardTyping(){ playSfx(Sfx.KEYBOARD_TYPING);}
+
+    public void playError() { playSfx(Sfx.ERROR);}
+
+    public void playAnswerWrong() { playSfx(Sfx.ANSWER_WRONG);}
+
+    // ── ดึง AudioClip ของ keyboard typing เพื่อ stop ได้จากภายนอก ─────────
+    public javafx.scene.media.AudioClip getKeyboardClip() {
+        try {
+            var url = getClass().getResource(Sfx.KEYBOARD_TYPING);
+            if (url == null) return null;
+            AudioClip clip = sfxCache.computeIfAbsent(
+                Sfx.KEYBOARD_TYPING, k -> new AudioClip(url.toExternalForm()));
+            clip.setVolume(effectiveSfxVol());
+            return clip;
+        } catch (Exception e) {
+            System.err.println("[AudioManager] Failed getKeyboardClip: " + e.getMessage());
+            return null;
+        }
+    }
 }

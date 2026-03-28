@@ -4,6 +4,7 @@ import java.util.Random;
 
 import com.savemygpa.player.Player;
 import com.savemygpa.player.StatType;
+import com.savemygpa.audio.AudioManager;
 
 import javafx.animation.KeyFrame;
 import javafx.animation.KeyValue;
@@ -67,6 +68,7 @@ public class CaptchaMiniGame {
     private final Label     resultLabel      = new Label();
     private final Label     roundTextLabel   = new Label();
     private final Label     countdownLabel   = new Label(); // นับถอยหลังตอนหยุดเวลา
+    private javafx.scene.media.AudioClip keyboardClip = null; // เก็บ clip keyboard เพื่อ stop ได้
 
     public CaptchaMiniGame(Player player, Runnable onFinish) {
         this.player   = player;
@@ -147,14 +149,25 @@ public class CaptchaMiniGame {
         warningLabel.setVisible(false);
         screenImageView.setVisible(true);
 
+        AudioManager.getInstance().setMusicVolume(0.3);
+        AudioManager.getInstance().playMusic(AudioManager.Music.CAPTCHA_IDLE); // เล่นเพลง Hotel
+
         String fileName = currentRound + "round.gif";
         screenImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/" + fileName)));
         characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/before_captcha2.gif")));
+        keyboardClip = AudioManager.getInstance().getKeyboardClip(); // เก็บ ref ไว้เพื่อ stop ได้
+        if (keyboardClip != null) keyboardClip.play(); // SFX ช่วง Intro GIF
 
         PauseTransition p1 = new PauseTransition(Duration.seconds(4));
         p1.setOnFinished(e -> {
             screenImageView.setVisible(false);
             warningLabel.setVisible(true);
+            // เล่นเพลง Death Report
+            AudioManager.getInstance().playMusic(AudioManager.Music.CAPTCHA_ACTIVE);
+            // หยุดเสียง keyboard
+            if (keyboardClip != null) { keyboardClip.stop(); keyboardClip = null; }
+            // SFX ช่วง Warning
+            AudioManager.getInstance().playError();
             characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/met_captcha.png")));
             PauseTransition p2 = new PauseTransition(Duration.seconds(3));
             p2.setOnFinished(ev -> { warningLabel.setVisible(false); prepareExamTask(); });
@@ -215,10 +228,12 @@ public class CaptchaMiniGame {
 
         if (input.equals(currentCaptcha)) {
             totalScore += POINTS_PER_ROUND;
+            AudioManager.getInstance().playCorrect(); // SFX ตอบถูก
             resultLabel.setText("✅ ถูกต้อง! (Enter เพื่อไปต่อ)");
             resultLabel.setStyle("-fx-font-size: 22px; -fx-text-fill: #66bb6a; -fx-font-weight: bold;");
             characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/pass.png")));
         } else {
+            AudioManager.getInstance().playAnswerWrong(); // SFX ตอบผิด
             resultLabel.setText("❌ ผิด! เฉลย: " + currentCaptcha + "  (Enter เพื่อไปต่อ)");
             resultLabel.setStyle("-fx-font-size: 22px; -fx-text-fill: #ef5350; -fx-font-weight: bold;");
             characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/fail.png")));
@@ -309,10 +324,12 @@ public class CaptchaMiniGame {
         if (!input.isEmpty() && input.equals(currentCaptcha)) {
             // พิมพ์ถูกแต่กด Enter ไม่ทัน → ให้คะแนน
             totalScore += POINTS_PER_ROUND;
+            AudioManager.getInstance().playCorrect(); // SFX ตอบถูก
             resultLabel.setText("✅ ถูกต้อง! (หมดเวลาพอดี)");
             resultLabel.setStyle("-fx-font-size: 22px; -fx-text-fill: #66bb6a; -fx-font-weight: bold;");
             characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/pass.png")));
         } else {
+            AudioManager.getInstance().playAnswerWrong(); // SFX ตอบผิด
             resultLabel.setText("⏰ หมดเวลา! เฉลย: " + currentCaptcha + "  (Enter เพื่อไปต่อ)");
             resultLabel.setStyle("-fx-font-size: 22px; -fx-text-fill: #ef5350; -fx-font-weight: bold;");
             characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/fail.png")));
@@ -462,6 +479,8 @@ public class CaptchaMiniGame {
         contentArea.setVisible(false);
         screenImageView.setVisible(false);
 
+        AudioManager.getInstance().playMusic(AudioManager.Music.CAPTCHA_IDLE);
+
         String charImg = (totalScore >= 30)
                 ? "/images/exam/code/pass.png"
                 : "/images/exam/code/fail.png";
@@ -482,7 +501,11 @@ public class CaptchaMiniGame {
 
         Button finishBtn = new Button("ดำเนินการต่อ  ▶");
         finishBtn.setStyle("-fx-font-size: 22px; -fx-background-color: #4fc3f7; -fx-font-weight: bold; -fx-background-radius: 12; -fx-padding: 10 28 10 28;");
-        finishBtn.setOnAction(e -> onFinish.run());
+        finishBtn.setOnAction(e -> {
+            // เปลี่ยน musicVolume กลับเป็น default
+            AudioManager.getInstance().setMusicVolume(0.6);
+            onFinish.run();
+        });
 
         summaryBox.getChildren().addAll(title, score, finishBtn);
         root.getChildren().add(summaryBox);
@@ -496,7 +519,11 @@ public class CaptchaMiniGame {
         p.setOnFinished(e -> {
             isProcessing = false;
             root.setOnKeyPressed(ev -> {
-                if (ev.getCode() == javafx.scene.input.KeyCode.ENTER) onFinish.run();
+                if (ev.getCode() == javafx.scene.input.KeyCode.ENTER)  {
+                    // คืนค่า musicVolume กลับเป็น default ตอนออกจาก CaptchaMiniGame
+                    AudioManager.getInstance().setMusicVolume(0.6);
+                    onFinish.run();
+                }
             });
             root.requestFocus();
         });
