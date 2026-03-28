@@ -2,11 +2,20 @@ package com.savemygpa.ui;
 
 import com.savemygpa.activity.*;
 import com.savemygpa.audio.AudioManager;
+import com.savemygpa.config.GameConfig;
+import com.savemygpa.config.StatConfig;
 import com.savemygpa.core.TimeSystem;
 import com.savemygpa.event.EventManager;
 import com.savemygpa.event.Location;
 import com.savemygpa.player.Player;
 import com.savemygpa.player.StatType;
+import com.savemygpa.player.effect.StatusEffect;
+import com.savemygpa.player.effect.buff.AuraOfLuckBuff;
+import com.savemygpa.player.effect.buff.IndefatigableBuff;
+import com.savemygpa.player.effect.buff.SeniorNoteBuff;
+import com.savemygpa.player.effect.debuff.StackOverflowDownDebuff;
+import com.savemygpa.player.effect.debuff.WetFeetDebuff;
+import com.savemygpa.player.effect.debuff.WhyDizzyDebuff;
 import javafx.animation.*;
 import javafx.geometry.Pos;
 import javafx.scene.control.Label;
@@ -18,6 +27,7 @@ import javafx.scene.paint.Color;
 import javafx.scene.transform.Scale;
 import javafx.util.Duration;
 
+import java.util.List;
 import java.util.Random;
 
 public class OutsideUI {
@@ -61,18 +71,16 @@ public class OutsideUI {
     Label      dayLabel;
     StatsBarUI statsBar;
 
-    private Timeline idleTimer;
-
+    private Timeline  idleTimer;
     private StackPane rootPane;
+
+    private TooltipOverlay tooltip;
 
     public interface Callbacks {
         void onBusStop();
         void onCanteen();
         void onITBuilding();
-        void onGoHome();
         void onPause();
-        void showMessage(String title, String message);
-        boolean doActivity(Activity activity, Location location);
     }
 
     public OutsideUI(Player player, TimeSystem timeSystem,
@@ -83,10 +91,9 @@ public class OutsideUI {
         this.cb           = cb;
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
+    // =========================================================================
     // Build
-    // ═════════════════════════════════════════════════════════════════════════
-
+    // =========================================================================
     public StackPane buildView() {
         AnchorPane canvas = new AnchorPane();
         canvas.setPrefSize(1920, 1080);
@@ -100,15 +107,41 @@ public class OutsideUI {
         bg.setPreserveRatio(false); bg.setMouseTransparent(true);
         canvas.getChildren().add(bg);
 
-        StackPane busBtn     = mapBtn(BUS_IMG,     295,  cb::onBusStop);
-        StackPane itBtn      = mapBtn(IT_IMG,      1450, this::doITTransition);
-        StackPane canteenBtn = mapBtn(CANTEEN_IMG, 765,  cb::onCanteen);
+        // ── Map buttons with tooltips ─────────────────────────────────────
+        String busTip =
+                "⏱ เดินทางไป KLLC Library หรือกลับบ้าน\n\n" +
+                        "📍 ไป KLLC  (" + GameConfig.KLLC_TIME_COST + " ชม.)\n" +
+                        "   ⚡ Energy -" + StatConfig.KLLC_ENERGY_LOSS +
+                        "  😊 Mood -" + StatConfig.KLLC_MOOD_LOSS +
+                        "  🧠 INT +" + StatConfig.KLLC_LOW_INTELLIGENCE_GAIN + "~" + StatConfig.KLLC_HIGH_INTELLIGENCE_GAIN + "\n" +
+                        "   🔒 Energy ≥ " + StatConfig.KLLC_ENERGY_REQUIREMENT +
+                        "  Mood ≥ " + StatConfig.KLLC_MOOD_REQUIREMENT + "\n\n" +
+                        "📍 กลับบ้าน\n" +
+                        "   ⚡ +3+(Mood/40)+เวลาที่เหลือ\n" +
+                        "   😊 +10+เวลาที่เหลือ  —  จบวันทันที";
+
+        String itTip =
+                "เข้าสู่อาคาร IT\n\n" +
+                        "📚 ห้องเรียน (Classroom)\n" +
+                        "🎭 หอประชุม (Auditorium)\n" +
+                        "☕ Coworking Space\n" +
+                        "📝 ห้องสอบ (เฉพาะวันสอบ)";
+
+        String canteenTip =
+                "⏱ ใช้เวลา " + GameConfig.CANTEEN_TIME_COST + " ชั่วโมง\n\n" +
+                        "✅ ได้รับ:\n" +
+                        "   ⚡ Energy +" + StatConfig.CANTEEN_ENERGY_GAIN + "\n" +
+                        "   😊 Mood +"  + StatConfig.CANTEEN_MOOD_GAIN + "\n\n" +
+                        "❌ ไม่มีเงื่อนไข — กินได้เสมอ";
+
+        StackPane busBtn     = mapBtn(BUS_IMG,     295,  cb::onBusStop,       "🚌 Bus Stop",     busTip);
+        StackPane itBtn      = mapBtn(IT_IMG,      1450, this::doITTransition, "🏫 IT Building",  itTip);
+        StackPane canteenBtn = mapBtn(CANTEEN_IMG, 765,  cb::onCanteen,       "🍽️ Canteen",      canteenTip);
+
         AnchorPane.setLeftAnchor(busBtn, 172.0);
         AnchorPane.setTopAnchor(busBtn, 431.0);
-
         AnchorPane.setLeftAnchor(itBtn, 319.0);
         AnchorPane.setTopAnchor(itBtn, 0.0);
-
         AnchorPane.setLeftAnchor(canteenBtn, 1155.0);
         AnchorPane.setTopAnchor(canteenBtn, 786.0);
         canvas.getChildren().addAll(busBtn, itBtn, canteenBtn);
@@ -117,21 +150,19 @@ public class OutsideUI {
         addHudToCanvas(canvas);
 
         rootPane = new StackPane(canvas);
+        tooltip  = new TooltipOverlay(rootPane);
 
         rootPane.widthProperty().addListener((obs, oldVal, newVal) -> {
             double scaleX = newVal.doubleValue() / 1920;
             double scaleY = rootPane.getHeight() / 1080;
             double scaleFactor = Math.min(scaleX, scaleY);
-            scale.setX(scaleFactor);
-            scale.setY(scaleFactor);
+            scale.setX(scaleFactor); scale.setY(scaleFactor);
         });
-
         rootPane.heightProperty().addListener((obs, oldVal, newVal) -> {
             double scaleX = rootPane.getWidth() / 1920;
             double scaleY = newVal.doubleValue() / 1080;
             double scaleFactor = Math.min(scaleX, scaleY);
-            scale.setX(scaleFactor);
-            scale.setY(scaleFactor);
+            scale.setX(scaleFactor); scale.setY(scaleFactor);
         });
 
         rootPane.setFocusTraversable(true);
@@ -143,19 +174,16 @@ public class OutsideUI {
         return rootPane;
     }
 
-    // ── IT Building transition ────────────────────────────────────────────────
     private void doITTransition() {
         FadeTransition fadeOut = new FadeTransition(Duration.millis(300), rootPane);
-        fadeOut.setFromValue(1.0);
-        fadeOut.setToValue(0.0);
+        fadeOut.setFromValue(1.0); fadeOut.setToValue(0.0);
         fadeOut.setOnFinished(e -> cb.onITBuilding());
         fadeOut.play();
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
+    // =========================================================================
     // HUD
-    // ═════════════════════════════════════════════════════════════════════════
-
+    // =========================================================================
     void buildHudNodes() {
         clockImage = new ImageView();
         clockImage.setFitWidth(150); clockImage.setFitHeight(150); clockImage.setPreserveRatio(true);
@@ -176,7 +204,22 @@ public class OutsideUI {
             -fx-font-size: 24px;
             -fx-text-fill: #ffe082;
             -fx-effect: dropshadow(gaussian, black, 3, 0.9, 0, 0);
+            -fx-cursor: hand;
         """);
+
+        // ── Effect hover: show detail popup ──────────────────────────────
+        effectsLabel.setOnMouseEntered(e -> {
+            List<StatusEffect> effects = player.getActiveEffects();
+            if (effects.isEmpty()) return;
+            StringBuilder sb = new StringBuilder();
+            for (StatusEffect eff : effects) {
+                sb.append("【 ").append(eff.getName()).append(" 】\n");
+                sb.append(effectDescription(eff)).append("\n\n");
+            }
+            if (tooltip != null)
+                tooltip.show("🌟 Active Effects", sb.toString().stripTrailing());
+        });
+        effectsLabel.setOnMouseExited(e -> { if (tooltip != null) tooltip.hide(); });
 
         statsBar = new StatsBarUI();
 
@@ -218,9 +261,10 @@ public class OutsideUI {
         AnchorPane.setLeftAnchor(statsNode, 10.0);
         statsNode.setMouseTransparent(true);
 
+        // effectsLabel must NOT be mouseTransparent — it handles hover
         AnchorPane.setBottomAnchor(effectsLabel, 330.0);
         AnchorPane.setLeftAnchor(effectsLabel, 16.0);
-        effectsLabel.setMouseTransparent(true);
+        effectsLabel.setMouseTransparent(false);
 
         VBox charStack = new VBox(8, speechBubble, playerSprite);
         charStack.setAlignment(Pos.BOTTOM_CENTER);
@@ -232,11 +276,11 @@ public class OutsideUI {
         canvas.getChildren().addAll(clockPanel, effectsLabel, statsNode, charArea);
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Map button
-    // ═════════════════════════════════════════════════════════════════════════
-
-    private StackPane mapBtn(String imgPath, double fitWidth, Runnable onClick) {
+    // =========================================================================
+    // Map button (now with tooltip params)
+    // =========================================================================
+    private StackPane mapBtn(String imgPath, double fitWidth, Runnable onClick,
+                             String tipTitle, String tipBody) {
         Image image = loadImgObj(imgPath);
         PixelReader reader = image.getPixelReader();
 
@@ -268,9 +312,9 @@ public class OutsideUI {
             double ivW = iv.getBoundsInLocal().getWidth();
             double ivH = iv.getBoundsInLocal().getHeight();
             if (lx < 0 || ly < 0 || lx > ivW || ly > ivH) return false;
-            double scaleX = image.getWidth()  / ivW;
-            double scaleY = image.getHeight() / ivH;
-            int px = (int)(lx * scaleX), py = (int)(ly * scaleY);
+            double sx = image.getWidth()  / ivW;
+            double sy = image.getHeight() / ivH;
+            int px = (int)(lx * sx), py = (int)(ly * sy);
             if (px < 0 || py < 0 || px >= (int) image.getWidth() || py >= (int) image.getHeight()) return false;
             return ((reader.getArgb(px, py) >> 24) & 0xff) > 10;
         };
@@ -278,18 +322,20 @@ public class OutsideUI {
         wrapper.setOnMouseMoved(e -> {
             if (isOpaque.apply(e.getSceneX(), e.getSceneY())) {
                 if (iv.getEffect() == null) { iv.setEffect(glow); pulse.play(); }
+                if (tooltip != null) tooltip.show(tipTitle, tipBody);
             } else {
                 pulse.stop(); iv.setEffect(null);
+                if (tooltip != null) tooltip.hide();
             }
         });
-        wrapper.setOnMouseExited(e -> { pulse.stop(); iv.setEffect(null); });
-
-        // ── SFX fires immediately on press so there is zero perceived delay ───
+        wrapper.setOnMouseExited(e -> {
+            pulse.stop(); iv.setEffect(null);
+            if (tooltip != null) tooltip.hide();
+        });
         wrapper.setOnMousePressed(e -> {
             if (!isOpaque.apply(e.getSceneX(), e.getSceneY())) return;
             AudioManager.getInstance().playAccept();
         });
-
         wrapper.setOnMouseClicked(e -> {
             if (!isOpaque.apply(e.getSceneX(), e.getSceneY())) return;
             javafx.scene.effect.ColorAdjust flash = new javafx.scene.effect.ColorAdjust();
@@ -299,18 +345,15 @@ public class OutsideUI {
                     new KeyFrame(Duration.ZERO,        new KeyValue(flash.brightnessProperty(), 0.8)),
                     new KeyFrame(Duration.millis(120), new KeyValue(flash.brightnessProperty(), 0.0))
             );
-            // onClick fires after the flash — the SFX has already started above
             flashAnim.setOnFinished(ev -> { iv.setEffect(null); onClick.run(); });
             flashAnim.play();
         });
-
         return wrapper;
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
+    // =========================================================================
     // Refresh
-    // ═════════════════════════════════════════════════════════════════════════
-
+    // =========================================================================
     public void refresh() {
         updateClock(); updateEffects(); updateCharacterSprite();
         if (statsBar != null) statsBar.refresh(player);
@@ -339,10 +382,44 @@ public class OutsideUI {
         playerSprite.setImage(loadImgObj(path));
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
-    // Speech bubble
-    // ═════════════════════════════════════════════════════════════════════════
+    // =========================================================================
+    // Effect description for tooltip
+    // =========================================================================
+    private static String effectDescription(StatusEffect eff) {
+        if (eff instanceof SeniorNoteBuff snb)
+            return "📖 บันทึกจากรุ่นพี่\n" +
+                    "🧠 INT +2 จะมาถึงใน " + snb.getDaysRemaining() + " วัน\n" +
+                    "🗑 หมดเองเมื่อ INT ถูกส่งมอบแล้ว";
+        if (eff instanceof AuraOfLuckBuff)
+            return "🍀 โชคลาภเพิ่มขึ้น\n" +
+                    "⚡ Random Event chance x1.5\n" +
+                    "⏳ เหลือ " + eff.getRemainingDuration() + " transitions\n" +
+                    "🗑 หมดเองตามเวลา";
+        if (eff instanceof IndefatigableBuff)
+            return "💪 ไก่ทอดพลัง!\n" +
+                    "🛡 กิจกรรมถัดไปไม่เสีย Energy\n" +
+                    "⏳ เหลือ 1 กิจกรรม\n" +
+                    "🗑 หมดหลังใช้งาน";
+        if (eff instanceof WetFeetDebuff)
+            return "💧 รองเท้าเปียก!\n" +
+                    "⚡ Energy -1 ทุกครั้งที่เปลี่ยนสถานที่\n" +
+                    "🗑 หมดเองเมื่อสิ้นวัน (กลับบ้าน)";
+        if (eff instanceof StackOverflowDownDebuff)
+            return "📡 StackOverflow ล่ม!\n" +
+                    "🧠 INT gain -5 ต่อกิจกรรม\n" +
+                    "😊 Mood cap ≤ 75\n" +
+                    "🗑 รอให้เน็ตกลับมา (random event)";
+        if (eff instanceof WhyDizzyDebuff)
+            return "😵 หัวหมุน!\n" +
+                    "🧠 INT gain -2 ต่อกิจกรรม\n" +
+                    "🗑 เข้าห้องเรียน (random event)";
+        int dur = eff.getRemainingDuration();
+        return "⏳ เหลือ " + (dur >= 99 ? "ยาวนาน" : dur + " turns") + "\n🗑 หมดเองตามเวลา";
+    }
 
+    // =========================================================================
+    // Speech bubble
+    // =========================================================================
     public void say(String message) {
         cancelIdle();
         speechBubbleLabel.setText(message);
@@ -394,10 +471,9 @@ public class OutsideUI {
         return pool[rng.nextInt(pool.length)];
     }
 
-    // ═════════════════════════════════════════════════════════════════════════
+    // =========================================================================
     // Helpers
-    // ═════════════════════════════════════════════════════════════════════════
-
+    // =========================================================================
     private ImageView loadImg(String path) { return new ImageView(loadImgObj(path)); }
 
     Image loadImgObj(String path) {

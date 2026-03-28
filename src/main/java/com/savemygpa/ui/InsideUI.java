@@ -1,5 +1,7 @@
 package com.savemygpa.ui;
 
+import com.savemygpa.config.GameConfig;
+import com.savemygpa.config.StatConfig;
 import com.savemygpa.core.TimeSystem;
 import com.savemygpa.event.EventManager;
 import com.savemygpa.player.Player;
@@ -48,6 +50,8 @@ public class InsideUI {
     }
 
     private final Callbacks cb;
+    private TooltipOverlay tooltip;
+
     public InsideUI(Callbacks cb) { this.cb = cb; }
 
     // =========================================================================
@@ -58,7 +62,6 @@ public class InsideUI {
         root.setPrefSize(1920, 1080);
         root.setMaxSize(1920, 1080);
 
-        // Background
         var bgUrl = getClass().getResource(IT_BG);
         if (bgUrl != null) {
             ImageView bg = new ImageView(new Image(bgUrl.toExternalForm()));
@@ -74,22 +77,65 @@ public class InsideUI {
         hudLayer.setMaxSize(1920, 1080); hudLayer.setPrefSize(1920, 1080);
         hudLayer.setMouseTransparent(true);
 
-        // Room buttons
+        tooltip = new TooltipOverlay(root);
+
+        // ── Tooltip text ─────────────────────────────────────────────────
+        String classroomTip =
+                "⏱ ใช้เวลา " + GameConfig.CLASSROOM_TIME_COST + " ชั่วโมง\n\n" +
+                        "✅ ได้รับ:\n" +
+                        "   🧠 INT +" + StatConfig.CLASSROOM_LOW_INTELLIGENCE_GAIN + "~" + StatConfig.CLASSROOM_HIGH_INTELLIGENCE_GAIN + "\n\n" +
+                        "❌ เสียไป:\n" +
+                        "   ⚡ Energy -" + StatConfig.CLASSROOM_ENERGY_LOSS + "\n" +
+                        "   😊 Mood -"   + StatConfig.CLASSROOM_MOOD_LOSS + "\n\n" +
+                        "🔒 ต้องการ:\n" +
+                        "   ⚡ Energy ≥ " + StatConfig.CLASSROOM_ENERGY_REQUIREMENT + "\n" +
+                        "   😊 Mood ≥ "   + StatConfig.CLASSROOM_MOOD_REQUIREMENT;
+
+        String auditoriumTip =
+                "⏱ ใช้เวลา " + GameConfig.AUDITORIUM_TIME_COST + " ชั่วโมง\n\n" +
+                        "✅ ได้รับ:\n" +
+                        "   😊 Mood +" + StatConfig.AUDITORIUM_MOOD_GAIN + "\n\n" +
+                        "❌ เสียไป:\n" +
+                        "   ⚡ Energy -" + StatConfig.AUDITORIUM_ENERGY_LOSS + "\n\n" +
+                        "🔒 ต้องการ:\n" +
+                        "   ⚡ Energy ≥ " + StatConfig.AUDITORIUM_ENERGY_REQUIREMENT;
+
+        String coworkingTip =
+                "เลือกกิจกรรมใน Coworking Space\n\n" +
+                        "📖 Review (" + GameConfig.REVIEW_TIME_COST + " ชม.)\n" +
+                        "   🧠 INT +" + StatConfig.REVIEW_LOW_INTELLIGENCE_GAIN + "~" + StatConfig.REVIEW_HIGH_INTELLIGENCE_GAIN +
+                        "  ⚡-" + StatConfig.REVIEW_ENERGY_LOSS + "  😊-" + StatConfig.REVIEW_MOOD_LOSS + "\n\n" +
+                        "😌 Relax (" + GameConfig.RELAX_TIME_COST + " ชม.)\n" +
+                        "   ⚡ Energy +" + StatConfig.RELAX_ENERGY_GAIN + "  😊 Mood +" + StatConfig.RELAX_MOOD_GAIN;
+
+        String progExamTip =
+                "⏱ ใช้เวลา " + GameConfig.EXAM_TIME_COST + " ชั่วโมง\n\n" +
+                        "🎮 Mini-game: Captcha challenge\n" +
+                        "🧠 INT สูง = โอกาสคะแนนสูง\n\n" +
+                        "⚠️ ทำได้ครั้งเดียวต่อวัน";
+
+        String mathExamTip =
+                "⏱ ใช้เวลา " + GameConfig.EXAM_TIME_COST + " ชั่วโมง\n\n" +
+                        "🔢 Mini-game: Counting challenge\n" +
+                        "🧠 INT สูง = โอกาสคะแนนสูง\n\n" +
+                        "⚠️ ทำได้ครั้งเดียวต่อวัน";
+
+        // ── Room buttons ──────────────────────────────────────────────────
         if (cb.isProgExamDay()) {
             addRoomButtons(gameLayer,
-                    BTN_CLASSROOM,  CLASSROOM_W,  GLOW_EXAM,       CLASSROOM_X,  CLASSROOM_Y,  cb::onProgExam,
-                    BTN_AUDITORIUM, AUDITORIUM_W, GLOW_AUDITORIUM, AUDITORIUM_X, AUDITORIUM_Y, cb::onAuditorium,
-                    BTN_COMMON,     COMMON_W,     GLOW_COMMON,     COMMON_X,     COMMON_Y,     cb::onCoworking);
+                    BTN_CLASSROOM,  CLASSROOM_W,  GLOW_EXAM,       CLASSROOM_X,  CLASSROOM_Y,  cb::onProgExam,   "📝 Programming Exam", progExamTip,
+                    BTN_AUDITORIUM, AUDITORIUM_W, GLOW_AUDITORIUM, AUDITORIUM_X, AUDITORIUM_Y, cb::onAuditorium, "🎭 Auditorium",        auditoriumTip,
+                    BTN_COMMON,     COMMON_W,     GLOW_COMMON,     COMMON_X,     COMMON_Y,     cb::onCoworking,  "☕ Coworking Space",   coworkingTip);
         } else if (cb.isMathExamDay()) {
             addRoomButtons(gameLayer,
-                    BTN_CLASSROOM,  CLASSROOM_W,  GLOW_EXAM,       CLASSROOM_X,  CLASSROOM_Y,  cb::onMathExam,
-                    BTN_AUDITORIUM, AUDITORIUM_W, GLOW_AUDITORIUM, AUDITORIUM_X, AUDITORIUM_Y, cb::onAuditorium,
-                    BTN_COMMON,     COMMON_W,     GLOW_COMMON,     COMMON_X,     COMMON_Y,     cb::onCoworking);
+                    BTN_CLASSROOM,  CLASSROOM_W,  GLOW_EXAM,       CLASSROOM_X,  CLASSROOM_Y,  cb::onMathExam,   "📐 Math Exam",         mathExamTip,
+                    BTN_AUDITORIUM, AUDITORIUM_W, GLOW_AUDITORIUM, AUDITORIUM_X, AUDITORIUM_Y, cb::onAuditorium, "🎭 Auditorium",        auditoriumTip,
+                    BTN_COMMON,     COMMON_W,     GLOW_COMMON,     COMMON_X,     COMMON_Y,     cb::onCoworking,  "☕ Coworking Space",   coworkingTip);
         } else {
             addRoomButtons(gameLayer,
-                    BTN_CLASSROOM,  CLASSROOM_W,  GLOW_CLASSROOM,  CLASSROOM_X,  CLASSROOM_Y,  cb::onClassroom,
-                    BTN_AUDITORIUM, AUDITORIUM_W, GLOW_AUDITORIUM, AUDITORIUM_X, AUDITORIUM_Y, cb::onAuditorium,
-                    BTN_COMMON,     COMMON_W,     GLOW_COMMON,     COMMON_X,     COMMON_Y,     cb::onCoworking);
+                    BTN_CLASSROOM,  CLASSROOM_W,  GLOW_CLASSROOM,  CLASSROOM_X,  CLASSROOM_Y,  cb::onClassroom,  "🏫 Classroom",         classroomTip,
+                    BTN_AUDITORIUM, AUDITORIUM_W, GLOW_AUDITORIUM, AUDITORIUM_X, AUDITORIUM_Y, cb::onAuditorium, "🎭 Auditorium",        auditoriumTip,
+                    BTN_COMMON,     COMMON_W,     GLOW_COMMON,     COMMON_X,     COMMON_Y,     cb::onCoworking,  "☕ Coworking Space",   coworkingTip);
         }
 
         addBackButton(gameLayer);
@@ -109,15 +155,15 @@ public class InsideUI {
     }
 
     // =========================================================================
-    // Room buttons
+    // Room buttons (with tooltip params)
     // =========================================================================
     private void addRoomButtons(Pane gl,
-                                String i1, double w1, String g1, double x1, double y1, Runnable a1,
-                                String i2, double w2, String g2, double x2, double y2, Runnable a2,
-                                String i3, double w3, String g3, double x3, double y3, Runnable a3) {
-        StackPane b1 = mapBtn(i1, w1, a1);
-        StackPane b2 = mapBtn(i2, w2, a2);
-        StackPane b3 = mapBtn(i3, w3, a3);
+                                String i1, double w1, String g1, double x1, double y1, Runnable a1, String t1, String tb1,
+                                String i2, double w2, String g2, double x2, double y2, Runnable a2, String t2, String tb2,
+                                String i3, double w3, String g3, double x3, double y3, Runnable a3, String t3, String tb3) {
+        StackPane b1 = mapBtn(i1, w1, a1, t1, tb1);
+        StackPane b2 = mapBtn(i2, w2, a2, t2, tb2);
+        StackPane b3 = mapBtn(i3, w3, a3, t3, tb3);
         AnchorPane.setLeftAnchor(b1, x1); AnchorPane.setTopAnchor(b1, y1);
         AnchorPane.setLeftAnchor(b2, x2); AnchorPane.setTopAnchor(b2, y2);
         AnchorPane.setLeftAnchor(b3, x3); AnchorPane.setTopAnchor(b3, y3);
@@ -125,9 +171,10 @@ public class InsideUI {
     }
 
     // =========================================================================
-    // Map button — pixel-perfect hit detection
+    // Map button — pixel-perfect hit detection + tooltip
     // =========================================================================
-    private StackPane mapBtn(String imgPath, double fitWidth, Runnable onClick) {
+    private StackPane mapBtn(String imgPath, double fitWidth, Runnable onClick,
+                             String tipTitle, String tipBody) {
         var url = getClass().getResource(imgPath);
         if (url == null) throw new IllegalStateException("Missing resource: " + imgPath);
         Image image = new Image(url.toExternalForm());
@@ -167,9 +214,16 @@ public class InsideUI {
         wrapper.setOnMouseMoved(e -> {
             if (isOpaque.apply(e.getSceneX(), e.getSceneY())) {
                 if (iv.getEffect() == null) { iv.setEffect(glow); pulse.play(); }
-            } else { pulse.stop(); iv.setEffect(null); }
+                if (tooltip != null) tooltip.show(tipTitle, tipBody);
+            } else {
+                pulse.stop(); iv.setEffect(null);
+                if (tooltip != null) tooltip.hide();
+            }
         });
-        wrapper.setOnMouseExited(e -> { pulse.stop(); iv.setEffect(null); });
+        wrapper.setOnMouseExited(e -> {
+            pulse.stop(); iv.setEffect(null);
+            if (tooltip != null) tooltip.hide();
+        });
         wrapper.setOnMouseClicked(e -> {
             if (!isOpaque.apply(e.getSceneX(), e.getSceneY())) return;
             ColorAdjust flash = new ColorAdjust();
@@ -190,7 +244,7 @@ public class InsideUI {
     private void addBackButton(Pane gameLayer) {
         var backUrl = getClass().getResource(BTN_BACK_IMG);
         if (backUrl != null) {
-            StackPane backBtn = mapBtn(BTN_BACK_IMG, BACK_W, cb::onBack);
+            StackPane backBtn = mapBtn(BTN_BACK_IMG, BACK_W, cb::onBack, null, null);
             AnchorPane.setRightAnchor(backBtn, BACK_RIGHT);
             AnchorPane.setTopAnchor(backBtn, BACK_TOP);
             gameLayer.getChildren().add(backBtn);

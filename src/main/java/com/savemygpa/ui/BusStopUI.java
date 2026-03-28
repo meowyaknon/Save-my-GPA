@@ -1,5 +1,7 @@
 package com.savemygpa.ui;
 
+import com.savemygpa.config.GameConfig;
+import com.savemygpa.config.StatConfig;
 import javafx.animation.*;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Pos;
@@ -15,7 +17,6 @@ public class BusStopUI {
     private static final String BTN_HOME   = "/images/popup/button_home_black.png";
     private static final String BTN_CANCEL = "/images/popup/button_cancel_black.png";
 
-    // Natural (1920-px-space) sizes
     private static final double BTN_ACTION_W = 360;
     private static final double BTN_CANCEL_W = 200;
     private static final double CARD_W       = 520;
@@ -29,6 +30,7 @@ public class BusStopUI {
     private final Callbacks cb;
     private final StackPane sceneRoot;
     private boolean showing = false;
+    private TooltipOverlay tooltip;
 
     public BusStopUI(StackPane sceneRoot, Callbacks cb) {
         this.sceneRoot = sceneRoot;
@@ -39,17 +41,16 @@ public class BusStopUI {
         if (showing) return;
         showing = true;
 
-        // ── Full-window dim overlay ───────────────────────────────────────────
+        tooltip = new TooltipOverlay(sceneRoot);
+
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(0,0,0,0.55);");
         overlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         overlay.prefWidthProperty().bind(sceneRoot.widthProperty());
         overlay.prefHeightProperty().bind(sceneRoot.heightProperty());
 
-        // ── Card at natural size ──────────────────────────────────────────────
         StackPane card = buildCard(overlay);
 
-        // ── Scale card to match current window zoom ───────────────────────────
         Scale cardScale = new Scale(1, 1);
         cardScale.pivotXProperty().bind(Bindings.divide(card.widthProperty(), 2));
         cardScale.pivotYProperty().bind(Bindings.divide(card.heightProperty(), 2));
@@ -62,7 +63,6 @@ public class BusStopUI {
         overlay.getChildren().add(card);
         sceneRoot.getChildren().add(overlay);
 
-        // Entrance animation
         card.setOpacity(0);
         FadeTransition ft = new FadeTransition(Duration.millis(220), card);
         ft.setToValue(1);
@@ -74,9 +74,27 @@ public class BusStopUI {
         bg.setFitWidth(CARD_W);
         bg.setPreserveRatio(true);
 
-        ImageView kllcBtn   = makeBtn(BTN_KLLC,   BTN_ACTION_W, () -> dismiss(overlay, cb::onKLLC));
-        ImageView homeBtn   = makeBtn(BTN_HOME,   BTN_ACTION_W, () -> dismiss(overlay, cb::onGoHome));
-        ImageView cancelBtn = makeBtn(BTN_CANCEL, BTN_CANCEL_W, () -> dismiss(overlay, cb::onBack));
+        String kllcTip =
+                "⏱ ใช้เวลา " + GameConfig.KLLC_TIME_COST + " ชั่วโมง\n\n" +
+                        "✅ ได้รับ:\n" +
+                        "   🧠 INT +" + StatConfig.KLLC_LOW_INTELLIGENCE_GAIN + "~" + StatConfig.KLLC_HIGH_INTELLIGENCE_GAIN + "\n\n" +
+                        "❌ เสียไป:\n" +
+                        "   ⚡ Energy -" + StatConfig.KLLC_ENERGY_LOSS + "\n" +
+                        "   😊 Mood -"   + StatConfig.KLLC_MOOD_LOSS + "\n\n" +
+                        "🔒 ต้องการ:\n" +
+                        "   ⚡ Energy ≥ " + StatConfig.KLLC_ENERGY_REQUIREMENT + "\n" +
+                        "   😊 Mood ≥ "   + StatConfig.KLLC_MOOD_REQUIREMENT;
+
+        String homeTip =
+                "จบวันนี้ทันที\n\n" +
+                        "✅ ได้รับ:\n" +
+                        "   ⚡ Energy +3 + (Mood/40) + เวลาที่เหลือ\n" +
+                        "   😊 Mood +10 + เวลาที่เหลือ\n\n" +
+                        "⚠️ ไม่สามารถย้อนกลับได้!";
+
+        ImageView kllcBtn   = makeBtn(BTN_KLLC,   BTN_ACTION_W, "🏛 KLLC Library", kllcTip,  () -> dismiss(overlay, cb::onKLLC));
+        ImageView homeBtn   = makeBtn(BTN_HOME,   BTN_ACTION_W, "🏠 กลับบ้าน",     homeTip,  () -> dismiss(overlay, cb::onGoHome));
+        ImageView cancelBtn = makeBtn(BTN_CANCEL, BTN_CANCEL_W, null,               null,     () -> dismiss(overlay, cb::onBack));
 
         VBox btnStack = new VBox(16, kllcBtn, homeBtn, cancelBtn);
         btnStack.setAlignment(Pos.CENTER);
@@ -87,13 +105,21 @@ public class BusStopUI {
         return card;
     }
 
-    private ImageView makeBtn(String path, double width, Runnable onClick) {
+    private ImageView makeBtn(String path, double width,
+                              String tipTitle, String tipBody,
+                              Runnable onClick) {
         ImageView iv = loadImg(path);
         iv.setFitWidth(width);
         iv.setPreserveRatio(true);
         iv.setCursor(javafx.scene.Cursor.HAND);
-        iv.setOnMouseEntered(e  -> { iv.setScaleX(1.05); iv.setScaleY(1.05); iv.setOpacity(0.88); });
-        iv.setOnMouseExited(e   -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  iv.setOpacity(1.0);  });
+        iv.setOnMouseEntered(e -> {
+            iv.setScaleX(1.05); iv.setScaleY(1.05); iv.setOpacity(0.88);
+            if (tipTitle != null && tooltip != null) tooltip.show(tipTitle, tipBody);
+        });
+        iv.setOnMouseExited(e -> {
+            iv.setScaleX(1.0); iv.setScaleY(1.0); iv.setOpacity(1.0);
+            if (tooltip != null) tooltip.hide();
+        });
         iv.setOnMousePressed(e  -> { iv.setScaleX(0.95); iv.setScaleY(0.95); e.consume(); });
         iv.setOnMouseReleased(e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0); });
         iv.setOnMouseClicked(e  -> { e.consume(); onClick.run(); });
@@ -101,6 +127,7 @@ public class BusStopUI {
     }
 
     private void dismiss(StackPane overlay, Runnable callback) {
+        if (tooltip != null) { tooltip.dispose(); tooltip = null; }
         overlay.prefWidthProperty().unbind();
         overlay.prefHeightProperty().unbind();
         FadeTransition ft = new FadeTransition(Duration.millis(150), overlay);

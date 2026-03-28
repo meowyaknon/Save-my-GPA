@@ -10,7 +10,7 @@ public class SeniorNoteBuff extends StatusEffect {
     private static final int INT_REWARD = 2;
 
     public SeniorNoteBuff() {
-        super(0); // expiration is controlled by daysRemaining override
+        super(0);
         this.daysRemaining = 2;
     }
 
@@ -28,10 +28,6 @@ public class SeniorNoteBuff extends StatusEffect {
             System.out.println("[Buff] Senior's Note activated — int +4!");
             daysRemaining = 0;
         }
-    }
-
-    @Override
-    public void onTransition(Player player) {
     }
 
     @Override

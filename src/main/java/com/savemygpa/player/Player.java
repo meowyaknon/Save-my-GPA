@@ -39,11 +39,6 @@ public class Player {
         }
     }
 
-    /**
-     * Force-removes an effect by class — safe to call even if not active.
-     * Used by: GameLauncher.clearDayEffects() for WetFeet + NoStackOverflow,
-     *          ClassroomActivity for WhyDizzy.
-     */
     public <T extends StatusEffect> void removeEffect(Class<T> effectClass) {
         Iterator<StatusEffect> it = effects.iterator();
         while (it.hasNext()) {

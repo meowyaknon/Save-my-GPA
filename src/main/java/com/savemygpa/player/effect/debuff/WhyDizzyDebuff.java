@@ -22,10 +22,6 @@ public class WhyDizzyDebuff extends StatusEffect {
     }
 
     @Override
-    public void onTransition(Player player) {
-    }
-
-    @Override
     public int modifyIntelligenceGain(int base) {
         return Math.max(0, base - INT_PENALTY);
     }

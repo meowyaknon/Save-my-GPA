@@ -15,7 +15,6 @@ public class StackOverflowDownDebuff extends StatusEffect {
 
     @Override
     public void onApply(Player player) {
-        // Immediately clamp mood if already above cap
         if (player.getStat(StatType.MOOD) > MOOD_CAP) {
             player.changeStat(StatType.MOOD, MOOD_CAP - player.getStat(StatType.MOOD));
         }
@@ -25,10 +24,6 @@ public class StackOverflowDownDebuff extends StatusEffect {
     @Override
     public void onExpire(Player player) {
         System.out.println("[Debuff] StackOverflow Down cleared — internet is back.");
-    }
-
-    @Override
-    public void onTransition(Player player) {
     }
 
     @Override

@@ -1,5 +1,7 @@
 package com.savemygpa.ui;
 
+import com.savemygpa.config.GameConfig;
+import com.savemygpa.config.StatConfig;
 import javafx.animation.*;
 import javafx.beans.binding.Bindings;
 import javafx.geometry.Pos;
@@ -28,6 +30,7 @@ public class CoworkingUI {
     private final Callbacks cb;
     private final StackPane sceneRoot;
     private boolean showing = false;
+    private TooltipOverlay tooltip;
 
     public CoworkingUI(StackPane sceneRoot, Callbacks cb) {
         this.sceneRoot = sceneRoot;
@@ -38,17 +41,16 @@ public class CoworkingUI {
         if (showing) return;
         showing = true;
 
-        // ── Full-window dim overlay ───────────────────────────────────────────
+        tooltip = new TooltipOverlay(sceneRoot);
+
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(0,0,0,0.55);");
         overlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         overlay.prefWidthProperty().bind(sceneRoot.widthProperty());
         overlay.prefHeightProperty().bind(sceneRoot.heightProperty());
 
-        // ── Card at natural size ──────────────────────────────────────────────
         StackPane card = buildCard(overlay);
 
-        // ── Scale card to match current window zoom ───────────────────────────
         Scale cardScale = new Scale(1, 1);
         cardScale.pivotXProperty().bind(Bindings.divide(card.widthProperty(), 2));
         cardScale.pivotYProperty().bind(Bindings.divide(card.heightProperty(), 2));
@@ -72,9 +74,28 @@ public class CoworkingUI {
         bg.setFitWidth(CARD_W);
         bg.setPreserveRatio(true);
 
-        ImageView studyBtn  = makeBtn(BTN_STUDY,  BTN_ACTION_W, () -> dismiss(overlay, cb::onStudy));
-        ImageView relaxBtn  = makeBtn(BTN_RELAX,  BTN_ACTION_W, () -> dismiss(overlay, cb::onRelax));
-        ImageView cancelBtn = makeBtn(BTN_CANCEL, BTN_CANCEL_W, () -> dismiss(overlay, cb::onBack));
+        String studyTip =
+                "⏱ ใช้เวลา " + GameConfig.REVIEW_TIME_COST + " ชั่วโมง\n\n" +
+                        "✅ ได้รับ:\n" +
+                        "   🧠 INT +" + StatConfig.REVIEW_LOW_INTELLIGENCE_GAIN + "~" + StatConfig.REVIEW_HIGH_INTELLIGENCE_GAIN + "\n\n" +
+                        "❌ เสียไป:\n" +
+                        "   ⚡ Energy -" + StatConfig.REVIEW_ENERGY_LOSS + "\n" +
+                        "   😊 Mood -"   + StatConfig.REVIEW_MOOD_LOSS + "\n\n" +
+                        "🔒 ต้องการ:\n" +
+                        "   ⚡ Energy ≥ " + StatConfig.REVIEW_ENERGY_REQUIREMENT + "\n" +
+                        "   😊 Mood ≥ "   + StatConfig.REVIEW_MOOD_REQUIREMENT;
+
+        String relaxTip =
+                "⏱ ใช้เวลา " + GameConfig.RELAX_TIME_COST + " ชั่วโมง\n\n" +
+                        "✅ ได้รับ:\n" +
+                        "   ⚡ Energy +" + StatConfig.RELAX_ENERGY_GAIN + "\n" +
+                        "   😊 Mood +"   + StatConfig.RELAX_MOOD_GAIN + "\n\n" +
+                        "❌ เสียไป: ไม่มี\n\n" +
+                        "🔒 ต้องการ: ไม่มีเงื่อนไข";
+
+        ImageView studyBtn  = makeBtn(BTN_STUDY,  BTN_ACTION_W, "📖 Review (ทบทวน)", studyTip, () -> dismiss(overlay, cb::onStudy));
+        ImageView relaxBtn  = makeBtn(BTN_RELAX,  BTN_ACTION_W, "😌 Relax (พักผ่อน)", relaxTip, () -> dismiss(overlay, cb::onRelax));
+        ImageView cancelBtn = makeBtn(BTN_CANCEL, BTN_CANCEL_W, null, null,            () -> dismiss(overlay, cb::onBack));
 
         VBox btnStack = new VBox(16, studyBtn, relaxBtn, cancelBtn);
         btnStack.setAlignment(Pos.CENTER);
@@ -85,13 +106,21 @@ public class CoworkingUI {
         return card;
     }
 
-    private ImageView makeBtn(String path, double width, Runnable onClick) {
+    private ImageView makeBtn(String path, double width,
+                              String tipTitle, String tipBody,
+                              Runnable onClick) {
         ImageView iv = loadImg(path);
         iv.setFitWidth(width);
         iv.setPreserveRatio(true);
         iv.setCursor(javafx.scene.Cursor.HAND);
-        iv.setOnMouseEntered(e  -> { iv.setScaleX(1.05); iv.setScaleY(1.05); iv.setOpacity(0.88); });
-        iv.setOnMouseExited(e   -> { iv.setScaleX(1.0);  iv.setScaleY(1.0);  iv.setOpacity(1.0);  });
+        iv.setOnMouseEntered(e -> {
+            iv.setScaleX(1.05); iv.setScaleY(1.05); iv.setOpacity(0.88);
+            if (tipTitle != null && tooltip != null) tooltip.show(tipTitle, tipBody);
+        });
+        iv.setOnMouseExited(e -> {
+            iv.setScaleX(1.0); iv.setScaleY(1.0); iv.setOpacity(1.0);
+            if (tooltip != null) tooltip.hide();
+        });
         iv.setOnMousePressed(e  -> { iv.setScaleX(0.95); iv.setScaleY(0.95); e.consume(); });
         iv.setOnMouseReleased(e -> { iv.setScaleX(1.0);  iv.setScaleY(1.0); });
         iv.setOnMouseClicked(e  -> { e.consume(); onClick.run(); });
@@ -99,6 +128,7 @@ public class CoworkingUI {
     }
 
     private void dismiss(StackPane overlay, Runnable callback) {
+        if (tooltip != null) { tooltip.dispose(); tooltip = null; }
         overlay.prefWidthProperty().unbind();
         overlay.prefHeightProperty().unbind();
         FadeTransition ft = new FadeTransition(Duration.millis(150), overlay);

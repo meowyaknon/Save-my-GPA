@@ -59,10 +59,8 @@ public class GameLauncher extends Application {
     private static final String LOGO_PATH = "/images/menu/logo.png";
     private static final int    TYPING_MS = 80;
 
-    // ── Shared text colour — matches StatsBarUI COL_LABEL ────────────────────
     static final String TEXT_COLOR = "#3b1a1a";
 
-    // ── Ending A scene images ─────────────────────────────────────────────────
     private static final String[] ENDING_A_SCENES = {
             "/images/endings/endingA_scene1.jpg",
             "/images/endings/endingA_scene2.jpg",
@@ -79,7 +77,6 @@ public class GameLauncher extends Application {
         pt.play();
     }
 
-    // ── Speak helpers — always read the live field ───────────────────────────
     private void speakFail(String message) {
         if (outsideUI != null) {
             if (message != null) outsideUI.sayFail(message);
@@ -103,7 +100,7 @@ public class GameLauncher extends Application {
         root.getChildren().add(gameLayer);
         root.setStyle("-fx-background-color: black;");
         stage.setWidth(1280);
-        stage.setHeight(740);
+        stage.setHeight(720);
         stage.centerOnScreen();
         stage.setResizable(true);
         applyScale();
@@ -515,6 +512,7 @@ public class GameLauncher extends Application {
         eventManager.triggerVisit(player, timeSystem, Location.OUTSIDE);
         outsideUI.refresh();
         maybeSaveProgress(false);
+        showExamDayNotice(null);
     }
 
     private OutsideUI.Callbacks buildOutsideCallbacks() {
@@ -522,10 +520,7 @@ public class GameLauncher extends Application {
             @Override public void onBusStop()    { runOnce(GameLauncher.this::showBusStop); }
             @Override public void onCanteen()    { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::doCanteen); }
             @Override public void onITBuilding() { runOnce(GameLauncher.this::showITBuilding); }
-            @Override public void onGoHome()     { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::doGoHome); }
             @Override public void onPause()      { showPause(PauseOrigin.OUTSIDE); }
-            @Override public void showMessage(String t, String m) { showDialog(t, m, null); }
-            @Override public boolean doActivity(Activity a, Location l) { return performSilent(a, l); }
         };
     }
 
@@ -633,6 +628,21 @@ public class GameLauncher extends Application {
         stage.setFullScreenExitHint(""); stage.setFullScreen(true);
     }
 
+    private void showExamDayNotice(Runnable onDone) {
+        String subject, detail;
+        if (isProgExamDay()) {
+            subject = "💻 วันสอบ Programming!";
+            detail  = "วันนี้มีสอบ Programming\nเตรียมตัวให้พร้อมและไปที่ห้องสอบได้เลย!\n\n🧠 Intelligence ยิ่งสูง คะแนนยิ่งดี";
+        } else if (isMathExamDay()) {
+            subject = "📐 วันสอบ Math!";
+            detail  = "วันนี้มีสอบ Math\nไปที่อาคาร IT เพื่อเข้าห้องสอบ!\n\n🧠 Intelligence ยิ่งสูง คะแนนยิ่งดี";
+        } else {
+            if (onDone != null) onDone.run();
+            return;
+        }
+        GameDialog.event(root, subject, detail, onDone);
+    }
+
     // =========================================================================
     // Endings
     // =========================================================================
@@ -674,27 +684,20 @@ public class GameLauncher extends Application {
         }
     }
 
-    // ── Ending A cinematic: one image per story line, subtitle at bottom ──────
+    // ── Ending A cinematic ────────────────────────────────────────────────────
     private void showEndingACinematic(Runnable onDone) {
         String[] lines = endingStory("A");
-
-        // Root pane for this cinematic
         StackPane cinPane = new StackPane();
         cinPane.setStyle("-fx-background-color:#000;");
         cinPane.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
 
-        // Background image — fills the whole screen
         ImageView bgImg = new ImageView();
         bgImg.setFitWidth(BASE_W); bgImg.setFitHeight(BASE_H);
         bgImg.setPreserveRatio(false);
         bgImg.setOpacity(0);
 
-        // Subtitle bar at the bottom
         StackPane subtitleBar = new StackPane();
-        subtitleBar.setStyle("""
-            -fx-background-color: rgba(0,0,0,0.62);
-            -fx-padding: 0;
-        """);
+        subtitleBar.setStyle("-fx-background-color: rgba(0,0,0,0.62);-fx-padding: 0;");
         subtitleBar.setMaxWidth(Double.MAX_VALUE);
         subtitleBar.setPrefHeight(130);
         subtitleBar.setMaxHeight(130);
@@ -707,55 +710,37 @@ public class GameLauncher extends Application {
         subtitle.setMaxWidth(1600);
         subtitle.setTextAlignment(TextAlignment.CENTER);
         subtitle.setAlignment(Pos.CENTER);
-        subtitle.setStyle("""
-            -fx-effect: dropshadow(gaussian, rgba(0,0,0,0.95), 12, 0.6, 0, 2);
-            -fx-padding: 18 40 18 40;
-        """);
+        subtitle.setStyle("-fx-effect: dropshadow(gaussian, rgba(0,0,0,0.95), 12, 0.6, 0, 2);-fx-padding: 18 40 18 40;");
         subtitleBar.getChildren().add(subtitle);
 
         cinPane.getChildren().addAll(bgImg, subtitleBar);
         setContent(cinPane);
-
         playEndingAScene(cinPane, bgImg, subtitle, lines, 0, onDone);
     }
 
-    private void playEndingAScene(StackPane cinPane,
-                                  ImageView bgImg,
-                                  Label subtitle,
-                                  String[] lines,
-                                  int index,
-                                  Runnable onDone) {
+    private void playEndingAScene(StackPane cinPane, ImageView bgImg, Label subtitle,
+                                  String[] lines, int index, Runnable onDone) {
         if (index >= lines.length) {
-            // Fade out the whole cinematic, then proceed
             FadeTransition fo = new FadeTransition(Duration.millis(800), cinPane);
             fo.setFromValue(1); fo.setToValue(0);
             fo.setOnFinished(e -> onDone.run());
             fo.play();
             return;
         }
-
-        // Load scene image (cycle if more lines than images)
         String imgPath = ENDING_A_SCENES[Math.min(index, ENDING_A_SCENES.length - 1)];
         var imgUrl = getClass().getResource(imgPath);
-        if (imgUrl != null) {
-            bgImg.setImage(new Image(imgUrl.toExternalForm()));
-        }
-
-        // Fade IN the background image
+        if (imgUrl != null) bgImg.setImage(new Image(imgUrl.toExternalForm()));
         FadeTransition bgIn = new FadeTransition(Duration.millis(700), bgImg);
         bgIn.setToValue(1);
         bgIn.setOnFinished(e -> {
-            // Type the subtitle
             subtitle.setText("");
             typeTextOnLabel(subtitle, lines[index], () -> {
-                // Hold for a moment, then fade out subtitle and move to next scene
                 PauseTransition hold = new PauseTransition(Duration.millis(1600));
                 hold.setOnFinished(pe -> {
                     FadeTransition subOut = new FadeTransition(Duration.millis(400), subtitle);
                     subOut.setToValue(0);
                     subOut.setOnFinished(se -> {
                         subtitle.setOpacity(1);
-                        // Fade out bg before showing next scene
                         FadeTransition bgOut = new FadeTransition(Duration.millis(600), bgImg);
                         bgOut.setToValue(0);
                         bgOut.setOnFinished(be ->
@@ -770,7 +755,6 @@ public class GameLauncher extends Application {
         bgIn.play();
     }
 
-    /** Typewriter on an arbitrary Label (used for subtitles). */
     private void typeTextOnLabel(Label target, String text, Runnable onDone) {
         target.setText("");
         AudioManager audio = AudioManager.getInstance();
@@ -787,16 +771,21 @@ public class GameLauncher extends Application {
         tl.play();
     }
 
-    // ── Shared ending result screen ───────────────────────────────────────────
+    // =========================================================================
+    // Ending result screens
+    // =========================================================================
     private void showEndingResult(String grade, int overall) {
         String c = endingColor(grade);
 
+        // Outer container — full 1920×1080, black bg, centre-aligns everything
         StackPane r = new StackPane();
         r.setStyle("-fx-background-color:#000;");
         r.setPrefSize(BASE_W, BASE_H);
+        r.setMinSize(BASE_W, BASE_H);
+        r.setMaxSize(BASE_W, BASE_H);
         r.setAlignment(Pos.CENTER);
 
-        // Inner VBox — fully centered, width capped so text never spans edge-to-edge
+        // Inner VBox — width-capped, centred inside the StackPane
         VBox content = new VBox(28);
         content.setAlignment(Pos.CENTER);
         content.setFillWidth(false);
@@ -835,14 +824,9 @@ public class GameLauncher extends Application {
 
         content.getChildren().addAll(gt, tt, sc, btns);
 
-        ScrollPane scroll = new ScrollPane(content);
-        scroll.setFitToWidth(true);
-        scroll.setFitToHeight(true);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scroll.setStyle("-fx-background:transparent;-fx-background-color:transparent;-fx-padding:0;");
-
-        r.getChildren().add(scroll);
+        // KEY FIX: place content directly — no ScrollPane
+        StackPane.setAlignment(content, Pos.CENTER);
+        r.getChildren().add(content);
 
         content.setOpacity(0);
         setContent(r);
@@ -879,7 +863,7 @@ public class GameLauncher extends Application {
         AudioManager.getInstance().playMusic(AudioManager.Music.ENDING_GREAT);
         StackPane black = new StackPane();
         black.setStyle("-fx-background-color:#000;");
-        black.setMaxSize(Double.MAX_VALUE,Double.MAX_VALUE);
+        black.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         Label lbl = makeCutsceneLabel();
         lbl.setOpacity(0);
         black.getChildren().add(lbl);
@@ -896,12 +880,15 @@ public class GameLauncher extends Application {
         }, this::showSecretEndingResult); });
         fi.play();
     }
+
     private void showSecretEndingResult() {
         final String ac = "#f48fb1";
 
         StackPane r = new StackPane();
         r.setStyle("-fx-background-color:#000;");
         r.setPrefSize(BASE_W, BASE_H);
+        r.setMinSize(BASE_W, BASE_H);
+        r.setMaxSize(BASE_W, BASE_H);
         r.setAlignment(Pos.CENTER);
 
         VBox content = new VBox(32);
@@ -929,32 +916,29 @@ public class GameLauncher extends Application {
         desc.setMaxWidth(900);
 
         ImageView tryAgainImg = makeEndingImgBtn("/images/menu/menu_start2.png");
-        ImageView quitImg     = makeEndingImgBtn("/images/menu/back_to_menu.png");
+        ImageView quitImg     = makeEndingImgBtn("/images/menu/menu_quit.png");
         tryAgainImg.setOnMouseClicked(e -> { AudioManager.getInstance().playAccept(); runOnce(this::showIntroSequence); });
-        quitImg    .setOnMouseClicked(e -> { AudioManager.getInstance().playRefuse(); runOnce(this::showMainMenuWithFade); });
+        quitImg    .setOnMouseClicked(e -> { AudioManager.getInstance().playRefuse(); stage.close(); });
 
-        HBox btns = new HBox(32, tryAgainImg, quitImg); btns.setAlignment(Pos.CENTER);
+        HBox btns = new HBox(32, tryAgainImg, quitImg);
+        btns.setAlignment(Pos.CENTER);
         content.getChildren().addAll(gt, tt, desc, btns);
 
-        ScrollPane scroll = new ScrollPane(content);
-        scroll.setFitToWidth(true);
-        scroll.setFitToHeight(true);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scroll.setStyle("-fx-background:transparent;-fx-background-color:transparent;-fx-padding:0;");
-
-        r.getChildren().add(scroll);
+        // KEY FIX: no ScrollPane
+        StackPane.setAlignment(content, Pos.CENTER);
+        r.getChildren().add(content);
 
         content.setOpacity(0);
         setContent(r);
-        FadeTransition ft = new FadeTransition(Duration.millis(600), content); ft.setToValue(1); ft.play();
+        FadeTransition ft = new FadeTransition(Duration.millis(600), content);
+        ft.setToValue(1); ft.play();
     }
 
     private void showSecretEnding2() {
-        AudioManager.getInstance().playMusic(AudioManager.Music.ENDING_BAD);  // FIX: music before cutscene
+        AudioManager.getInstance().playMusic(AudioManager.Music.ENDING_BAD);
         StackPane black = new StackPane();
         black.setStyle("-fx-background-color:#000;");
-        black.setMaxSize(Double.MAX_VALUE,Double.MAX_VALUE);
+        black.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         Label lbl = makeCutsceneLabel(); lbl.setOpacity(0);
         black.getChildren().add(lbl);
         setContent(black);
@@ -969,12 +953,15 @@ public class GameLauncher extends Application {
         }, this::showSecretEnding2Result); });
         fi.play();
     }
+
     private void showSecretEnding2Result() {
         final String ac = "#78909c";
 
         StackPane r = new StackPane();
         r.setStyle("-fx-background-color:#000;");
         r.setPrefSize(BASE_W, BASE_H);
+        r.setMinSize(BASE_W, BASE_H);
+        r.setMaxSize(BASE_W, BASE_H);
         r.setAlignment(Pos.CENTER);
 
         VBox content = new VBox(32);
@@ -1009,21 +996,18 @@ public class GameLauncher extends Application {
         againImg.setOnMouseClicked(e -> { AudioManager.getInstance().playAccept(); runOnce(this::startNewGame); });
         quitImg .setOnMouseClicked(e -> { AudioManager.getInstance().playRefuse(); runOnce(this::showMainMenuWithFade); });
 
-        HBox btns = new HBox(32, againImg, quitImg); btns.setAlignment(Pos.CENTER);
+        HBox btns = new HBox(32, againImg, quitImg);
+        btns.setAlignment(Pos.CENTER);
         content.getChildren().addAll(gt, tt, desc, btns);
 
-        ScrollPane scroll = new ScrollPane(content);
-        scroll.setFitToWidth(true);
-        scroll.setFitToHeight(true);
-        scroll.setHbarPolicy(ScrollPane.ScrollBarPolicy.NEVER);
-        scroll.setVbarPolicy(ScrollPane.ScrollBarPolicy.AS_NEEDED);
-        scroll.setStyle("-fx-background:transparent;-fx-background-color:transparent;-fx-padding:0;");
-
-        r.getChildren().add(scroll);
+        // KEY FIX: no ScrollPane
+        StackPane.setAlignment(content, Pos.CENTER);
+        r.getChildren().add(content);
 
         content.setOpacity(0);
         setContent(r);
-        FadeTransition ft = new FadeTransition(Duration.millis(600), content); ft.setToValue(1); ft.play();
+        FadeTransition ft = new FadeTransition(Duration.millis(600), content);
+        ft.setToValue(1); ft.play();
     }
 
     // =========================================================================
@@ -1128,12 +1112,7 @@ public class GameLauncher extends Application {
 
     private ImageView makeEndingImgBtn(String resourcePath) {
         var url = getClass().getResource(resourcePath);
-        ImageView iv;
-        if (url != null) {
-            iv = new ImageView(new Image(url.toExternalForm()));
-        } else {
-            iv = new ImageView();
-        }
+        ImageView iv = url != null ? new ImageView(new Image(url.toExternalForm())) : new ImageView();
         iv.setFitWidth(260);
         iv.setPreserveRatio(true);
         iv.setCursor(javafx.scene.Cursor.HAND);
@@ -1144,7 +1123,6 @@ public class GameLauncher extends Application {
         return iv;
     }
 
-    /** Cutscene label — WHITE text on black background. Never changes. */
     private Label makeCutsceneLabel() {
         Label l = new Label("");
         l.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 42));
