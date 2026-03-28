@@ -28,8 +28,10 @@ public class SourceCodeEvent extends Event {
     }
 
     @Override
-    public String getName() { return "ได้รับ Source Code"; }
+    public String getName() { return "ได้รับ \"Source Code\" จากรุ่นพี่"; }
     @Override
-    public String getDescription() { return "รุ่นพีใจดีเดินเอาไฟล์สรุปและแนวข้อสอบมาให้"; }
-    @Override public double getChance() { return 0.2; }
+    public String getDescription() { return "รุ่นพี่ใจดีเดินเอาไฟล์สรุปและแนวข้อสอบมาให้ประหนึ่งแสงสว่างที่ปลายอุโมงค์\n\n" +
+                                        "ผลกระทบ: Int +15";
+                                    }
+    @Override public double getChance() { return 0.1; }
 }

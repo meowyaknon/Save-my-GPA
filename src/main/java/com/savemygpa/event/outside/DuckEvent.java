@@ -28,6 +28,6 @@ public class DuckEvent extends Event {
     public String getName() { return "กองทัพ \"เป็ด\" บุกเลนจักรยาน"; }
     @Override
     public String getDescription() { return "น้องเป็ดเดินพาเหรดข้ามถนนแบบไม่รีบเร่ง คุณต้องหยุดรอจนกว่าขบวนจะหมด ทำให้เข้าเรียนสายนิดหน่อยแต่ก็ได้ความน่ารักปลอบใจ\n\n" + 
-                                    "ผลกระทบ: Time -1, Mood +15\n\n"; }
+                                    "ผลกระทบ: Time -1, Mood +15"; }
     @Override public double getChance() { return 0.35; }
 }
