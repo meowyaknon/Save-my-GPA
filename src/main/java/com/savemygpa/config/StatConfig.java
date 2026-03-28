@@ -3,8 +3,8 @@ package com.savemygpa.config;
 public final class StatConfig {
 
     // KLLC
-    public static final int KLLC_LOW_INTELLIGENCE_GAIN = 0;
-    public static final int KLLC_MEDIUM_INTELLIGENCE_GAIN = 2;
+    public static final int KLLC_LOW_INTELLIGENCE_GAIN = 2;
+    public static final int KLLC_MEDIUM_INTELLIGENCE_GAIN = 3;
     public static final int KLLC_HIGH_INTELLIGENCE_GAIN = 4;
     public static final int KLLC_MOOD_LOSS = 5;
     public static final int KLLC_ENERGY_LOSS = 2;
