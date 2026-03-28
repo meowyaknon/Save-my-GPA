@@ -27,6 +27,8 @@ public class InternetDownEvent extends Event {
     @Override
     public String getName() { return "Internet ล่ม"; }
     @Override
-    public String getDescription() { return "เน็ตล่ม กู้โค้ดไม่ได้ การเรียนรู้วันนี้ติดขัดไปหมด"; }
-    @Override public double getChance() { return 0.3; }
+    public String getDescription() { return "เน็ตล่ม กู้โค้ดไม่ได้ ค้นหาวิธีแก้ Error ไม่ได้ ทำให้การเรียนรู้วันนี้ติดขัดไปหมด\n\n" + 
+                                    "ผลกระทบ: Mood -25\n\n" +
+                                    "Debuff: StackOverflow Down ( int ที่จะได้จากการเรียนลดลง 5 หน่วย และ mood จะตันที่ 75 ในวันนั้นๆ )"; }
+    @Override public double getChance() { return 0.15; }
 }

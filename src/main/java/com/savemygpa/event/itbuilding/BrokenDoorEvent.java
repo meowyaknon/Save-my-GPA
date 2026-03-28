@@ -23,8 +23,9 @@ public class BrokenDoorEvent extends Event {
     }
 
     @Override
-    public String getName() { return "ประตูอัตโนมัติไม่เปิด"; }
+    public String getName() { return "ประตูอัตโนมัติ \"ไม่เปิด\""; }
     @Override
-    public String getDescription() { return "ชนประตูกระดังปัง เซนเซอร์ไม่ทำงาน เสียเวลาและอารมณ์"; }
+    public String getDescription() { return "คุณเดินตรงดิ่งไปด้วยความรีบ แต่เซนเซอร์ประตูเจ้ากรรมดันไม่ทำงาน ชนประตูกระจกดังปัง!\n\n" + 
+                                    "ผลกระทบ: Mood -15, Time -1\n\n"; }
     @Override public double getChance() { return 0.25; }
 }

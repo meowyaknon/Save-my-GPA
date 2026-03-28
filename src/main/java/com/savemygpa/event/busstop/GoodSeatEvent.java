@@ -23,8 +23,9 @@ public class GoodSeatEvent extends Event {
     }
 
     @Override
-    public String getName() { return "ได้นั่งมุมโปรด"; }
+    public String getName() { return "ได้นั่งที่นั่ง \"มุมโปรด\""; }
     @Override
-    public String getDescription() { return "แอร์เย็นฉ่ำ ปลั๊กไฟพร้อม ที่นั่งว่างพอดี สมาธิมาเต็มร้อย"; }
-    @Override public double getChance() { return 0.3; }
+    public String getDescription() { return "แอร์เย็นฉ่ำ ปลั๊กไฟพร้อม ที่นั่งว่างพอดี สมาธิมาเต็มร้อย\n\n" + 
+                                    "ผลกระทบ: mood +15, int + มากกว่าปกติ 5"; }
+    @Override public double getChance() { return 0.2; }
 }

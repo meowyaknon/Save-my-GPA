@@ -23,8 +23,9 @@ public class NoSeatEvent extends Event {
     }
 
     @Override
-    public String getName() { return "โรงอาหารแน่นมาก"; }
+    public String getName() { return "โรงอาหารแน่นยิ่งกว่าปลาป๋อง"; }
     @Override
-    public String getDescription() { return "ไม่เหลือที่นั่ง รอนานพอคนหาย ข้าวก็หมด ชีวิตช่างน่าเศร้า"; }
+    public String getDescription() { return "ช่างน่าสงสาร ไม่เหลือที่นั่งให้คุณแล้ว\n\n" + 
+                                    "ผลกระทบ: Time -1, Mood -20"; }
     @Override public double getChance() { return 0.3; }
 }

@@ -19,12 +19,12 @@ public class StackOverflowDownDebuff extends StatusEffect {
         if (player.getStat(StatType.MOOD) > MOOD_CAP) {
             player.changeStat(StatType.MOOD, MOOD_CAP - player.getStat(StatType.MOOD));
         }
-        System.out.println("[Debuff] No StackOverflow — internet is down. Brain foggy.");
+        System.out.println("[Debuff] StackOverflow Down — internet is down. Brain foggy.");
     }
 
     @Override
     public void onExpire(Player player) {
-        System.out.println("[Debuff] No StackOverflow cleared — internet is back.");
+        System.out.println("[Debuff] StackOverflow Down cleared — internet is back.");
     }
 
     @Override
@@ -43,5 +43,5 @@ public class StackOverflowDownDebuff extends StatusEffect {
     }
 
     @Override
-    public String getName() { return "No StackOverflow"; }
+    public String getName() { return "StackOverflow Down"; }
 }

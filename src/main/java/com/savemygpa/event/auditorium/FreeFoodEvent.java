@@ -27,6 +27,8 @@ public class FreeFoodEvent extends Event {
     @Override
     public String getName() { return "รุ่นพี่เลี้ยงไก่ทอด"; }
     @Override
-    public String getDescription() { return "รุ่นพี่แสนใจดีสั่งไก่ทอดผู้พันมาเลี้ยง อิ่มทั้งกายและใจ"; }
+    public String getDescription() { return "‘สวรรค์มาโปรด รุ่นพี่แสนใจดีสั่งไก่ทอดผู้พันมาเลี้ยง ทั้งอร่อย อิ่มกาย และอิ่มใจ\n\n" + 
+                                    "ผลกระทบ: Energy +5\n\n" +
+                                    "Buff:  indefatigable (ไม่รู้สึกเหนื่อยเมื่อเข้ากิจกรรมครั้งถัดไป)"; }
     @Override public double getChance() { return 0.3; }
 }
