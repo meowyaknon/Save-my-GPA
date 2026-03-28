@@ -70,7 +70,6 @@ public class EventManager {
         if (random.nextDouble() <= effectiveChance) {
             chosen.occur(player, timeSystem);
             eventsToday++;
-            // Notify the UI
             if (eventListener != null) {
                 eventListener.onEvent(chosen.getName(), chosen.getDescription());
             }

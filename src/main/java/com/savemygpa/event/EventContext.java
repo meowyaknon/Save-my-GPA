@@ -14,7 +14,4 @@ public class EventContext {
         return location;
     }
 
-    public boolean isAfterActivity() {
-        return afterActivity;
-    }
 }

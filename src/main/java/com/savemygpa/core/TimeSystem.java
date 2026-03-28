@@ -37,10 +37,6 @@ public class TimeSystem {
         }
     }
 
-    public boolean isDayOver() {
-        return currentHour >= GameConfig.END_HOUR;
-    }
-
     public void endDay() {
         currentDay++;
         currentHour = GameConfig.START_HOUR;
