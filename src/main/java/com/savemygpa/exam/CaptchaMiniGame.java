@@ -237,6 +237,7 @@ public class CaptchaMiniGame {
     // =========================================================================
     private void showEmptyWarning() {
         // หยุดเวลาครั้งแรกที่เตือน (ถ้ายังไม่ได้หยุด)
+        /*
         if (!isTimerPaused) {
             isTimerPaused  = true;
             pausedBarWidth = timerBarFill.getWidth();
@@ -245,11 +246,12 @@ public class CaptchaMiniGame {
 
         answerField.setDisable(true);  // ← ล็อกไม่ให้พิมพ์
         submitButton.setDisable(true); // ← ล็อกปุ่มด้วย
-
+        */
         resultLabel.setText("⚠ กรุณากรอก CAPTCHA ก่อนกด Enter!");
         resultLabel.setStyle("-fx-font-size: 20px; -fx-text-fill: #ffe082; -fx-font-weight: bold;");
 
         // ถ้า countdownLabel ยังไม่อยู่ใน contentArea ให้เพิ่มเข้าไป
+        /*
         if (!contentArea.getChildren().contains(countdownLabel)) {
             contentArea.getChildren().add(countdownLabel);
         }
@@ -269,7 +271,8 @@ public class CaptchaMiniGame {
                     answerField.requestFocus();
                 })
         );
-        countdown.play();
+        countdown.play()
+         */
     }
 
     private void resumeTimerBar() {
@@ -277,21 +280,36 @@ public class CaptchaMiniGame {
         answerField.setDisable(false);  // ← ปลดล็อก
         submitButton.setDisable(false); // ← ปลดล็อก
         answerField.clear();            // ← ล้างช่องด้วยเผื่อมีอะไรค้าง
-        double ratio        = pausedBarWidth / FULL_BAR_WIDTH;
-        int    remainingSec = Math.max(1, (int) Math.ceil(ratio * 10));
-
+        double ratio = pausedBarWidth / FULL_BAR_WIDTH;
+        int remainingSec = Math.max(1, (int) Math.ceil(ratio * 10));
         timerBarFill.setWidth(pausedBarWidth);
-
-        barAnim = new Timeline(new KeyFrame(
-                Duration.seconds(remainingSec),
-                new KeyValue(timerBarFill.widthProperty(), 0)
-        ));
+        barAnim = new Timeline(new KeyFrame(Duration.seconds(remainingSec), new KeyValue(timerBarFill.widthProperty(), 0)));
         barAnim.play();
-
-        countdownTimer = new Timeline(new KeyFrame(
-                Duration.seconds(remainingSec), e -> handleAnswer()
-        ));
+        // เปลี่ยนจาก handleAnswer() → handleTimeout()
+        countdownTimer = new Timeline(new KeyFrame(Duration.seconds(remainingSec), e -> handleTimeout()));
         countdownTimer.play();
+    }
+
+    private void handleTimeout() {
+        if (isProcessing) return;
+        isProcessing = true;
+        stopTimers();
+        answerField.setDisable(true);
+        submitButton.setDisable(true);
+        isWaitingForNext = true;
+
+        resultLabel.setText("⏰ หมดเวลา! เฉลย: " + currentCaptcha + "  (Enter เพื่อไปต่อ)");
+        resultLabel.setStyle("-fx-font-size: 22px; -fx-text-fill: #ef5350; -fx-font-weight: bold;");
+        characterImageView.setImage(new Image(getClass().getResourceAsStream("/images/exam/code/fail.png")));
+
+        PauseTransition delay = new PauseTransition(Duration.millis(800));
+        delay.setOnFinished(e -> {
+            isProcessing = false;
+            submitButton.setDisable(false);
+            submitButton.setText("ไปต่อ (Enter) →");
+            root.requestFocus();
+        });
+        delay.play();
     }
 
     // =========================================================================
@@ -335,7 +353,7 @@ public class CaptchaMiniGame {
         timerBarFill.setWidth(FULL_BAR_WIDTH);
         barAnim = new Timeline(new KeyFrame(Duration.seconds(10), new KeyValue(timerBarFill.widthProperty(), 0)));
         barAnim.play();
-        countdownTimer = new Timeline(new KeyFrame(Duration.seconds(10), e -> handleAnswer()));
+        countdownTimer = new Timeline(new KeyFrame(Duration.seconds(10), e -> handleTimeout()));
         countdownTimer.play();
     }
 
@@ -361,13 +379,20 @@ public class CaptchaMiniGame {
 
     private void drawCaptcha(String text) {
         GraphicsContext gc = captchaCanvas.getGraphicsContext2D();
-        double w = captchaCanvas.getWidth(), h = captchaCanvas.getHeight();
+        double w = captchaCanvas.getWidth();
+        double h = captchaCanvas.getHeight();
         gc.clearRect(0, 0, w, h);
         gc.setFill(Color.web("#0d1b2a", 0.95));
         gc.fillRoundRect(0, 0, w, h, 20, 20);
         gc.setFill(Color.WHITE);
         gc.setFont(Font.font("Consolas", FontWeight.BOLD, 50));
-        gc.fillText(text, w / 2 - 100, h / 2 + 15);
+
+        // คำนวณความกว้างข้อความจริงๆ แทน hardcode 100
+        // Consolas 50px แต่ละตัวกว้างประมาณ 30px
+        double textWidth = text.length() * 30.0;
+        double x = (w - textWidth) / 2;
+
+        gc.fillText(text, x, h / 2 + 15);
     }
 
     // =========================================================================
