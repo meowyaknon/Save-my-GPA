@@ -22,8 +22,9 @@ public class SeniorAdviceEvent extends Event {
     }
 
     @Override
-    public String getName() { return "รุ่นพี่ชวนคุยเรื่องโปรเจค"; }
+    public String getName() { return "รุ่นพี่มาชวนคุยเรื่องโปรเจค"; }
     @Override
-    public String getDescription() { return "ระหว่างนั่งพัก มีรุ่นพี่มาทักและให้คำปรึกษาเรื่องโปรเจค ได้ทริคดีๆ กลับไปเพียบ!"; }
+    public String getDescription() { return "ระหว่างนั่งพัก มีรุ่นพี่มาทักและให้คำปรึกษาเรื่องโปรเจค ได้ทริคดีๆ กลับไปเพียบ!\n\n" + 
+                                    "ผลกระทบ: Int +5"; }
     @Override public double getChance() { return 0.35; }
 }

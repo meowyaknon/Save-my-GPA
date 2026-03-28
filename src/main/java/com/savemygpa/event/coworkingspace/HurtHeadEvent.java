@@ -25,8 +25,10 @@ public class HurtHeadEvent extends Event {
     }
 
     @Override
-    public String getName() { return "โป๊กกระได"; }
+    public String getName() { return "เดินไม่ดูทาง! โป๊กกระไดเข้าให้"; }
     @Override
-    public String getDescription() { return "ก้าวเข้ามาแล้วโขกบรรไดเจ้ากรรม มึนตึบเลย"; }
+    public String getDescription() { return "มันเกิดขึ้นไวมาก คุณก้าวเข้ามาในห้องอันคุ้นเคย ไม่ทันได้ตั้งตัวหัวก็โขกเข้าบรรไดเจ้ากรรมเข้าให้!\n\n" + 
+                                    "ผลกระทบ: Int -5\n\n" +
+                                    "Debuff: Why dizzy? (สมองกระทบกระเทือน ทำให้การเรียนครั้งถัดไปได้รับค่า int ลดลง 2 หน่วย)"; }
     @Override public double getChance() { return 0.25; }
 }

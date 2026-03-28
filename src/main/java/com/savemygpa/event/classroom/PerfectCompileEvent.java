@@ -23,8 +23,9 @@ public class PerfectCompileEvent extends Event {
     }
 
     @Override
-    public String getName() { return "Compile ผ่านในครั้งเดียว"; }
+    public String getName() { return "โปรเจค Compile ผ่านในครั้งเดียว!"; }
     @Override
-    public String getDescription() { return "โค้ดยาวเที้ยมดัน Run ผ่านฉลุยไม่มี Error ความฟินพุ่งทะลุหลอด"; }
+    public String getDescription() { return "ความมหัศจรรย์ที่นานๆ จะเกิดที โค้ดที่เขียนมาอย่างยาวเหี้ยมดัน Run ผ่านฉลุยแบบไม่มี Error\n\n" + 
+                                    "ผลกระทบ: Mood +45, Int +2\n\n"; }
     @Override public double getChance() { return 0.2; }
 }

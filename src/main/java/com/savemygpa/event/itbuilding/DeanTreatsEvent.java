@@ -24,8 +24,9 @@ public class DeanTreatsEvent extends Event {
     }
 
     @Override
-    public String getName() { return "ท่านคณบดีเลี้ยงไอติม"; }
+    public String getName() { return "ท่านคณบดีใจดี เลี้ยงไอติม"; }
     @Override
-    public String getDescription() { return "ท่านคณบดีเหมาไอติมมาแจกเด็กๆ พลังใจเต็มเปี่ยม"; }
+    public String getDescription() { return "เดินผ่านโถงคณะพอดี เจอท่านคณบดีเหมาไอติมไผ่XXXมาแจกเด็กๆ พลังใจเต็มเปี่ยมพร้อมปั่นโปรเจค\n\n" + 
+                                    "ผลกระทบ: Mood +40, Energy +10\n\n"; }
     @Override public double getChance() { return 0.07; }
 }
