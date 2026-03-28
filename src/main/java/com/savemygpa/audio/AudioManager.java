@@ -7,33 +7,6 @@ import javafx.scene.media.MediaPlayer;
 import java.util.HashMap;
 import java.util.Map;
 
-/**
- * AudioManager — centralised audio + resolution state.
- *
- * Volumes (0.0 – 1.0):
- *   gameVolume  → master multiplier applied to all channels
- *   sfxVolume   → button-click and short sound effects
- *   musicVolume → looping background music per scene
- *
- * Requires javafx.media on the classpath / module-info.
- *
- * ── Music keys (use AudioManager.Music.*) ────────────────────────────────────
- *   INTRO          → played when game first opens / intro sequence
- *   CUTSCENE       → quiet ambient music under typing cutscenes
- *   ACCEPTANCE     → acceptance screen background
- *   MAIN_MENU      → main menu background
- *   OUTSIDE        → campus map (OutsideUI)
- *   INSIDE         → IT Building (InsideUI)
- *   ENDING_GREAT   → Ending A, Secret Ending 1
- *   ENDING_MID     → Ending B, C, D
- *   ENDING_BAD     → Ending F, Secret Ending 2
- *
- * ── SFX keys (use AudioManager.Sfx.*) ────────────────────────────────────────
- *   CLICK        → generic button (accept / confirm)
- *   ACCEPT       → accept / positive action button
- *   REFUSE       → refuse / cancel / quit button
- *   TYPING       → single key-tap played per character in typewriter effect
- */
 public class AudioManager {
 
     // ── Named music constants ─────────────────────────────────────────────────
@@ -78,10 +51,6 @@ public class AudioManager {
     private double gameVolume  = 1.0;
     private double sfxVolume   = 0.8;
     private double musicVolume = 0.6;
-
-    // ── Resolution state ──────────────────────────────────────────────────────
-    private int resolutionWidth  = 1920;
-    private int resolutionHeight = 1080;
 
     // ── Internal state ────────────────────────────────────────────────────────
     private String      currentMusicKey = "";
@@ -157,30 +126,6 @@ public class AudioManager {
             musicPlayer = null;
         }
         currentMusicKey = "";
-    }
-
-    public void fadeOutMusic(int ms) {
-        if (musicPlayer == null) return;
-        MediaPlayer mp = musicPlayer;
-        musicPlayer = null;
-        currentMusicKey = "";
-
-        double startVol = mp.getVolume();
-        long startTime  = System.currentTimeMillis();
-
-        javafx.animation.AnimationTimer timer = new javafx.animation.AnimationTimer() {
-            @Override public void handle(long now) {
-                double elapsed = System.currentTimeMillis() - startTime;
-                double frac    = Math.min(elapsed / ms, 1.0);
-                mp.setVolume(startVol * (1.0 - frac));
-                if (frac >= 1.0) {
-                    mp.stop();
-                    mp.dispose();
-                    stop();
-                }
-            }
-        };
-        timer.start();
     }
 
     // ═════════════════════════════════════════════════════════════════════════

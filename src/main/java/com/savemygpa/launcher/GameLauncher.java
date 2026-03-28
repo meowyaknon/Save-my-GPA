@@ -253,10 +253,10 @@ public class GameLauncher extends Application {
 
         Text heading = new Text("📚 จบเทอมแรกแล้ว!");
         heading.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 28));
-        heading.setFill(Color.web("#ffe082"));
+        heading.setFill(Color.web(TEXT_COLOR));
 
         javafx.scene.shape.Line sep = new javafx.scene.shape.Line(0, 0, 340, 0);
-        sep.setStroke(Color.web("#ffe082", 0.35)); sep.setStrokeWidth(1.5);
+        sep.setStroke(Color.web(TEXT_COLOR, 0.35)); sep.setStrokeWidth(1.5);
 
         Label scores = new Label(
                 "💻 Programming\n" + progExam1Score + " คะแนน\n\n" +
@@ -352,7 +352,7 @@ public class GameLauncher extends Application {
         if (reason != null) { speakFail(activity.getFailMessage(reason)); return; }
         actionLocked = true;
         ActivityCutscene.play(root, ActivityCutscene.lineFor(activity.getClass().getSimpleName()), () -> {
-            activity.performActivity(player, timeSystem, eventManager);
+            activity.performActivity(player, timeSystem);
             if (location != null) eventManager.triggerAfterActivity(player, timeSystem, location);
             if (outsideUI != null) { outsideUI.refresh(); outsideUI.saySuccess(); }
             maybeSaveProgress(false);
@@ -364,7 +364,7 @@ public class GameLauncher extends Application {
     private boolean performSilent(Activity activity, Location location) {
         RequirementReason reason = activity.canPerform(player, timeSystem);
         if (reason != null) { speakFail(activity.getFailMessage(reason)); return false; }
-        activity.performActivity(player, timeSystem, eventManager);
+        activity.performActivity(player, timeSystem);
         if (location != null) eventManager.triggerAfterActivity(player, timeSystem, location);
         if (outsideUI != null) { outsideUI.refresh(); outsideUI.saySuccess(); }
         maybeSaveProgress(false);
@@ -535,7 +535,7 @@ public class GameLauncher extends Application {
         if (r != null) { speakFail(eat.getFailMessage(r)); return; }
         actionLocked = true;
         ActivityCutscene.play(root, ActivityCutscene.lineFor("EatActivity"), () -> {
-            eat.performActivity(player, timeSystem, eventManager);
+            eat.performActivity(player, timeSystem);
             eventManager.triggerAfterActivity(player, timeSystem, Location.CANTEEN);
             if (outsideUI != null) { outsideUI.refresh(); outsideUI.saySuccess(); }
             maybeSaveProgress(false);

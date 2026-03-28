@@ -37,9 +37,6 @@ public class EatActivity extends Activity {
     }
 
     @Override
-    protected void afterActivity(Player player, TimeSystem timeSystem,  EventManager eventManager) { }
-
-    @Override
     protected String getName() {
         return "Eating";
     }

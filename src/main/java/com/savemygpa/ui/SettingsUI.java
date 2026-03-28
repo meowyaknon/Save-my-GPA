@@ -55,11 +55,11 @@ public class SettingsUI {
 
         Text title = new Text("⚙  ตั้งค่า");
         title.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 40));
-        title.setFill(Color.web("#80cbc4"));
+        title.setFill(Color.web(TEXT_COLOR));
         title.setStyle("-fx-effect: dropshadow(gaussian,rgba(128,203,196,0.55),16,0.4,0,0);");
 
         javafx.scene.shape.Line sep = new javafx.scene.shape.Line(0, 0, 620, 0);
-        sep.setStroke(Color.web("#80cbc4", 0.35)); sep.setStrokeWidth(1.5);
+        sep.setStroke(Color.web(TEXT_COLOR, 0.35)); sep.setStrokeWidth(1.5);
 
         VBox sliders = new VBox(22,
                 volRow("🔊  Master Volume", audio.getGameVolume(),  audio::setGameVolume),

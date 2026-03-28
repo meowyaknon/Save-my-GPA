@@ -36,8 +36,4 @@ public class ExamActivity extends Activity {
         return GameConfig.EXAM_TIME_COST;
     }
 
-    @Override
-    protected void afterActivity(Player player, TimeSystem timeSystem, EventManager eventManager) {
-
-    }
 }

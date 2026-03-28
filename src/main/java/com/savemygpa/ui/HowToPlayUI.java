@@ -48,11 +48,11 @@ public class HowToPlayUI {
 
         Text title = new Text("🕹️  วิธีเล่น Save My GPA");
         title.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 34));
-        title.setFill(Color.web("#ffe082"));
+        title.setFill(Color.web(TEXT_COLOR));
         title.setStyle("-fx-effect: dropshadow(gaussian,rgba(255,224,130,0.55),16,0.4,0,0);");
 
         javafx.scene.shape.Line sep = new javafx.scene.shape.Line(0, 0, 640, 0);
-        sep.setStroke(Color.web("#ffe082", 0.30)); sep.setStrokeWidth(1.5);
+        sep.setStroke(Color.web(TEXT_COLOR, 0.30)); sep.setStrokeWidth(1.5);
 
         Label body = new Label(
                 "วัน 1–5    →  เรียนปกติ\n" +

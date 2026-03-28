@@ -48,17 +48,23 @@ public class CreditsUI {
 
         Text title = new Text("👥  เครดิต");
         title.setFont(Font.font("Comic Sans MS", FontWeight.BOLD, 40));
-        title.setFill(Color.web("#ce93d8"));
+        title.setFill(Color.web(TEXT_COLOR));
         title.setStyle("-fx-effect: dropshadow(gaussian,rgba(206,147,216,0.55),16,0.4,0,0);");
 
         javafx.scene.shape.Line sep = new javafx.scene.shape.Line(0, 0, 540, 0);
-        sep.setStroke(Color.web("#ce93d8", 0.30)); sep.setStrokeWidth(1.5);
+        sep.setStroke(Color.web(TEXT_COLOR, 0.30)); sep.setStrokeWidth(1.5);
 
-        Label body = new Label(
-                "🎮  Save My GPA\n\n" +
-                        "สร้างโดย SaveMyGPA Team\n\n" +
-                        "ขอบคุณทุกคนที่เล่น! 🎉\n\n" +
-                        "© 2024 SaveMyGPA Team");
+        Label body = new Label("  สร้างโดย SaveMyGPA Team\n" +
+                             "รายชื่อผู้สร้างมีดังนี้\n" +
+                             "1. 68070316 นายศิริเทพ บดิการ" +
+                             "    2. 68070316 นายศิริเทพ บดิการ\n" +
+                             "3. 68070316 นายศิริเทพ บดิการ" +
+                             "    4. 68070316 นายศิริเทพ บดิการ\n" +
+                             "5. 68070316 นายศิริเทพ บดิการ" +
+                             "    6. 68070316 นายศิริเทพ บดิการ\n" +
+                             "7. 68070316 นายศิริเทพ บดิการ" +
+                             "    8. 68070316 นายศิริเทพ บดิการ\n" +
+                             "ขอบคุณทุกคนที่เล่น! 🎉\n");
         body.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:24px;" +
                 "-fx-text-fill:" + TEXT_COLOR + ";-fx-line-spacing:8;");
         body.setTextAlignment(TextAlignment.CENTER); body.setWrapText(true);

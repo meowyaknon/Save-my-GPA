@@ -46,8 +46,5 @@ public class ClassroomActivity extends Activity {
     protected int getTimeCost() { return GameConfig.CLASSROOM_TIME_COST; }
 
     @Override
-    protected void afterActivity(Player player, TimeSystem timeSystem, EventManager eventManager) {}
-
-    @Override
     protected String getName() { return "Classroom Study"; }
 }
