@@ -89,7 +89,7 @@ public class GameDialog {
         // Card
         StackPane card = new StackPane();
         card.setMaxWidth(CARD_W);
-        card.setAlignment(Pos.TOP_CENTER);
+        card.setAlignment(Pos.CENTER);
 
         // ── Background image (big_block_black_V.png) ──────────────────────────
         var bgUrl = GameDialog.class.getResource(POPUP_BG_V);
@@ -98,7 +98,7 @@ public class GameDialog {
             bgIv.setFitWidth(CARD_W);
             bgIv.setPreserveRatio(true);
             bgIv.setSmooth(true);
-            card.getChildren().add(bgIv);   // background — first child
+            card.getChildren().add(bgIv);
         } else {
             card.setStyle("-fx-background-color:rgba(8,8,24,0.97);-fx-background-radius:24;" +
                     "-fx-min-width:460;-fx-min-height:640;" +
@@ -165,11 +165,9 @@ public class GameDialog {
         ImageView continueBtn = makeContinueBtn(() -> dismissCard(root, overlay, onClose));
         body.getChildren().add(continueBtn);
 
-        StackPane.setAlignment(body, Pos.TOP_CENTER);
+        StackPane.setAlignment(body, Pos.CENTER);
         card.getChildren().add(body);   // content — second child (on top of bg)
 
-        // FIX: Scale card relative to the root pane dimensions so it centers
-        // correctly in both windowed and fullscreen mode.
         Scale cardScale = new Scale(1, 1);
         cardScale.pivotXProperty().bind(Bindings.divide(card.widthProperty(), 2));
         cardScale.pivotYProperty().bind(Bindings.divide(card.heightProperty(), 2));
