@@ -21,9 +21,9 @@ public class ClassroomActivity extends Activity {
     @Override
     public String getFailMessage(RequirementReason reason) {
         return switch (reason) {
-            case NOT_ENOUGH_MOOD   -> "No mood for classroom";
-            case NOT_ENOUGH_ENERGY -> "No energy for classroom";
-            case NOT_ENOUGH_TIME   -> "No time for classroom";
+            case NOT_ENOUGH_MOOD   -> "ฉันไม่อารมณ์ที่อยากจะเข้าเรียน";
+            case NOT_ENOUGH_ENERGY -> "ฉันไม่มีแรงพอที่จะเข้าเรียน";
+            case NOT_ENOUGH_TIME   -> "ฉันเหลือเวลาไม่พอที่จะเข้าเรียน";
         };
     }
 

@@ -16,7 +16,6 @@ public class PauseMenuUI {
     private static final String BTN_SETTINGS = "/images/menu/menu_setting.png";
     private static final String BTN_MENU     = "/images/menu/back_to_menu.png";
 
-    // Natural (1920-px-space) sizes
     private static final double BTN_W  = 340;
     private static final double CARD_W = 420;
 
@@ -84,7 +83,6 @@ public class PauseMenuUI {
 
         overlay.getChildren().add(card);
 
-        // ESC → resume
         overlay.setFocusTraversable(true);
         overlay.setOnKeyPressed(e -> {
             if (e.getCode() == javafx.scene.input.KeyCode.ESCAPE) cb.onResume();

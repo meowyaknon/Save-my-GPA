@@ -32,12 +32,12 @@ public class OutsideUI {
     private static final String PLAYER_TIRED   = "/images/player/player_tired.png";
 
     static final String[] CLOCK_IMGS = {
-            "/images/clock/full_time.png",
-            "/images/clock/9_left.png", "/images/clock/8_left.png",
-            "/images/clock/7_left.png", "/images/clock/6_left.png",
-            "/images/clock/5_left.png", "/images/clock/4_left.png",
-            "/images/clock/3_left.png", "/images/clock/2_left.png",
-            "/images/clock/1_left.png", "/images/clock/No_time.png",
+            "/images/clock/No_time.png",
+            "/images/clock/1_left.png", "/images/clock/2_left.png",
+            "/images/clock/3_left.png", "/images/clock/4_left.png",
+            "/images/clock/5_left.png", "/images/clock/6_left.png",
+            "/images/clock/7_left.png", "/images/clock/8_left.png",
+            "/images/clock/9_left.png", "/images/clock/full_time.png",
     };
 
     private static final String[] IDLE_NORMAL   = { "วันนี้จะทำอะไรดีนะ?", "ต้องสู้ต่อไป!", "หิวข้าวแล้วล่ะ...", "อยากนอนจัง" };

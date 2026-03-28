@@ -19,7 +19,7 @@ public class ExamActivity extends Activity {
 
     @Override
     public String getFailMessage(RequirementReason reason) {
-        return "Not enough time to take the exam";
+        return "ฉันเหลือเวลาไม่พอที่จะทำข้อสอบ";
     }
 
     @Override

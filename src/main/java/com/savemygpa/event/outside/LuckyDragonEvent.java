@@ -28,6 +28,6 @@ public class LuckyDragonEvent extends Event {
     @Override
     public String getName() { return "น้องเงินทอง"; }
     @Override
-    public String getDescription() { return "A golden cat naps in the sun. Today feels lucky!"; }
+    public String getDescription() { return "ดินผ่านน้องที่กำลังนอนอาบแดดอย่างสบายใจ แค่เห็นก็รู้สึกว่าวันนี้ต้องเป็นวันที่ดี!"; }
     @Override public double getChance() { return 0.4; }
 }

@@ -26,9 +26,9 @@ public class KLLCActivity extends Activity {
     @Override
     public String getFailMessage(RequirementReason reason) {
         return switch (reason) {
-            case NOT_ENOUGH_MOOD -> "no mood for KLLC";
-            case NOT_ENOUGH_ENERGY -> "no energy for KLLC";
-            case NOT_ENOUGH_TIME -> "no time for KLLC";
+            case NOT_ENOUGH_MOOD -> "ฉันไม่มีอารมณ์ที่จะไป KLLC";
+            case NOT_ENOUGH_ENERGY -> "ฉันไม่มีแรงพอที่จะไป KLLC";
+            case NOT_ENOUGH_TIME -> "ฉันเหลือเวลาไม่พอที่จะไป KLLC";
         };
     }
 

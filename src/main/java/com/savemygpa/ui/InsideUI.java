@@ -44,8 +44,6 @@ public class InsideUI {
         Player       getPlayer();
         TimeSystem   getTimeSystem();
         EventManager getEventManager();
-        // KEY: provide the LIVE outsideUI so its speech-bubble nodes are
-        // reattached to this screen's HUD layer — not a new dead instance.
         OutsideUI    getOutsideUI();
     }
 

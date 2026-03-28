@@ -20,7 +20,7 @@ public class EatActivity extends Activity {
     @Override
     public String getFailMessage(RequirementReason reason) {
         if  (reason == RequirementReason.NOT_ENOUGH_TIME) {
-            return "No time to eat";
+            return "ฉันเหลือเวลาไม่พอที่จะกินข้าว";
         }
         return null;
     }

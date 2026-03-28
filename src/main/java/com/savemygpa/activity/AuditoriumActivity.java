@@ -23,8 +23,8 @@ public class AuditoriumActivity extends Activity {
     @Override
     public String getFailMessage(RequirementReason reason) {
         return switch (reason) {
-            case NOT_ENOUGH_ENERGY -> "No energy for auditorium";
-            case NOT_ENOUGH_TIME -> "No time for auditorium";
+            case NOT_ENOUGH_ENERGY -> "ฉันไม่มีแรงพอที่จะเข้า auditorium";
+            case NOT_ENOUGH_TIME -> "ฉันเหลือเวลาไม่พอที่จะเข้า auditorium";
             case NOT_ENOUGH_MOOD -> null;
         };
     }

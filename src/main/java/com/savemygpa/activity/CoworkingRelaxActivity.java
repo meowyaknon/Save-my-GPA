@@ -20,7 +20,7 @@ public class CoworkingRelaxActivity extends Activity {
     @Override
     public String getFailMessage(RequirementReason reason) {
         if  (reason == RequirementReason.NOT_ENOUGH_TIME) {
-            return "No time for relaxing";
+            return "ฉันเหลือเวลาไม่พอที่จะพักที่ coworking";
         }
         return null;
     }

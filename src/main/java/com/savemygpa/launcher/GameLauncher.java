@@ -852,13 +852,7 @@ public class GameLauncher extends Application {
 
     private String[] endingStory(String g) {
         return switch (g) {
-            // FIX: Exactly 4 lines for Ending A — one per cinematic scene image
-            case "A" -> new String[]{
-                    "ผลสอบออกมาแล้ว...",
-                    "เกรด A — ทุกวิชาผ่านด้วยคะแนนสูง",
-                    "ทุกหยดเหงื่อที่ทุ่มเทลงไป — มันคุ้มค่า",
-                    "แล้วก็ยิ้ม... 'ปี 2 ฉันจะเอา A อีกครั้ง'"
-            };
+            case "A" -> new String[]{"ผลสอบออกมาแล้ว...", "เกรด A — ทุกวิชาผ่านด้วยคะแนนสูง", "ทุกหยดเหงื่อที่ทุ่มเทลงไป — มันคุ้มค่า", "แล้วก็ยิ้ม... 'ปี 2 ฉันจะเอา A อีกครั้ง'"};
             case "B" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด B — ไม่ใช่สิ่งที่หวัง แต่ก็ภูมิใจ","Nobody is perfect — แต่ทุกคนพัฒนาได้"};
             case "C" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด C — รอดมาได้ แม้จะหนักแค่ไหน","อย่างน้อยก็ผ่าน — สู้ต่อไปนะ!"};
             case "D" -> new String[]{"ผลสอบออกมาแล้ว...","เกรด D — ผ่านแบบ Probation ฉิวเฉียด","ลมหายใจค่อยๆ นิ่ง — ใจยังก้าวต่อไปได้"};
@@ -882,7 +876,7 @@ public class GameLauncher extends Application {
 
     private void showSecretEnding() {
         agreedToTerms = false;
-        AudioManager.getInstance().playMusic(AudioManager.Music.ENDING_GREAT);  // FIX: music before cutscene
+        AudioManager.getInstance().playMusic(AudioManager.Music.ENDING_GREAT);
         StackPane black = new StackPane();
         black.setStyle("-fx-background-color:#000;");
         black.setMaxSize(Double.MAX_VALUE,Double.MAX_VALUE);

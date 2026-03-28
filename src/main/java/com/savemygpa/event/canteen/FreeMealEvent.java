@@ -25,7 +25,7 @@ public class FreeMealEvent extends Event {
     }
 
     @Override
-    public String getName() { return "เจอพี่รหัสสายซัพ"; }
+    public String getName() { return "เจอพี่รหัสสายซัพพอร์ต"; }
     @Override
     public String getDescription() { return "พี่รหัสเลี้ยงข้าวชุดใหญ่พร้อมแนะแนวทางทำ Assignment"; }
     @Override public double getChance() { return 0.25; }

@@ -1,6 +1,5 @@
 package com.savemygpa.ui;
 
-import com.savemygpa.audio.AudioManager;
 import javafx.animation.*;
 import javafx.geometry.Insets;
 import javafx.geometry.Pos;

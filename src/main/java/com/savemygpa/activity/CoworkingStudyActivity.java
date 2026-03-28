@@ -26,9 +26,9 @@ public class CoworkingStudyActivity extends Activity {
     @Override
     public String getFailMessage(RequirementReason reason) {
         return switch (reason) {
-            case NOT_ENOUGH_MOOD ->"No mood for review";
-            case NOT_ENOUGH_ENERGY -> "No energy for review";
-            case NOT_ENOUGH_TIME -> "No time for review";
+            case NOT_ENOUGH_MOOD ->"ฉันไม่มีอารมณ์อยากติวหนังสือ";
+            case NOT_ENOUGH_ENERGY -> "ฉันไม่มีแรงพอที่จะติวหนังสือ";
+            case NOT_ENOUGH_TIME -> "ฉันเหลือเวลาไม่พอที่จะติวหนังสือ";
         };
     }
 

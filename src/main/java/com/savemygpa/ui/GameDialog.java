@@ -74,15 +74,12 @@ public class GameDialog {
     // ── Event notification (custom card with popup background image) ──────────
     public static void event(StackPane root, String eventName, String description, Runnable onClose) {
 
-        // Full-window dim — covers the entire root pane
         StackPane overlay = new StackPane();
         overlay.setStyle("-fx-background-color: rgba(0,0,0,0.68);");
         overlay.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);
         overlay.prefWidthProperty().bind(root.widthProperty());
         overlay.prefHeightProperty().bind(root.heightProperty());
 
-        // FIX: Wrap card in a centering pane so it always sits in the middle
-        // of the window regardless of scale/resolution.
         StackPane centerWrapper = new StackPane();
         centerWrapper.setAlignment(Pos.CENTER);
         centerWrapper.setMaxSize(Double.MAX_VALUE, Double.MAX_VALUE);

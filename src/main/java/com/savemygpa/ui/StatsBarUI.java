@@ -17,7 +17,7 @@ import javafx.util.Duration;
 
 public class StatsBarUI {
 
-    // ── Rendered panel size (used by OutsideUI for positioning) ──────────────
+    // ── Rendered panel size ──────────────
     public static final double IMG_W = 620;
     public static final double IMG_H = 310;
 
@@ -113,7 +113,6 @@ public class StatsBarUI {
             clip.setArcWidth(BAR_RADIUS * 2); clip.setArcHeight(BAR_RADIUS * 2);
             fill.setClip(clip);
 
-            // Shine
             Rectangle shine = new Rectangle(tW * 0.40, BAR_H * 0.33);
             shine.setArcWidth(BAR_RADIUS); shine.setArcHeight(BAR_RADIUS);
             shine.setFill(Color.color(1, 1, 1, 0.18));

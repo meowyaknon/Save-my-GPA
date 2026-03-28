@@ -55,12 +55,12 @@ public class HowToPlayUI {
         sep.setStroke(Color.web(TEXT_COLOR, 0.30)); sep.setStrokeWidth(1.5);
 
         Label body = new Label(
-                "วัน 1–5    →  เรียนปกติ\n" +
-                        "วัน 6       →  สอบ Programming รอบ 1\n" +
+                "วัน 1–5    →  เรียนปกติ (ทำกิจกรรมเพื่อเก็บค่าความรู้ INT)\n" +
+                        "วัน 6       →  สอบ Programming รอบ 1 (มินิเกม)\n" +
                         "วัน 7       →  สอบ Math รอบ 1 (มินิเกม)\n" +
                         "วัน 8       →  Intelligence รีเซ็ต\n" +
-                        "วัน 8–12  →  เรียนปกติ\n" +
-                        "วัน 13     →  สอบ Programming รอบ 2\n" +
+                        "วัน 8–12  →  เรียนปกติ (ทำกิจกรรมเพื่อเก็บค่าความรู้ INT)\n" +
+                        "วัน 13     →  สอบ Programming รอบ 2 (มินิเกม)\n" +
                         "วัน 14     →  สอบ Math รอบ 2 (มินิเกม)\n\n" +
                         "🏆  เกรด:  ≥80 → A  |  ≥70 → B  |  ≥60 → C  |  ≥50 → D  |  <50 → F");
         body.setStyle("-fx-font-family:'Comic Sans MS';-fx-font-size:21px;" +
