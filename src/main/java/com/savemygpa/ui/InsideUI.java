@@ -87,10 +87,12 @@ public class InsideUI {
         String coworkingTip =
                 "เลือกกิจกรรมใน Coworking Space\n\n" +
                         "📖 Review (" + GameConfig.REVIEW_TIME_COST + " ชม.)\n" +
-                        "-> 🧠 INT +" + StatConfig.REVIEW_LOW_INTELLIGENCE_GAIN + "~" + StatConfig.REVIEW_HIGH_INTELLIGENCE_GAIN +
-                        "-> ⚡ Energy -" + StatConfig.REVIEW_ENERGY_LOSS + "  😊 Mood -" + StatConfig.REVIEW_MOOD_LOSS + "\n\n" +
+                        "-> 🧠 INT +" + StatConfig.REVIEW_LOW_INTELLIGENCE_GAIN + "~" + StatConfig.REVIEW_HIGH_INTELLIGENCE_GAIN + "\n" +
+                        "-> ⚡ Energy -" + StatConfig.REVIEW_ENERGY_LOSS + "\n" +
+                        "-> 😊 Mood -" + StatConfig.REVIEW_MOOD_LOSS + "\n\n" +
                         "😌 Relax (" + GameConfig.RELAX_TIME_COST + " ชม.)\n" +
-                        "-> ⚡ Energy +" + StatConfig.RELAX_ENERGY_GAIN + "  😊 Mood +" + StatConfig.RELAX_MOOD_GAIN;
+                        "-> ⚡ Energy +" + StatConfig.RELAX_ENERGY_GAIN + "\n" +
+                        "-> 😊 Mood +" + StatConfig.RELAX_MOOD_GAIN;
 
         String progExamTip =
                 "⏱ ใช้เวลา " + GameConfig.EXAM_TIME_COST + " ชั่วโมง\n\n" +
