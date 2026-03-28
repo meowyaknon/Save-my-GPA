@@ -16,7 +16,7 @@ import javafx.util.Duration;
 
 public class TooltipOverlay {
 
-    private static final double WIDTH  = 300;
+    private static final double WIDTH  = 340;
     private static final double PAD    = 18;
     private static final double MARGIN = 16;
 

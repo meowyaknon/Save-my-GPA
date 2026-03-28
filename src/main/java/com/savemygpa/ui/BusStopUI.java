@@ -73,23 +73,24 @@ public class BusStopUI {
 
         String kllcTip =
                 "⏱ ใช้เวลา " + GameConfig.KLLC_TIME_COST + " ชั่วโมง\n\n" +
-                        "✅ ได้รับ:\n" +
-                        "   🧠 INT +" + StatConfig.KLLC_LOW_INTELLIGENCE_GAIN + "~" + StatConfig.KLLC_HIGH_INTELLIGENCE_GAIN + "\n\n" +
-                        "❌ เสียไป:\n" +
-                        "   ⚡ Energy -" + StatConfig.KLLC_ENERGY_LOSS + "\n" +
-                        "   😊 Mood -"   + StatConfig.KLLC_MOOD_LOSS + "\n\n" +
-                        "🔒 ต้องการ:\n" +
-                        "   ⚡ Energy ≥ " + StatConfig.KLLC_ENERGY_REQUIREMENT + "\n" +
-                        "   😊 Mood ≥ "   + StatConfig.KLLC_MOOD_REQUIREMENT;
+                        "✅ ได้รับ :\n" +
+                        "-> 🧠 INT +" + StatConfig.KLLC_LOW_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง 0 - 30" + "\n" +
+                        "-> 🧠 INT +" + StatConfig.KLLC_MEDIUM_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง 31 - 69" + "\n" +
+                        "-> 🧠 INT +" + StatConfig.KLLC_HIGH_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง ≥ 70" +"\n\n" +
+                        "❌ เสียไป :\n" +
+                        "-> ⚡ Energy -" + StatConfig.KLLC_ENERGY_LOSS + "\n" +
+                        "-> 😊 Mood -"   + StatConfig.KLLC_MOOD_LOSS + "\n\n" +
+                        "🔒 ต้องการ :\n" +
+                        "-> ⚡ Energy " + StatConfig.KLLC_ENERGY_REQUIREMENT + "\n" +
+                        "-> 😊 Mood "   + StatConfig.KLLC_MOOD_REQUIREMENT;
 
         String homeTip =
-                "จบวันนี้ทันที\n\n" +
+                "⚠️ เมื่อคลิกจะจบวันนี้ทันที !\n\n" +
                         "✅ ได้รับ:\n" +
-                        "   ⚡ Energy +3 + (Mood/40) + เวลาที่เหลือ\n" +
-                        "   😊 Mood +10 + เวลาที่เหลือ\n\n" +
-                        "⚠️ ไม่สามารถย้อนกลับได้!";
+                        "-> ⚡ Energy + ( 3 + (Mood/40) + เวลาที่เหลือในวันนั้น )\n" +
+                        "-> 😊 Mood + ( 10 + เวลาที่เหลือ )";
 
-        ImageView kllcBtn   = makeBtn(BTN_KLLC,   BTN_ACTION_W, "🏛 KLLC Library", kllcTip, () -> dismiss(overlay, cb::onKLLC));
+        ImageView kllcBtn   = makeBtn(BTN_KLLC,   BTN_ACTION_W, "🏛 KLLC", kllcTip, () -> dismiss(overlay, cb::onKLLC));
         ImageView homeBtn   = makeBtn(BTN_HOME,   BTN_ACTION_W, "🏠 กลับบ้าน",     homeTip, () -> dismiss(overlay, cb::onGoHome));
         ImageView cancelBtn = makeBtn(BTN_CANCEL, BTN_CANCEL_W, null,               null,    () -> dismissNoCallback(overlay));
 
