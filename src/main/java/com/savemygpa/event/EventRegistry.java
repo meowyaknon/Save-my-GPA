@@ -1,7 +1,7 @@
 package com.savemygpa.event;
 
 import com.savemygpa.event.auditorium.FreeFoodEvent;
-import com.savemygpa.event.busstop.GoodSeatEvent;
+import com.savemygpa.event.coworkingspace.GoodSeatEvent;
 import com.savemygpa.event.busstop.SlowBusEvent;
 import com.savemygpa.event.canteen.FreeMealEvent;
 import com.savemygpa.event.canteen.NoSeatEvent;

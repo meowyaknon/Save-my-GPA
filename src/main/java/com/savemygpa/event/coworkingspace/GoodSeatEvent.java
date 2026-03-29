@@ -1,4 +1,4 @@
-package com.savemygpa.event.busstop;
+package com.savemygpa.event.coworkingspace;
 
 import com.savemygpa.core.TimeSystem;
 import com.savemygpa.event.Event;
@@ -13,7 +13,7 @@ public class GoodSeatEvent extends Event {
 
     @Override
     public boolean canOccur(Player player, TimeSystem timeSystem, EventContext context) {
-        return context.getLocation() == Location.BUS_STOP;
+        return context.getLocation() == Location.COWORKING;
     }
 
     @Override
