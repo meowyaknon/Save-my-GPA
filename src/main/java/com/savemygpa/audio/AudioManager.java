@@ -191,14 +191,12 @@ public class AudioManager {
 
     public void playExplosion() { playSfx(Sfx.EXPLOSION); }
 
-    public void playKeyboardTyping(){ playSfx(Sfx.KEYBOARD_TYPING);}
-
     public void playError() { playSfx(Sfx.ERROR);}
 
     public void playAnswerWrong() { playSfx(Sfx.ANSWER_WRONG);}
 
     // ── ดึง AudioClip ของ keyboard typing เพื่อ stop ได้จากภายนอก ─────────
-    public javafx.scene.media.AudioClip getKeyboardClip() {
+    public AudioClip getKeyboardClip() {
         try {
             var url = getClass().getResource(Sfx.KEYBOARD_TYPING);
             if (url == null) return null;
