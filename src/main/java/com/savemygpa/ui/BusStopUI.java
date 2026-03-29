@@ -74,9 +74,9 @@ public class BusStopUI {
         String kllcTip =
                 "⏱ ใช้เวลา " + GameConfig.KLLC_TIME_COST + " ชั่วโมง\n\n" +
                         "✅ ได้รับ :\n" +
-                        "-> 🧠 INT +" + StatConfig.KLLC_LOW_INTELLIGENCE_GAIN    + " | เมื่อ Mood มาก " + "\n" +
+                        "-> 🧠 INT +" + StatConfig.KLLC_LOW_INTELLIGENCE_GAIN    + " | เมื่อ Mood น้อย" + "\n" +
                         "-> 🧠 INT +" + StatConfig.KLLC_MEDIUM_INTELLIGENCE_GAIN + " | เมื่อ Mood กลางๆ" + "\n" +
-                        "-> 🧠 INT +" + StatConfig.KLLC_HIGH_INTELLIGENCE_GAIN   + " | เมื่อ Mood น้อย  " +"\n\n" +
+                        "-> 🧠 INT +" + StatConfig.KLLC_HIGH_INTELLIGENCE_GAIN   + " | เมื่อ Mood มาก" +"\n\n" +
                         "❌ เสียไป :\n" +
                         "-> ⚡ Energy -" + StatConfig.KLLC_ENERGY_LOSS + "\n" +
                         "-> 😊 Mood -"   + StatConfig.KLLC_MOOD_LOSS + "\n\n" +
