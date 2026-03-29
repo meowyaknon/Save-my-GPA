@@ -31,5 +31,5 @@ public class RainEvent extends Event {
                                         "ผลกระทบ: Mood -10\n\n" +
                                         "Debuff: Wet Feet (เสีย energy เพิ่มขึ้น 1 หน่วย เมื่อเปลี่ยนสถานที่) ทั้งวัน";
                                     }
-    @Override public double getChance() { return 0.3; }
+    @Override public double getChance() { return 0.2; }
 }

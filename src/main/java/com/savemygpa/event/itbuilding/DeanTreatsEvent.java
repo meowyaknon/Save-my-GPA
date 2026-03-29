@@ -28,5 +28,5 @@ public class DeanTreatsEvent extends Event {
     @Override
     public String getDescription() { return "เดินผ่านโถงคณะพอดี เจอท่านคณบดีเหมาไอติมไผ่XXXมาแจกเด็กๆ พลังใจเต็มเปี่ยมพร้อมปั่นโปรเจค\n\n" + 
                                     "ผลกระทบ: Mood +40, Energy +10"; }
-    @Override public double getChance() { return 0.07; }
+    @Override public double getChance() { return 0.15; }
 }

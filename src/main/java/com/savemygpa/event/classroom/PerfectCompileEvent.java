@@ -27,5 +27,5 @@ public class PerfectCompileEvent extends Event {
     @Override
     public String getDescription() { return "ความมหัศจรรย์ที่นานๆ จะเกิดที โค้ดที่เขียนมาอย่างยาวเหี้ยมดัน Run ผ่านฉลุยแบบไม่มี Error\n\n" + 
                                     "ผลกระทบ: Mood +45, Int +2"; }
-    @Override public double getChance() { return 0.2; }
+    @Override public double getChance() { return 0.25; }
 }
