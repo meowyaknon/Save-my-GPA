@@ -29,7 +29,7 @@ import java.io.*;
 import java.nio.file.*;
 import java.util.*;
 
-public class GameLauncher extends Application {
+public class GameLauncher extends Application implements GameCallbacks {
 
     private Stage        stage;
     private Player       player;
@@ -41,13 +41,11 @@ public class GameLauncher extends Application {
 
     private static final int BASE_W = 1920, BASE_H = 1080;
 
-    private OutsideUI     outsideUI;
-    private GameCallbacks gameCallbacks;
-    private StackPane     pauseOverlay = null;
-    private boolean       pauseOpen    = false;
-    private boolean       actionLocked = false;
+    private OutsideUI outsideUI;
+    private StackPane pauseOverlay = null;
+    private boolean   pauseOpen    = false;
+    private boolean   actionLocked = false;
 
-    // Tracks which map screen the player is currently on
     private enum ScreenOrigin { MAIN_MENU, OUTSIDE, IT_BUILDING }
     private ScreenOrigin screenOrigin = ScreenOrigin.MAIN_MENU;
 
@@ -68,126 +66,158 @@ public class GameLauncher extends Application {
     static final String TEXT_COLOR = "#3b1a1a";
 
     private static final String[] ENDING_A_SCENES = {
-            "/images/endings/A/1.jpg",
-            "/images/endings/A/2.jpg",
-            "/images/endings/A/3.jpg",
-            "/images/endings/A/4.jpg",
-            "/images/endings/A/5.jpg",
-            "/images/endings/A/6.jpg",
-            "/images/endings/A/7.jpg",
-            "/images/endings/A/8.jpg",
+            "/images/endings/A/1.jpg", "/images/endings/A/2.jpg",
+            "/images/endings/A/3.jpg", "/images/endings/A/4.jpg",
+            "/images/endings/A/5.jpg", "/images/endings/A/6.jpg",
+            "/images/endings/A/7.jpg", "/images/endings/A/8.jpg",
     };
     private static final String[] ENDING_B_SCENES = {
-            "/images/endings/B/1.jpg",
-            "/images/endings/B/2.jpg",
-            "/images/endings/B/3.jpg",
-            "/images/endings/B/4.jpg",
-            "/images/endings/B/5.jpg",
-            "/images/endings/B/6.jpg",
+            "/images/endings/B/1.jpg", "/images/endings/B/2.jpg",
+            "/images/endings/B/3.jpg", "/images/endings/B/4.jpg",
+            "/images/endings/B/5.jpg", "/images/endings/B/6.jpg",
     };
     private static final String[] ENDING_C_SCENES = {
-            "/images/endings/C/1.JPG",
-            "/images/endings/C/2.JPG",
-            "/images/endings/C/3.JPG",
-            "/images/endings/C/4.JPG",
-            "/images/endings/C/5.JPG",
-            "/images/endings/C/6.JPG",
+            "/images/endings/C/1.JPG", "/images/endings/C/2.JPG",
+            "/images/endings/C/3.JPG", "/images/endings/C/4.JPG",
+            "/images/endings/C/5.JPG", "/images/endings/C/6.JPG",
     };
     private static final String[] ENDING_D_SCENES = {
-            "/images/endings/D/1.JPG",
-            "/images/endings/D/2.JPG",
-            "/images/endings/D/3.JPG",
-            "/images/endings/D/4.JPG",
-            "/images/endings/D/5.JPG",
-            "/images/endings/D/6.JPG",
+            "/images/endings/D/1.JPG", "/images/endings/D/2.JPG",
+            "/images/endings/D/3.JPG", "/images/endings/D/4.JPG",
+            "/images/endings/D/5.JPG", "/images/endings/D/6.JPG",
     };
     private static final String[] ENDING_F_SCENES = {
-            "/images/endings/F/1.JPG",
-            "/images/endings/F/2.JPG",
-            "/images/endings/F/3.JPG",
-            "/images/endings/F/4.JPG",
-            "/images/endings/F/5.JPG",
-            "/images/endings/F/6.JPG",
+            "/images/endings/F/1.JPG", "/images/endings/F/2.JPG",
+            "/images/endings/F/3.JPG", "/images/endings/F/4.JPG",
+            "/images/endings/F/5.JPG", "/images/endings/F/6.JPG",
     };
 
     // =========================================================================
-    // Unified callbacks — built ONCE in start(), never rebuilt
+    // start()
     // =========================================================================
-    private GameCallbacks buildGameCallbacks() {
-        return new GameCallbacks() {
-
-            // ── OutsideUI ─────────────────────────────────────────────────────
-            @Override public void onBusStop()    { runOnce(GameLauncher.this::showBusStop); }
-            @Override public void onCanteen()    { runOnce(GameLauncher.this::doCanteen); }
-            @Override public void onITBuilding() { runOnce(GameLauncher.this::showITBuilding); }
-
-            // ── InsideUI ──────────────────────────────────────────────────────
-            @Override public boolean      isProgExamDay()   { return GameLauncher.this.isProgExamDay(); }
-            @Override public boolean      isMathExamDay()   { return GameLauncher.this.isMathExamDay(); }
-            @Override public Player       getPlayer()       { return player; }
-            @Override public TimeSystem   getTimeSystem()   { return timeSystem; }
-            @Override public EventManager getEventManager() { return eventManager; }
-            @Override public OutsideUI    getOutsideUI()    { return outsideUI; }
-            @Override public void onClassroom()  { AudioManager.getInstance().playAccept(); performWithCutscene(new ClassroomActivity(),      Location.CLASSROOM,  GameLauncher.this::showITBuilding); }
-            @Override public void onAuditorium() { AudioManager.getInstance().playAccept(); performWithCutscene(new AuditoriumActivity(),     Location.AUDITORIUM, GameLauncher.this::showITBuilding); }
-            @Override public void onCoworking()  { AudioManager.getInstance().playAccept(); showCoworkingSpace(); }
-            @Override public void onProgExam()   { AudioManager.getInstance().playAccept(); doProgExam(); }
-            @Override public void onMathExam()   { AudioManager.getInstance().playAccept(); doMathExam(); }
-
-            // ── BusStopUI ─────────────────────────────────────────────────────
-            @Override public void onKLLC()   { AudioManager.getInstance().playAccept(); performWithCutscene(new KLLCActivity(), Location.BUS_STOP, GameLauncher.this::showGameplay); }
-            @Override public void onGoHome() { AudioManager.getInstance().playAccept(); doGoHome(); }
-
-            // ── CoworkingUI ───────────────────────────────────────────────────
-            @Override public void onRelax() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingRelaxActivity(), Location.COWORKING, GameLauncher.this::showITBuilding); }
-            @Override public void onStudy() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingStudyActivity(), Location.COWORKING, GameLauncher.this::showITBuilding); }
-
-            // ── AcceptanceUI ──────────────────────────────────────────────────
-            @Override public void onAccept() { AudioManager.getInstance().playAccept(); agreedToTerms = true; persistSave(true); fadeOutThenRun(v -> showMainMenuWithFade()); }
-            @Override public void onRefuse() { AudioManager.getInstance().playRefuse(); showSecretEnding(); }
-
-            // ── MainMenuUI ────────────────────────────────────────────────────
-            @Override public void onContinue()  { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showGameplayWithFadeIn); }
-            @Override public void onNewGame()   { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::startNewGame); }
-            @Override public void onHowToPlay() { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showHowToPlay); }
-            @Override public void onCredits()   { AudioManager.getInstance().playAccept(); runOnce(GameLauncher.this::showCredits); }
-            @Override public void onQuit()      { AudioManager.getInstance().playRefuse(); stage.close(); }
-
-            // ── PauseMenuUI ───────────────────────────────────────────────────
-            @Override public void onResume() {
-                if (pauseOverlay != null)
-                    PauseMenuUI.dismiss(root, pauseOverlay, () -> { pauseOverlay = null; pauseOpen = false; });
-            }
-            @Override public void onMainMenu() {
-                if (pauseOverlay != null)
-                    PauseMenuUI.dismiss(root, pauseOverlay, () -> { pauseOverlay = null; pauseOpen = false; showMainMenuWithFade(); });
-            }
-
-            // ── Shared — fully context-aware via screenOrigin ─────────────────
-
-            @Override public void onBack() {
-                if (actionLocked) return;
-                AudioManager.getInstance().playRefuse();
-                actionLocked = true;
-                ActivityCutscene.transition(root, () -> { actionLocked = false; showGameplay(); }, null);
-            }
-
-            @Override public void onSettings() {
-                AudioManager.getInstance().playAccept();
-                if (pauseOverlay != null) {
-                    PauseMenuUI.dismiss(root, pauseOverlay, () -> {
-                        pauseOverlay = null;
-                        pauseOpen    = false;
-                        showSettings();
-                    });
-                } else {
-                    runOnce(GameLauncher.this::showSettings);
-                }
-            }
-
-            @Override public void onPause() { showPause(); }
-        };
+    @Override
+    public void start(Stage stage) {
+        Font.loadFont(getClass().getResourceAsStream("/fonts/IBMPlexSansThai-Medium.ttf"), 14);
+        this.stage = stage;
+        stage.setTitle("Save My GPA");
+        Scene scene = new Scene(root);
+        stage.setScene(scene);
+        root.getChildren().add(gameLayer);
+        root.setStyle("-fx-background-color: black;");
+        stage.setWidth(1280);
+        stage.setHeight(720);
+        stage.centerOnScreen();
+        stage.setResizable(true);
+        applyScale();
+        scene.widthProperty() .addListener((o, ov, nv) -> applyScale());
+        scene.heightProperty().addListener((o, ov, nv) -> applyScale());
+        stage.show();
+        loadFromDisk();
+        AudioManager.getInstance().playMusic(AudioManager.Music.INTRO);
+        if (agreedToTerms) showMainMenuWithFade(); else showIntroSequence();
     }
+
+    private void applyScale() {
+        double w = stage.getScene().getWidth();
+        double h = stage.getScene().getHeight();
+        if (w <= 0 || h <= 0) return;
+        double scale = Math.min(w / BASE_W, h / BASE_H);
+        gameLayer.setScaleX(scale); gameLayer.setScaleY(scale);
+        gameLayer.setTranslateX((w - BASE_W * scale) / 2.0);
+        gameLayer.setTranslateY((h - BASE_H * scale) / 2.0);
+    }
+
+    private void setContent(javafx.scene.Node node) {
+        gameLayer.getChildren().clear();
+        gameLayer.getChildren().add(node);
+    }
+
+    // =========================================================================
+    // GameCallbacks — OutsideUI
+    // =========================================================================
+    @Override public void onBusStop()    { runOnce(this::showBusStop); }
+    @Override public void onCanteen()    { runOnce(this::doCanteen); }
+    @Override public void onITBuilding() { runOnce(this::showITBuilding); }
+
+    // =========================================================================
+    // GameCallbacks — InsideUI
+    // =========================================================================
+    @Override public boolean      isProgExamDay()   { return isProgExamDayInternal(); }
+    @Override public boolean      isMathExamDay()   { return isMathExamDayInternal(); }
+    @Override public Player       getPlayer()       { return player; }
+    @Override public TimeSystem   getTimeSystem()   { return timeSystem; }
+    @Override public EventManager getEventManager() { return eventManager; }
+    @Override public OutsideUI    getOutsideUI()    { return outsideUI; }
+
+    @Override public void onClassroom()  { AudioManager.getInstance().playAccept(); performWithCutscene(new ClassroomActivity(),  Location.CLASSROOM,  this::showITBuilding); }
+    @Override public void onAuditorium() { AudioManager.getInstance().playAccept(); performWithCutscene(new AuditoriumActivity(), Location.AUDITORIUM, this::showITBuilding); }
+    @Override public void onCoworking()  { AudioManager.getInstance().playAccept(); showCoworkingSpace(); }
+    @Override public void onProgExam()   { AudioManager.getInstance().playAccept(); doProgExam(); }
+    @Override public void onMathExam()   { AudioManager.getInstance().playAccept(); doMathExam(); }
+
+    // =========================================================================
+    // GameCallbacks — BusStopUI
+    // =========================================================================
+    @Override public void onKLLC()   { AudioManager.getInstance().playAccept(); performWithCutscene(new KLLCActivity(), Location.BUS_STOP, this::showGameplay); }
+    @Override public void onGoHome() { AudioManager.getInstance().playAccept(); doGoHome(); }
+
+    // =========================================================================
+    // GameCallbacks — CoworkingUI
+    // =========================================================================
+    @Override public void onRelax() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingRelaxActivity(), Location.COWORKING, this::showITBuilding); }
+    @Override public void onStudy() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingStudyActivity(), Location.COWORKING, this::showITBuilding); }
+
+    // =========================================================================
+    // GameCallbacks — AcceptanceUI
+    // =========================================================================
+    @Override public void onAccept() { AudioManager.getInstance().playAccept(); agreedToTerms = true; persistSave(true); showMainMenuWithFade(); }
+    @Override public void onRefuse() { AudioManager.getInstance().playRefuse(); showSecretEnding(); }
+
+    // =========================================================================
+    // GameCallbacks — MainMenuUI
+    // =========================================================================
+    @Override public void onContinue()  { AudioManager.getInstance().playAccept(); runOnce(this::showGameplayWithFadeIn); }
+    @Override public void onNewGame()   { AudioManager.getInstance().playAccept(); runOnce(this::startNewGame); }
+    @Override public void onHowToPlay() { AudioManager.getInstance().playAccept(); runOnce(this::showHowToPlay); }
+    @Override public void onCredits()   { AudioManager.getInstance().playAccept(); runOnce(this::showCredits); }
+    @Override public void onQuit()      { AudioManager.getInstance().playRefuse(); stage.close(); }
+
+    // =========================================================================
+    // GameCallbacks — PauseMenuUI
+    // =========================================================================
+    @Override public void onResume() {
+        if (pauseOverlay != null)
+            PauseMenuUI.dismiss(root, pauseOverlay, () -> { pauseOverlay = null; pauseOpen = false; });
+    }
+    @Override public void onMainMenu() {
+        if (pauseOverlay != null)
+            PauseMenuUI.dismiss(root, pauseOverlay, () -> { pauseOverlay = null; pauseOpen = false; showMainMenuWithFade(); });
+    }
+
+    // =========================================================================
+    // GameCallbacks — Shared
+    // =========================================================================
+    @Override public void onBack() {
+        if (actionLocked) return;
+        AudioManager.getInstance().playRefuse();
+        actionLocked = true;
+        ActivityCutscene.transition(root, () -> { actionLocked = false; showGameplay(); }, null);
+    }
+
+    @Override public void onSettings() {
+        if (pauseOverlay != null) {
+            PauseMenuUI.dismiss(root, pauseOverlay, () -> {
+                pauseOverlay = null;
+                pauseOpen    = false;
+                showSettings();
+            });
+        } else {
+            AudioManager.getInstance().playAccept();
+            runOnce(this::showSettings);
+        }
+    }
+
+    @Override public void onPause() { showPause(); }
 
     // =========================================================================
     // Helpers
@@ -213,47 +243,6 @@ public class GameLauncher extends Application {
     }
 
     // =========================================================================
-    // start()
-    // =========================================================================
-    @Override
-    public void start(Stage stage) {
-        Font.loadFont(getClass().getResourceAsStream("/fonts/IBMPlexSansThai-Medium.ttf"), 14);
-        this.stage = stage;
-        stage.setTitle("Save My GPA");
-        Scene scene = new Scene(root);
-        stage.setScene(scene);
-        root.getChildren().add(gameLayer);
-        root.setStyle("-fx-background-color: black;");
-        stage.setWidth(1280);
-        stage.setHeight(720);
-        stage.centerOnScreen();
-        stage.setResizable(true);
-        applyScale();
-        scene.widthProperty() .addListener((o, ov, nv) -> applyScale());
-        scene.heightProperty().addListener((o, ov, nv) -> applyScale());
-        stage.show();
-        loadFromDisk();
-        gameCallbacks = buildGameCallbacks(); // built ONCE, never rebuilt
-        AudioManager.getInstance().playMusic(AudioManager.Music.INTRO);
-        if (agreedToTerms) showMainMenuWithFade(); else showIntroSequence();
-    }
-
-    private void applyScale() {
-        double w = stage.getScene().getWidth();
-        double h = stage.getScene().getHeight();
-        if (w <= 0 || h <= 0) return;
-        double scale = Math.min(w / BASE_W, h / BASE_H);
-        gameLayer.setScaleX(scale); gameLayer.setScaleY(scale);
-        gameLayer.setTranslateX((w - BASE_W * scale) / 2.0);
-        gameLayer.setTranslateY((h - BASE_H * scale) / 2.0);
-    }
-
-    private void setContent(javafx.scene.Node node) {
-        gameLayer.getChildren().clear();
-        gameLayer.getChildren().add(node);
-    }
-
-    // =========================================================================
     // Event listener
     // =========================================================================
     private void wireEventListener() {
@@ -276,7 +265,6 @@ public class GameLauncher extends Application {
         hasSavedGame = true;
         progExam1Score = mathExam1Score = progExam2Score = mathExam2Score = 0;
         progExamTakenToday = mathExamTakenToday = examNoticeShownToday = false;
-        // gameCallbacks already exists — no rebuild needed
         persistSave(true);
         showNewGameIntro();
     }
@@ -318,7 +306,7 @@ public class GameLauncher extends Application {
     private void showGameplayWithFadeIn() {
         if (isGameOver()) { showEnding(); return; }
         AudioManager.getInstance().playMusic(AudioManager.Music.OUTSIDE);
-        outsideUI = new OutsideUI(gameCallbacks);
+        outsideUI = new OutsideUI(this);
         javafx.scene.Node gv = outsideUI.buildView();
         gv.setOpacity(0);
         setContent(gv);
@@ -329,9 +317,9 @@ public class GameLauncher extends Application {
         ft.setFromValue(0); ft.setToValue(1); ft.play();
     }
 
-    private boolean isProgExamDay() { int d = timeSystem.getCurrentDay(); return d == 6 || d == 13; }
-    private boolean isMathExamDay() { int d = timeSystem.getCurrentDay(); return d == 7 || d == 14; }
-    private boolean isGameOver()    { return timeSystem.getCurrentDay() > TOTAL_DAYS; }
+    private boolean isProgExamDayInternal() { int d = timeSystem.getCurrentDay(); return d == 6 || d == 13; }
+    private boolean isMathExamDayInternal() { int d = timeSystem.getCurrentDay(); return d == 7 || d == 14; }
+    private boolean isGameOver()            { return timeSystem.getCurrentDay() > TOTAL_DAYS; }
 
     private void onDayEnd() {
         player.getEffect(SeniorNoteBuff.class).ifPresent(b -> b.tickDay(player));
@@ -496,11 +484,10 @@ public class GameLauncher extends Application {
         return true;
     }
 
-    // ── Pause — uses gameCallbacks directly, no anonymous shim ───────────────
     private void showPause() {
         if (pauseOpen) return;
         pauseOpen = true;
-        PauseMenuUI pauseUI = new PauseMenuUI(root, gameCallbacks);
+        PauseMenuUI pauseUI = new PauseMenuUI(root, this);
         pauseOverlay = pauseUI.buildView();
         root.getChildren().add(pauseOverlay);
     }
@@ -546,21 +533,19 @@ public class GameLauncher extends Application {
 
     private void showAgreement() {
         AudioManager.getInstance().playMusic(AudioManager.Music.ACCEPTANCE);
-        AcceptanceUI ui = new AcceptanceUI(gameCallbacks);
+        AcceptanceUI ui = new AcceptanceUI(this);
         javafx.scene.Node av = ui.buildView();
         av.setOpacity(0); setContent(av);
         FadeTransition ft = new FadeTransition(Duration.millis(500), av);
         ft.setFromValue(0); ft.setToValue(1); ft.play();
     }
 
-    private void fadeOutThenRun(java.util.function.Consumer<Void> then) { then.accept(null); }
-
     private void showMainMenuWithFade() {
         AudioManager.getInstance().playMusic(AudioManager.Music.MAIN_MENU);
         actionLocked = false;
         pauseOpen    = false;
-        screenOrigin = ScreenOrigin.MAIN_MENU; // ← track we are on main menu
-        MainMenuUI ui = new MainMenuUI(hasSavedGame, gameCallbacks);
+        screenOrigin = ScreenOrigin.MAIN_MENU;
+        MainMenuUI ui = new MainMenuUI(hasSavedGame, this);
         javafx.scene.Node mv = ui.buildView();
         mv.setOpacity(0); setContent(mv);
         FadeTransition ft = new FadeTransition(Duration.millis(500), mv);
@@ -570,12 +555,11 @@ public class GameLauncher extends Application {
     private void showSettings() {
         ScreenOrigin returnTo = screenOrigin;
         screenOrigin = ScreenOrigin.MAIN_MENU;
-
-        SettingsUI ui = new SettingsUI(AudioManager.getInstance(), gameCallbacks, () -> {
+        SettingsUI ui = new SettingsUI(AudioManager.getInstance(),  () -> {
             switch (returnTo) {
-                case MAIN_MENU   -> ActivityCutscene.transition(root, GameLauncher.this::showMainMenuWithFade, null);
-                case OUTSIDE     -> ActivityCutscene.transition(root, GameLauncher.this::showGameplay, null);
-                case IT_BUILDING -> ActivityCutscene.transition(root, GameLauncher.this::showITBuilding, null);
+                case MAIN_MENU   -> ActivityCutscene.transition(root, this::showMainMenuWithFade, null);
+                case OUTSIDE     -> ActivityCutscene.transition(root, this::showGameplay, null);
+                case IT_BUILDING -> ActivityCutscene.transition(root, this::showITBuilding, null);
             }
         });
         ActivityCutscene.transition(root, () -> setContent(ui.buildView()), null);
@@ -585,7 +569,7 @@ public class GameLauncher extends Application {
         ActivityCutscene.transition(root, () -> {
             HowToPlayUI ui = new HowToPlayUI(() -> runOnce(() -> {
                 AudioManager.getInstance().playRefuse();
-                ActivityCutscene.transition(root, GameLauncher.this::showMainMenuWithFade, null);
+                ActivityCutscene.transition(root, this::showMainMenuWithFade, null);
             }));
             setContent(ui.buildView());
         }, null);
@@ -595,7 +579,7 @@ public class GameLauncher extends Application {
         ActivityCutscene.transition(root, () -> {
             CreditsUI ui = new CreditsUI(() -> runOnce(() -> {
                 AudioManager.getInstance().playRefuse();
-                ActivityCutscene.transition(root, GameLauncher.this::showMainMenuWithFade, null);
+                ActivityCutscene.transition(root, this::showMainMenuWithFade, null);
             }));
             setContent(ui.buildView());
         }, null);
@@ -605,7 +589,7 @@ public class GameLauncher extends Application {
         if (isGameOver()) { showEnding(); return; }
         screenOrigin = ScreenOrigin.OUTSIDE;
         AudioManager.getInstance().playMusic(AudioManager.Music.OUTSIDE);
-        outsideUI = new OutsideUI(gameCallbacks);
+        outsideUI = new OutsideUI(this);
         setContent(outsideUI.buildView());
         eventManager.triggerVisit(player, timeSystem, Location.OUTSIDE);
         outsideUI.refresh();
@@ -632,17 +616,17 @@ public class GameLauncher extends Application {
     }
 
     private void showBusStop() {
-        new BusStopUI(root, gameCallbacks).show();
+        new BusStopUI(root, this).show();
     }
 
     private void showITBuilding() {
-        screenOrigin = ScreenOrigin.IT_BUILDING; // ← track we are in IT building
+        screenOrigin = ScreenOrigin.IT_BUILDING;
         AudioManager.getInstance().playMusic(AudioManager.Music.INSIDE);
         eventManager.triggerVisit(player, timeSystem, Location.IT_BUILDING);
-        if (outsideUI == null) outsideUI = new OutsideUI(gameCallbacks);
+        if (outsideUI == null) outsideUI = new OutsideUI(this);
         outsideUI.refresh();
         actionLocked = false;
-        InsideUI ui = new InsideUI(gameCallbacks);
+        InsideUI ui = new InsideUI(this);
         javafx.scene.Node iv = ui.buildView();
         iv.setOpacity(0); setContent(iv);
         FadeTransition fi = new FadeTransition(Duration.millis(300), iv);
@@ -650,7 +634,7 @@ public class GameLauncher extends Application {
     }
 
     private void showCoworkingSpace() {
-        new CoworkingUI(root, gameCallbacks).show();
+        new CoworkingUI(root, this).show();
     }
 
     // ── Exams ─────────────────────────────────────────────────────────────────
@@ -694,10 +678,10 @@ public class GameLauncher extends Application {
 
     private void showExamDayNotice(Runnable onDone) {
         String subject, detail;
-        if (isProgExamDay()) {
+        if (isProgExamDayInternal()) {
             subject = "💻 วันสอบ Programming!";
             detail  = "วันนี้มีสอบ Programming\nเตรียมตัวให้พร้อมและไปที่ห้องสอบได้เลย!\n\n🧠 Intelligence ยิ่งสูง คะแนนยิ่งดี";
-        } else if (isMathExamDay()) {
+        } else if (isMathExamDayInternal()) {
             subject = "📐 วันสอบ Math!";
             detail  = "วันนี้มีสอบ Math\nไปที่อาคาร IT เพื่อเข้าห้องสอบ!\n\n🧠 Intelligence ยิ่งสูง คะแนนยิ่งดี";
         } else {
@@ -713,14 +697,13 @@ public class GameLauncher extends Application {
     private void showEnding() {
         if (player != null && player.getStat(StatType.MOOD) <= 10) { showSecretEnding2(); return; }
 
-        int progAvg = progExam1Score + progExam2Score;
-        int mathAvg = mathExam1Score + mathExam2Score;
-        int overall = (progAvg + mathAvg) / 2;
+        int overall = (progExam1Score + progExam2Score + mathExam1Score + mathExam2Score) / 2;
         String grade = overall >= 80 ? "A" : overall >= 70 ? "B" : overall >= 60 ? "C" : overall >= 50 ? "D" : "F";
 
         String endingMusic = switch (grade) {
             case "A"           -> AudioManager.Music.ENDING_GREAT;
-            case "B", "C", "D" -> AudioManager.Music.ENDING_MID;
+            case "B"           -> AudioManager.Music.ENDING_MID;
+            case "C", "D"      -> AudioManager.Music.ENDING_BAD2;
             default            -> AudioManager.Music.ENDING_BAD;
         };
         AudioManager.getInstance().playMusic(endingMusic);
@@ -769,11 +752,6 @@ public class GameLauncher extends Application {
         cinPane.getChildren().addAll(bgImg, subtitleBar);
         setContent(cinPane);
         playEndingScene(cinPane, bgImg, subtitle, scenes, lines, 0, onDone);
-    }
-
-    // Replace showEndingACinematic with a call to showEndingCinematic:
-    private void showEndingACinematic(Runnable onDone) {
-        showEndingCinematic(ENDING_A_SCENES, endingStory("A"), onDone);
     }
 
     private void playEndingScene(StackPane cinPane, ImageView bgImg, Label subtitle,
@@ -922,11 +900,14 @@ public class GameLauncher extends Application {
 
     private String endingTitle(String g) {
         return switch (g) {
-            case "A" -> "Ending A  —  All Stars Passed";   case "B" -> "Ending B  —  Nobody Is Perfect";
-            case "C" -> "Ending C  —  Struggling Success"; case "D" -> "Ending D  —  Probation";
+            case "A" -> "Ending A  —  All Stars Passed";
+            case "B" -> "Ending B  —  Nobody Is Perfect";
+            case "C" -> "Ending C  —  Struggling Success";
+            case "D" -> "Ending D  —  Probation";
             default  -> "Ending F  —  Hope Dies Last";
         };
     }
+
     private String endingColor(String g) {
         return switch (g) {
             case "A" -> "#ffe082"; case "B" -> "#80cbc4";
@@ -1157,6 +1138,7 @@ public class GameLauncher extends Application {
         FadeTransition ft = new FadeTransition(Duration.seconds(secs), n);
         ft.setFromValue(from); ft.setToValue(to); return ft;
     }
+
     private PauseTransition pause(double s) { return new PauseTransition(Duration.seconds(s)); }
 
     private void typeSegments(Label target, String[] segs, Runnable onDone) {

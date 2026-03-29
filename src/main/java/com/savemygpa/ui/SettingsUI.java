@@ -1,7 +1,6 @@
 package com.savemygpa.ui;
 
 import com.savemygpa.audio.AudioManager;
-import com.savemygpa.util.GameCallbacks;
 import javafx.animation.FadeTransition;
 import javafx.geometry.Pos;
 import javafx.scene.control.*;
@@ -24,9 +23,7 @@ public class SettingsUI {
     private final AudioManager audio;
     private final Runnable     onBack;
 
-    // GameLauncher passes the exact destination as a Runnable so SettingsUI
-    // never needs to know about screen origins — it just calls onBack.
-    public SettingsUI(AudioManager audio, GameCallbacks ignoredCb, Runnable onBack) {
+    public SettingsUI(AudioManager audio, Runnable onBack) {
         this.audio  = audio;
         this.onBack = onBack;
     }
@@ -70,7 +67,7 @@ public class SettingsUI {
         sliders.setAlignment(Pos.CENTER_LEFT); sliders.setMaxWidth(640);
 
         ImageView backBtn = makeImgBtn(BTN_BACK, BTN_W, () -> {
-            AudioManager.getInstance().playAccept();
+            AudioManager.getInstance().playRefuse();
             onBack.run();
         });
 

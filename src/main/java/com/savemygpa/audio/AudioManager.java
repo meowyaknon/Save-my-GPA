@@ -21,6 +21,7 @@ public class AudioManager {
         public static final String ENDING_GREAT = "ending_great";
         public static final String ENDING_MID   = "ending_mid";
         public static final String ENDING_BAD   = "ending_bad";
+        public static final String ENDING_BAD2 = "ending_bad2";
         // ── Counting Mini Game music ───────────────────────────────────────────
         public static final String COUNTING_ACTIVE = "counting_active";
         public static final String COUNTING_IDLE   = "counting_idle";
@@ -59,6 +60,7 @@ public class AudioManager {
         MUSIC_PATHS.put(Music.ENDING_GREAT, "/audio/music/ending_good.mp3");
         MUSIC_PATHS.put(Music.ENDING_MID,   "/audio/music/ending_mid.mp3");
         MUSIC_PATHS.put(Music.ENDING_BAD,   "/audio/music/ending_bad.mp3");
+        MUSIC_PATHS.put(Music.ENDING_BAD2,   "/audio/music/ending_bad2.mp3");
         // ── Counting Mini Game music ──
         MUSIC_PATHS.put(Music.COUNTING_ACTIVE, "/audio/music/Run! - Toby Fox (128k).wav");
         MUSIC_PATHS.put(Music.COUNTING_IDLE,   "/audio/music/Snowdin Town - Toby Fox (128k) (1).wav");
