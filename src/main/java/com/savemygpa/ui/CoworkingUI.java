@@ -73,9 +73,9 @@ public class CoworkingUI {
         String studyTip =
                 "⏱ ใช้เวลา " + GameConfig.REVIEW_TIME_COST + " ชั่วโมง\n\n" +
                         "✅ ได้รับ:\n" +
-                        "-> 🧠 INT +" + StatConfig.REVIEW_LOW_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง 0 - 30" + "\n" +
-                        "-> 🧠 INT +" + StatConfig.REVIEW_MEDIUM_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง 31 - 69" + "\n" +
-                        "-> 🧠 INT +" + StatConfig.REVIEW_HIGH_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง ≥ 70" +"\n\n" +
+                        "-> 🧠 INT +" + StatConfig.REVIEW_LOW_INTELLIGENCE_GAIN + " | เมื่อ Mood มาก" + "\n" +
+                        "-> 🧠 INT +" + StatConfig.REVIEW_MEDIUM_INTELLIGENCE_GAIN + " | เมื่อ Mood กลางๆ" + "\n" +
+                        "-> 🧠 INT +" + StatConfig.REVIEW_HIGH_INTELLIGENCE_GAIN + " | เมื่อ Mood น้้อย" +"\n\n" +
                         "❌ เสียไป:\n" +
                         "-> ⚡ Energy -" + StatConfig.REVIEW_ENERGY_LOSS + "\n" +
                         "-> 😊 Mood -"   + StatConfig.REVIEW_MOOD_LOSS + "\n\n" +
