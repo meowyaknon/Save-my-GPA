@@ -5,40 +5,14 @@
   <artifactId>Save-my-GPA</artifactId>
   <version>1.0</version>
   <build>
+    <finalName>Save-my-GPA</finalName>
     <plugins>
-      <plugin>
-        <artifactId>maven-jar-plugin</artifactId>
-        <version>3.3.0</version>
-        <configuration>
-          <archive>
-            <manifest>
-              <mainClass>com.savemygpa.launcher.GameLauncher</mainClass>
-            </manifest>
-          </archive>
-        </configuration>
-      </plugin>
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <version>3.6.1</version>
-        <executions>
-          <execution>
-            <id>copy-dependencies</id>
-            <phase>package</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <outputDirectory>${project.build.directory}/libs</outputDirectory>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
       <plugin>
         <groupId>org.openjfx</groupId>
         <artifactId>javafx-maven-plugin</artifactId>
         <version>0.0.8</version>
         <configuration>
-          <mainClass>com.savemygpa.launcher.GameLauncher</mainClass>
+          <mainClass>com.savemygpa.launcher.AppLauncher</mainClass>
         </configuration>
       </plugin>
       <plugin>
@@ -53,9 +27,19 @@
             <configuration>
               <transformers>
                 <transformer>
-                  <mainClass>com.savemygpa.launcher.GameLauncher</mainClass>
+                  <mainClass>com.savemygpa.launcher.AppLauncher</mainClass>
                 </transformer>
               </transformers>
+              <filters>
+                <filter>
+                  <artifact>*:*</artifact>
+                  <excludes>
+                    <exclude>META-INF/*.SF</exclude>
+                    <exclude>META-INF/*.DSA</exclude>
+                    <exclude>META-INF/*.RSA</exclude>
+                  </excludes>
+                </filter>
+              </filters>
             </configuration>
           </execution>
         </executions>
