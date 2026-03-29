@@ -29,5 +29,5 @@ public class ForgetIDEvent extends Event {
     @Override
     public String getDescription() { return "ตกใจสุดขีดต้องรีบไปทำเรื่องหน้าห้องสอบ เสียพลังงานและขวัญกำลังใจก่อนเริ่มทำข้อสอบ\n\n" + 
                                     "ผลกระทบ: Mood -30, Energy -6"; }
-    @Override public double getChance() { return 0.25; }
+    @Override public double getChance() { return 0.2; }
 }

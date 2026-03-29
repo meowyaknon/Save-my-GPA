@@ -64,9 +64,9 @@ public class InsideUI {
         String classroomTip =
                 "⏱ ใช้เวลา " + GameConfig.CLASSROOM_TIME_COST + " ชั่วโมง\n\n" +
                         "✅ ได้รับ:\n" +
-                        "-> 🧠 INT +" + StatConfig.CLASSROOM_LOW_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง 0 - 30" + "\n" +
-                        "-> 🧠 INT +" + StatConfig.CLASSROOM_MEDIUM_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง 31 - 69" + "\n" +
-                        "-> 🧠 INT +" + StatConfig.CLASSROOM_HIGH_INTELLIGENCE_GAIN + " | เมื่อ Mood อยู่ในช่วง ≥ 70" +"\n\n" +
+                        "-> 🧠 INT +" + StatConfig.CLASSROOM_LOW_INTELLIGENCE_GAIN + " | เมื่อ Mood น้อยๆ" + "\n" +
+                        "-> 🧠 INT +" + StatConfig.CLASSROOM_MEDIUM_INTELLIGENCE_GAIN + " | เมื่อ Mood กลางๆ" + "\n" +
+                        "-> 🧠 INT +" + StatConfig.CLASSROOM_HIGH_INTELLIGENCE_GAIN + " | เมื่อ Mood มาก" +"\n\n" +
                         "❌ เสียไป:\n" +
                         "-> ⚡ Energy -" + StatConfig.CLASSROOM_ENERGY_LOSS + "\n" +
                         "-> 😊 Mood -"   + StatConfig.CLASSROOM_MOOD_LOSS + "\n\n" +
