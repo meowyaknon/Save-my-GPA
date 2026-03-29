@@ -149,8 +149,8 @@ public class GameLauncher extends Application implements GameCallbacks {
     @Override public EventManager getEventManager() { return eventManager; }
     @Override public OutsideUI    getOutsideUI()    { return outsideUI; }
 
-    @Override public void onClassroom()  { AudioManager.getInstance().playAccept(); performWithCutscene(new ClassroomActivity(),  Location.CLASSROOM,  this::showITBuilding); }
-    @Override public void onAuditorium() { AudioManager.getInstance().playAccept(); performWithCutscene(new AuditoriumActivity(), Location.AUDITORIUM, this::showITBuilding); }
+    @Override public void onClassroom()  { AudioManager.getInstance().playAccept(); performWithCutscene(new ClassroomActivity(),  Location.CLASSROOM,  () -> showITBuilding(false)); }
+    @Override public void onAuditorium() { AudioManager.getInstance().playAccept(); performWithCutscene(new AuditoriumActivity(), Location.AUDITORIUM, () -> showITBuilding(false)); }
     @Override public void onCoworking()  { AudioManager.getInstance().playAccept(); showCoworkingSpace(); }
     @Override public void onProgExam()   { AudioManager.getInstance().playAccept(); doProgExam(); }
     @Override public void onMathExam()   { AudioManager.getInstance().playAccept(); doMathExam(); }
@@ -164,8 +164,8 @@ public class GameLauncher extends Application implements GameCallbacks {
     // =========================================================================
     // GameCallbacks — CoworkingUI
     // =========================================================================
-    @Override public void onRelax() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingRelaxActivity(), Location.COWORKING, this::showITBuilding); }
-    @Override public void onStudy() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingStudyActivity(), Location.COWORKING, this::showITBuilding); }
+    @Override public void onRelax() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingRelaxActivity(), Location.COWORKING, () -> showITBuilding(false)); }
+    @Override public void onStudy() { AudioManager.getInstance().playAccept(); performWithCutscene(new CoworkingStudyActivity(), Location.COWORKING, () -> showITBuilding(false)); }
 
     // =========================================================================
     // GameCallbacks — AcceptanceUI
@@ -620,9 +620,15 @@ public class GameLauncher extends Application implements GameCallbacks {
     }
 
     private void showITBuilding() {
+        showITBuilding(true);
+    }
+
+    private void showITBuilding(boolean triggerVisitEvent) {
         screenOrigin = ScreenOrigin.IT_BUILDING;
         AudioManager.getInstance().playMusic(AudioManager.Music.INSIDE);
-        eventManager.triggerVisit(player, timeSystem, Location.IT_BUILDING);
+        if (triggerVisitEvent) {
+            eventManager.triggerVisit(player, timeSystem, Location.IT_BUILDING);
+        }
         if (outsideUI == null) outsideUI = new OutsideUI(this);
         outsideUI.refresh();
         actionLocked = false;
